@@ -37,10 +37,10 @@
       ]
     },
     {
-      "name": "claude-screenote",
-      "source": "./plugins/claude-screenote",
-      "description": "Screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback.",
-      "version": "1.4.0",
+      "name": "screenote",
+      "source": "./plugins/screenote",
+      "description": "Screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback from Claude Code or Codex.",
+      "version": "1.5.0",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
@@ -49,8 +49,9 @@
       "repository": "https://github.com/ivankuznetsov/claude-screenote",
       "license": "MIT",
       "keywords": [
-        "claude-skill",
+        "agent-skill",
         "claude-code",
+        "codex",
         "screenote",
         "visual-feedback",
         "screenshot",

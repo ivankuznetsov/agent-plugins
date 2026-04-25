@@ -7,7 +7,7 @@ This marketplace is intentionally a catalog. Plugin source remains in separate r
 ## Plugins
 
 - `llm-wiki` — bootstrap and query LLM-maintained project wikis before planning or implementation.
-- `claude-screenote` — screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback.
+- `screenote` — screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback.
 
 ## Claude Code
 
@@ -26,7 +26,7 @@ Install `llm-wiki`:
 Install Screenote:
 
 ```text
-/plugin install claude-screenote@aikuznetsov-marketplace
+/plugin install screenote@aikuznetsov-marketplace
 ```
 
 ## Codex
@@ -45,7 +45,7 @@ Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install t
 .claude-plugin/marketplace.json     # Claude Code marketplace catalog
 .agents/plugins/marketplace.json    # Codex marketplace catalog
 plugins/llm-wiki                    # plugin repo, expected as submodule
-plugins/claude-screenote            # plugin repo, expected as submodule
+plugins/screenote                   # plugin repo, expected as submodule
 ```
 
 ## Development

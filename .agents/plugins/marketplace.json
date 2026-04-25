@@ -17,10 +17,10 @@
       "category": "Coding"
     },
     {
-      "name": "claude-screenote",
+      "name": "screenote",
       "source": {
         "source": "local",
-        "path": "./plugins/claude-screenote"
+        "path": "./plugins/screenote"
       },
       "policy": {
         "installation": "AVAILABLE",
