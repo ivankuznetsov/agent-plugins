@@ -1,0 +1,69 @@
+{
+  "name": "aikuznetsov-marketplace",
+  "owner": {
+    "name": "ivankuznetsov",
+    "url": "https://github.com/ivankuznetsov"
+  },
+  "metadata": {
+    "description": "Agent plugins by Ivan Kuznetsov.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "llm-wiki",
+      "source": "./plugins/llm-wiki",
+      "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
+      "version": "0.1.0",
+      "author": {
+        "name": "ivankuznetsov",
+        "url": "https://github.com/ivankuznetsov"
+      },
+      "homepage": "https://github.com/ivankuznetsov/llm-wiki",
+      "repository": "https://github.com/ivankuznetsov/llm-wiki",
+      "license": "MIT",
+      "keywords": [
+        "llm-wiki",
+        "qmd",
+        "knowledge-management",
+        "planning",
+        "agent-workflow"
+      ],
+      "category": "workflow",
+      "tags": [
+        "wiki",
+        "qmd",
+        "planning",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "claude-screenote",
+      "source": "./plugins/claude-screenote",
+      "description": "Screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback.",
+      "version": "1.4.0",
+      "author": {
+        "name": "ivankuznetsov",
+        "url": "https://github.com/ivankuznetsov"
+      },
+      "homepage": "https://screenote.ai",
+      "repository": "https://github.com/ivankuznetsov/claude-screenote",
+      "license": "MIT",
+      "keywords": [
+        "claude-skill",
+        "claude-code",
+        "screenote",
+        "visual-feedback",
+        "screenshot",
+        "annotation",
+        "design-review"
+      ],
+      "category": "workflow",
+      "tags": [
+        "screenshot",
+        "feedback",
+        "annotation",
+        "design"
+      ]
+    }
+  ]
+}
