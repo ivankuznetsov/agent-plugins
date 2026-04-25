@@ -3,4 +3,4 @@
 	url = https://github.com/ivankuznetsov/llm-wiki.git
 [submodule "plugins/screenote"]
 	path = plugins/screenote
-	url = https://github.com/ivankuznetsov/claude-screenote.git
+	url = https://github.com/ivankuznetsov/screenote-skills.git
