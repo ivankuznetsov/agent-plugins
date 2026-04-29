@@ -65,6 +65,37 @@
         "annotation",
         "design"
       ]
+    },
+    {
+      "name": "agent-seo",
+      "source": "./plugins/agent-seo",
+      "description": "SEO content workflow for researching, writing, humanizing, fact-checking, and optimizing long-form content.",
+      "version": "1.1.0",
+      "author": {
+        "name": "ivankuznetsov",
+        "url": "https://github.com/ivankuznetsov"
+      },
+      "homepage": "https://github.com/ivankuznetsov/agent-seo",
+      "repository": "https://github.com/ivankuznetsov/agent-seo",
+      "license": "MIT",
+      "keywords": [
+        "agent-seo",
+        "claude-code",
+        "codex",
+        "seo",
+        "content-writing",
+        "keyword-research",
+        "ai-humanization",
+        "content-optimization"
+      ],
+      "category": "content",
+      "tags": [
+        "seo",
+        "content",
+        "writing",
+        "optimization",
+        "humanization"
+      ]
     }
   ]
 }

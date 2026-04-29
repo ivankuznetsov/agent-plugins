@@ -4,3 +4,6 @@
 [submodule "plugins/screenote"]
 	path = plugins/screenote
 	url = https://github.com/ivankuznetsov/screenote-skills.git
+[submodule "plugins/agent-seo"]
+	path = plugins/agent-seo
+	url = https://github.com/ivankuznetsov/agent-seo.git

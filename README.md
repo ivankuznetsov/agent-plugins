@@ -8,6 +8,7 @@ This marketplace is intentionally a catalog. Plugin source remains in separate r
 
 - `llm-wiki` — bootstrap and query LLM-maintained project wikis before planning or implementation.
 - `screenote` — screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback.
+- `agent-seo` — research, write, humanize, fact-check, and optimize SEO content.
 
 ## Claude Code
 
@@ -29,6 +30,12 @@ Install Screenote:
 /plugin install screenote@aikuznetsov-marketplace
 ```
 
+Install Agent SEO:
+
+```text
+/plugin install agent-seo@aikuznetsov-marketplace
+```
+
 ## Codex
 
 Add the marketplace:
@@ -37,7 +44,7 @@ Add the marketplace:
 codex plugin marketplace add ivankuznetsov/agent-plugins
 ```
 
-Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install the plugin you want.
+Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install the plugin you want, including `agent-seo`.
 
 ## Repository Layout
 
@@ -46,6 +53,7 @@ Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install t
 .agents/plugins/marketplace.json    # Codex marketplace catalog
 plugins/llm-wiki                    # plugin repo, expected as submodule
 plugins/screenote                   # plugin repo, expected as submodule
+plugins/agent-seo                   # plugin repo, expected as submodule
 ```
 
 ## Development
