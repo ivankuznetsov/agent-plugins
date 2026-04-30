@@ -12,6 +12,7 @@ Create a self-maintaining project wiki under `wiki/` for the current repository.
 - The current directory must be inside a git repository.
 - QMD is optional but recommended. Use it when available; when missing, suggest installing it before falling back to `rg`.
 - Merge existing agent settings and instructions. Do not overwrite existing config files blindly.
+- Detect the main cross-project wiki when present. Check `~/wikis/master/wiki/` and `~/wikis/main/wiki/`.
 
 ## Step 1: Detect Project Shape
 
@@ -22,6 +23,7 @@ Read the project root and identify:
 - Entry points: routes, API specs, CLI commands, GraphQL schemas, gRPC protos, or main files.
 - Architecture: services, domain modules, packages, jobs, queues, middleware, dependency injection, or monorepo boundaries.
 - Tests, dependency files, CI/CD, Docker, and deploy config.
+- Main cross-project wiki: whether `~/wikis/master/wiki/` or `~/wikis/main/wiki/` exists. Prefer `~/wikis/master/wiki/` if both exist.
 
 Adapt all later page names and source reads to what the project actually uses.
 
@@ -46,6 +48,8 @@ Add `.qmd/` to `.gitignore` if it is not already ignored.
 ## Step 3: Generate Grounded Pages
 
 Read source files before writing. Prefer fewer, richer pages over many thin pages.
+
+Before writing pages, search the main cross-project wiki when it exists. Read relevant pages such as `patterns.md`, `learnings.md`, `decisions.md`, `architecture.md`, and `index.md` if present. Use this context to align project wiki structure and note reusable patterns, but only cite or summarize cross-project facts from pages actually read.
 
 Generate pages that apply to the project:
 
@@ -137,12 +141,53 @@ Use `[[page-name]]` backlinks between wiki pages.
 Query protocol:
 1. Run `qmd query "<topic>"` or `qmd search "<topic>"` when QMD is available.
 2. Fall back to `rg "<topic>" wiki/`.
-3. Check `~/wikis/master/wiki/` before making architectural decisions when that directory exists.
+3. Check the main cross-project wiki before making architectural decisions when it exists:
+   - `~/wikis/master/wiki/`
+   - `~/wikis/main/wiki/`
 ```
 
-## Step 6: Optional Hooks and QMD
+## Step 6: Hooks, Scheduled Automation, and QMD
 
 If this is Claude Code and `.claude/settings.json` exists or the user wants hooks, merge a `SessionStart` hook that prints `wiki/index.md` and recent `wiki/log.md`. Never overwrite unrelated settings.
+
+Always set up scheduled wiki refresh automation during bootstrap. Do not ask whether to add it.
+
+Create `.llm-wiki/refresh-wiki.sh` and make it executable. It should run the current agent's headless CLI from the project root:
+
+- Codex setup: use `codex exec -C "<project-root>" "<refresh prompt>"`.
+- Claude Code setup: use Claude Code's headless command only when the current tool is Claude Code.
+
+For Codex setup, never write automation that shells out to `claude`, `claude -p`, or Claude-specific hooks. Do not fall back from Codex automation to Claude if `codex` is missing; report the missing `codex` CLI instead.
+
+Codex refresh script shape:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$project_root"
+
+codex exec -C "$project_root" "Refresh this project's LLM wiki. Read AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If ~/wikis/master/wiki/ or ~/wikis/main/wiki/ exists, search that main cross-project wiki for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
+```
+
+Install the best available scheduler without prompting:
+
+- Linux with systemd user services: create `~/.config/systemd/user/llm-wiki-<project-slug>.service` and `.timer`, then run `systemctl --user daemon-reload` and `systemctl --user enable --now llm-wiki-<project-slug>.timer`.
+- macOS with launchd: create `~/Library/LaunchAgents/com.llm-wiki.<project-slug>.plist` with a 24 hour `StartInterval`, then run `launchctl load`.
+- Other environments: install an equivalent cron entry that runs `.llm-wiki/refresh-wiki.sh` daily.
+
+Use a stable `<project-slug>` from the repository basename plus a short hash of the project root to avoid timer name collisions. If scheduler installation fails because the environment lacks systemd, launchd, cron, or permissions, keep `.llm-wiki/refresh-wiki.sh`, record the failure in `wiki/gaps.md`, and report the exact command the user can run.
+
+Also install post-commit wiki maintenance automation. Preserve existing hooks; do not overwrite unrelated hook logic. Prefer creating `.llm-wiki/post-commit-refresh.sh` and wiring `.git/hooks/post-commit` to call it.
+
+The post-commit script must detect changed files and run focused headless refreshes:
+
+- Data model changes: schema, migrations, models, entities, Prisma schema.
+- API surface changes: routes, controllers, handlers, endpoints, resolvers.
+- Dependency changes: `Gemfile`, `package.json`, `go.mod`, `Cargo.toml`, `requirements.txt`, `pyproject.toml`, `composer.json`.
+- Plans, todos, docs changes: update roadmap, technical debt, plans/initiatives pages when those pages exist or should exist.
+
+For Codex setup, every focused refresh command must use `codex exec -C "$project_root" "<focused prompt>"` in the background. Never use `claude -p`. After focused refreshes, run `qmd embed` in the background when `qmd` exists, then create `~/wikis/.sync-needed/<project-name>` when `~/wikis/` exists so the main cross-project wiki can sync later.
 
 Check whether QMD is installed with `command -v qmd`.
 
@@ -168,8 +213,11 @@ Mention that the first `qmd embed` may download local models. Ask whether they w
 Report:
 
 - Project type detected.
+- Main cross-project wiki path detected, if any.
 - Pages created and updated.
 - QMD indexing status.
+- Scheduled refresh automation status.
+- Post-commit hook automation status.
 - Top three gaps.
 - Any files intentionally skipped.
 

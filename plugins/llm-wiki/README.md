@@ -8,7 +8,7 @@ Bootstrap and query LLM-maintained project wikis before planning or implementati
 
 `llm-wiki` turns the LLM Wiki pattern into installable agent skills. It is based on the setup from [How I Built a Self-Maintaining Knowledge Base for 6 Projects Using Claude Code & Karpathy's LLM Wiki](https://hackernoon.com/how-i-built-a-self-maintaining-knowledge-base-for-6-projects-using-claude-code-and-karpathys-llm-wiki).
 
-It works with my original six-project setup: project-local `wiki/` folders, a cross-project `~/wikis/master/wiki/`, QMD semantic search when available, and ripgrep fallback when it is not.
+It works with my original six-project setup: project-local `wiki/` folders, a main cross-project wiki at `~/wikis/master/wiki/` or `~/wikis/main/wiki/`, QMD semantic search when available, and ripgrep fallback when it is not.
 
 `llm-wiki` packages three workflows:
 
@@ -112,7 +112,7 @@ This keeps plans grounded in what already happened instead of rediscovering the 
 
 ## QMD
 
-QMD is preferred for semantic and lexical search, but it is optional. During bootstrap, `llm-wiki` checks for `qmd`; if it is missing, it suggests installing it with `npm install -g @tobilu/qmd` or `bun install -g @tobilu/qmd`, then lets you either install QMD or continue with the `rg` fallback. The workflows fall back to the `qmd` CLI when MCP tools are unavailable, and then to `rg` over `wiki/` and `~/wikis/master/wiki/` when QMD is unavailable.
+QMD is preferred for semantic and lexical search, but it is optional. During bootstrap, `llm-wiki` checks for `qmd`; if it is missing, it suggests installing it with `npm install -g @tobilu/qmd` or `bun install -g @tobilu/qmd`, then lets you either install QMD or continue with the `rg` fallback. The workflows fall back to the `qmd` CLI when MCP tools are unavailable, and then to `rg` over `wiki/`, `~/wikis/master/wiki/`, and `~/wikis/main/wiki/` when QMD is unavailable.
 
 ## Compound Engineering
 
@@ -123,4 +123,5 @@ QMD is preferred for semantic and lexical search, but it is optional. During boo
 - `llm-wiki` does not invent documentation. It reads source files and records uncertainty in `wiki/gaps.md`.
 - QMD is optional, but semantic search is better when QMD is installed and indexed.
 - Agent hooks differ between Claude Code and Codex. The bootstrap skill adds only the instructions and hooks that the current tool supports.
+- Bootstrap installs scheduled refresh automation and post-commit wiki maintenance by default. In Codex, headless refreshes use `codex exec -C <project-root> ...`, not `claude` or `claude -p`.
 - The first bootstrap pass is intentionally broad. Review `wiki/gaps.md` afterward to decide what deserves deeper documentation.
