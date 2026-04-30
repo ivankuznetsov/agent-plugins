@@ -1,5 +1,5 @@
 ---
-name: bootstrap-wiki
+name: bootstrap
 description: Bootstrap an LLM-maintained wiki for the current project. Use when a user asks to create, initialize, or refresh a project wiki, LLM wiki, QMD wiki, or codebase knowledge base.
 ---
 
@@ -12,7 +12,7 @@ Create a self-maintaining project wiki under `wiki/` for the current repository.
 - The current directory must be inside a git repository.
 - QMD is optional but recommended. Use it when available; when missing, suggest installing it before falling back to `rg`.
 - Merge existing agent settings and instructions. Do not overwrite existing config files blindly.
-- Detect the main cross-project wiki when present. Check `~/wikis/master/wiki/` and `~/wikis/main/wiki/`.
+- Detect the main cross-project wiki when present. Check `~/wikis/master/wiki/`, `~/wikis/main/wiki/`, `<parent-of-project>/wikis/master/wiki/`, and `<parent-of-project>/wikis/main/wiki/`.
 
 ## Step 1: Detect Project Shape
 
@@ -23,7 +23,14 @@ Read the project root and identify:
 - Entry points: routes, API specs, CLI commands, GraphQL schemas, gRPC protos, or main files.
 - Architecture: services, domain modules, packages, jobs, queues, middleware, dependency injection, or monorepo boundaries.
 - Tests, dependency files, CI/CD, Docker, and deploy config.
-- Main cross-project wiki: whether `~/wikis/master/wiki/` or `~/wikis/main/wiki/` exists. Prefer `~/wikis/master/wiki/` if both exist.
+- Parent of project: `dirname "$(git rev-parse --show-toplevel)"`.
+- Main cross-project wiki: whether any default path exists. Check in this order:
+  - `~/wikis/master/wiki/`
+  - `~/wikis/main/wiki/`
+  - `<parent-of-project>/wikis/master/wiki/`
+  - `<parent-of-project>/wikis/main/wiki/`
+- If no main cross-project wiki exists, ask the user to either provide an existing main wiki folder or create a new master wiki at `<parent-of-project>/wikis/master/wiki/`. Wait for the user's answer before continuing.
+- If creating a new main wiki, create the directory and seed `index.md`, `patterns.md`, `learnings.md`, and `log.md` with minimal grounded headings. Do not invent cross-project facts.
 
 Adapt all later page names and source reads to what the project actually uses.
 
@@ -49,7 +56,7 @@ Add `.qmd/` to `.gitignore` if it is not already ignored.
 
 Read source files before writing. Prefer fewer, richer pages over many thin pages.
 
-Before writing pages, search the main cross-project wiki when it exists. Read relevant pages such as `patterns.md`, `learnings.md`, `decisions.md`, `architecture.md`, and `index.md` if present. Use this context to align project wiki structure and note reusable patterns, but only cite or summarize cross-project facts from pages actually read.
+Before writing pages, search the detected or user-provided main cross-project wiki when it exists. Read relevant pages such as `patterns.md`, `learnings.md`, `decisions.md`, `architecture.md`, and `index.md` if present. Use this context to align project wiki structure and note reusable patterns, but only cite or summarize cross-project facts from pages actually read.
 
 Generate pages that apply to the project:
 
@@ -144,6 +151,8 @@ Query protocol:
 3. Check the main cross-project wiki before making architectural decisions when it exists:
    - `~/wikis/master/wiki/`
    - `~/wikis/main/wiki/`
+   - `<parent-of-project>/wikis/master/wiki/`
+   - `<parent-of-project>/wikis/main/wiki/`
 ```
 
 ## Step 6: Hooks, Scheduled Automation, and QMD
@@ -169,7 +178,7 @@ set -euo pipefail
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
-codex exec -C "$project_root" "Refresh this project's LLM wiki. Read AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If ~/wikis/master/wiki/ or ~/wikis/main/wiki/ exists, search that main cross-project wiki for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
+codex exec -C "$project_root" "Refresh this project's LLM wiki. Read AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If a configured main cross-project wiki exists, including ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, or ../wikis/main/wiki/, search it for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
 ```
 
 Claude Code refresh script shape:
@@ -180,7 +189,7 @@ set -euo pipefail
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
-claude -p "Refresh this project's LLM wiki. Read CLAUDE.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If ~/wikis/master/wiki/ or ~/wikis/main/wiki/ exists, search that main cross-project wiki for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50
+claude -p "Refresh this project's LLM wiki. Read CLAUDE.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If a configured main cross-project wiki exists, including ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, or ../wikis/main/wiki/, search it for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50
 ```
 
 Install the best available scheduler without prompting:
@@ -204,7 +213,7 @@ For Codex setup, every focused refresh command must use `codex exec -C "$project
 
 For Claude Code setup, every focused refresh command must use `claude -p "<focused prompt>" --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50` in the background. Never use `codex exec`.
 
-After focused refreshes, run `qmd embed` in the background when `qmd` exists, then create `~/wikis/.sync-needed/<project-name>` when `~/wikis/` exists so the main cross-project wiki can sync later.
+After focused refreshes, run `qmd embed` in the background when `qmd` exists, then create `<wikis-root>/.sync-needed/<project-name>` when the detected main wiki root has a `.sync-needed` directory. Use `~/wikis/.sync-needed/<project-name>` for home-based main wikis and `<parent-of-project>/wikis/.sync-needed/<project-name>` for parent-directory main wikis.
 
 Check whether QMD is installed with `command -v qmd`.
 
@@ -230,7 +239,7 @@ Mention that the first `qmd embed` may download local models. Ask whether they w
 Report:
 
 - Project type detected.
-- Main cross-project wiki path detected, if any.
+- Main cross-project wiki path detected, provided, or created.
 - Pages created and updated.
 - QMD indexing status.
 - Scheduled refresh automation status.

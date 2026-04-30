@@ -1,9 +1,9 @@
 ---
-name: wiki-researcher
+name: research
 description: Search QMD-indexed project and main cross-project LLM wikis for past patterns, decisions, solutions, and pitfalls before planning or implementation. Use before feature planning, bug fixing, refactoring, architecture work, or code changes when a project wiki may exist.
 ---
 
-# Wiki Researcher
+# Wiki Research
 
 Search the project wiki and main cross-project wiki before planning or implementation. Produce a concise Past Knowledge section that downstream planning or coding can use.
 
@@ -12,10 +12,15 @@ Search the project wiki and main cross-project wiki before planning or implement
 Determine:
 
 - Current project name: `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"`
+- Parent of project: `dirname "$(git rev-parse --show-toplevel)"`
 - Whether `wiki/` exists in the repo.
 - Whether `~/wikis/master/wiki/` exists.
 - Whether `~/wikis/main/wiki/` exists.
+- Whether `<parent-of-project>/wikis/master/wiki/` exists.
+- Whether `<parent-of-project>/wikis/main/wiki/` exists.
 - Whether QMD MCP tools, `qmd` CLI, or only `rg` are available.
+
+If no main cross-project wiki exists, say that explicitly. Ask the user for a main wiki folder when cross-project context is important, or suggest running `bootstrap` to create `<parent-of-project>/wikis/master/wiki/`.
 
 ## Step 2: Search With the Best Available Tool
 
@@ -68,6 +73,8 @@ qmd query "<topic>" --collection main
 rg "<key terms>" wiki/ --type md -C 2
 rg "<key terms>" ~/wikis/master/wiki/ --type md -C 2
 rg "<key terms>" ~/wikis/main/wiki/ --type md -C 2
+rg "<key terms>" ../wikis/master/wiki/ --type md -C 2
+rg "<key terms>" ../wikis/main/wiki/ --type md -C 2
 ```
 
 Skip missing directories gracefully.
@@ -84,6 +91,10 @@ Prioritize:
 - `~/wikis/master/wiki/learnings.md`
 - `~/wikis/main/wiki/patterns.md`
 - `~/wikis/main/wiki/learnings.md`
+- `<parent-of-project>/wikis/master/wiki/patterns.md`
+- `<parent-of-project>/wikis/master/wiki/learnings.md`
+- `<parent-of-project>/wikis/main/wiki/patterns.md`
+- `<parent-of-project>/wikis/main/wiki/learnings.md`
 
 Only cite or summarize pages actually read.
 
@@ -113,7 +124,7 @@ Return this structure:
 - ...
 ```
 
-If no wiki exists, say that explicitly and suggest running `bootstrap-wiki`.
+If no wiki exists, say that explicitly and suggest running `bootstrap`.
 
 ## Rules
 

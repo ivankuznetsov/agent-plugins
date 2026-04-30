@@ -8,14 +8,14 @@ Bootstrap and query LLM-maintained project wikis before planning or implementati
 
 `llm-wiki` turns the LLM Wiki pattern into installable agent skills. It is based on the setup from [How I Built a Self-Maintaining Knowledge Base for 6 Projects Using Claude Code & Karpathy's LLM Wiki](https://hackernoon.com/how-i-built-a-self-maintaining-knowledge-base-for-6-projects-using-claude-code-and-karpathys-llm-wiki).
 
-It works with my original six-project setup: project-local `wiki/` folders, a main cross-project wiki at `~/wikis/master/wiki/` or `~/wikis/main/wiki/`, QMD semantic search when available, and ripgrep fallback when it is not.
+It works with my original six-project setup: project-local `wiki/` folders, a main cross-project wiki at `~/wikis/master/wiki/`, `~/wikis/main/wiki/`, or a parent-directory `wikis/` folder, QMD semantic search when available, and ripgrep fallback when it is not.
 
 `llm-wiki` packages four workflows:
 
-- `bootstrap-wiki` creates a grounded `wiki/` knowledge base for the current project.
-- `wiki-researcher` searches the project wiki and cross-project master wiki before planning or implementation.
+- `bootstrap` creates a grounded `wiki/` knowledge base for the current project.
+- `research` searches the project wiki and main cross-project wiki before planning or implementation.
 - `wiki-plan` runs wiki research first, then hands the result to Compound Engineering planning when available.
-- `wiki-plugin-status` checks whether a newer `llm-wiki` release is available and reports the correct update command.
+- `status` checks whether a newer `llm-wiki` release is available and reports the correct update command.
 
 ## Install: Claude Code
 
@@ -34,13 +34,11 @@ Install this plugin:
 Then use the installed plugin commands/skills from Claude Code. The key entrypoints are:
 
 ```text
-/llm-wiki:bootstrap-wiki
-/llm-wiki:wiki-researcher
+/llm-wiki:bootstrap
+/llm-wiki:research
 /llm-wiki:wiki-plan
-/llm-wiki:wiki-plugin-status
+/llm-wiki:status
 ```
-
-Claude Code may also expose short forms depending on your plugin setup.
 
 ## Install: Codex
 
@@ -55,10 +53,10 @@ Then open Codex, run `/plugins`, select the `aikuznetsov-marketplace` marketplac
 After restarting Codex, invoke the skills using the namespace shown by `/skills`. The expected form is:
 
 ```text
-$llm-wiki:bootstrap-wiki
-$llm-wiki:wiki-researcher
+$llm-wiki:bootstrap
+$llm-wiki:research
 $llm-wiki:wiki-plan
-$llm-wiki:wiki-plugin-status
+$llm-wiki:status
 ```
 
 If Codex displays a fully qualified marketplace namespace, use that displayed name.
@@ -68,13 +66,13 @@ If Codex displays a fully qualified marketplace namespace, use that displayed na
 Bootstrap a wiki in the current project:
 
 ```text
-$llm-wiki:bootstrap-wiki
+$llm-wiki:bootstrap
 ```
 
 Research past project knowledge before coding:
 
 ```text
-$llm-wiki:wiki-researcher auth flow refactor
+$llm-wiki:research auth flow refactor
 ```
 
 Plan with wiki context first:
@@ -86,8 +84,45 @@ $llm-wiki:wiki-plan add billing reminders
 Check whether the plugin has an update:
 
 ```text
-$llm-wiki:wiki-plugin-status
+$llm-wiki:status
 ```
+
+## Main Cross-Project Wiki
+
+When present, `llm-wiki` searches a main cross-project wiki before creating or updating project wiki pages. It checks:
+
+- `~/wikis/master/wiki/`
+- `~/wikis/main/wiki/`
+- `<parent-of-project>/wikis/master/wiki/`
+- `<parent-of-project>/wikis/main/wiki/`
+
+`<parent-of-project>` means the parent directory of the current repository root. If no main wiki exists during `bootstrap`, the agent asks whether to use a folder you provide or create a new master wiki at `<parent-of-project>/wikis/master/wiki/`.
+
+## Automation
+
+`bootstrap` installs scheduled refresh automation and post-commit wiki maintenance by default.
+
+- Claude Code automation uses `claude -p ...`
+- Codex automation uses `codex exec -C <project-root> ...`
+- Both refresh paths search the project wiki and any detected main cross-project wiki.
+
+## Update Status
+
+Check whether `llm-wiki` has a newer marketplace release:
+
+Claude Code:
+
+```text
+/llm-wiki:status
+```
+
+Codex:
+
+```text
+$llm-wiki:status
+```
+
+`status` reports the current cached or installed version, latest marketplace version, whether an update is available, the update command, and whether a restart is required.
 
 ## What It Creates
 
@@ -112,7 +147,7 @@ It adapts page names to the project. A Rails app might get models/controllers/se
 `wiki-plan` always does wiki research before planning:
 
 1. Search the current project's wiki.
-2. Search the cross-project master wiki.
+2. Search the main cross-project wiki when present.
 3. Read relevant decisions, patterns, gaps, and gotchas.
 4. Produce a `Past Knowledge` section.
 5. Delegate to Compound Engineering planning when installed, or produce a standalone plan outline.
@@ -121,7 +156,7 @@ This keeps plans grounded in what already happened instead of rediscovering the 
 
 ## QMD
 
-QMD is preferred for semantic and lexical search, but it is optional. During bootstrap, `llm-wiki` checks for `qmd`; if it is missing, it suggests installing it with `npm install -g @tobilu/qmd` or `bun install -g @tobilu/qmd`, then lets you either install QMD or continue with the `rg` fallback. The workflows fall back to the `qmd` CLI when MCP tools are unavailable, and then to `rg` over `wiki/`, `~/wikis/master/wiki/`, and `~/wikis/main/wiki/` when QMD is unavailable.
+QMD is preferred for semantic and lexical search, but it is optional. During bootstrap, `llm-wiki` checks for `qmd`; if it is missing, it suggests installing it with `npm install -g @tobilu/qmd` or `bun install -g @tobilu/qmd`, then lets you either install QMD or continue with the `rg` fallback. The workflows fall back to the `qmd` CLI when MCP tools are unavailable, and then to `rg` over `wiki/`, detected main wiki paths, and any user-provided main wiki folder when QMD is unavailable.
 
 ## Compound Engineering
 
@@ -132,5 +167,4 @@ QMD is preferred for semantic and lexical search, but it is optional. During boo
 - `llm-wiki` does not invent documentation. It reads source files and records uncertainty in `wiki/gaps.md`.
 - QMD is optional, but semantic search is better when QMD is installed and indexed.
 - Agent hooks differ between Claude Code and Codex. The bootstrap skill adds only the instructions and hooks that the current tool supports.
-- Bootstrap installs scheduled refresh automation and post-commit wiki maintenance by default for both Claude Code and Codex. Claude Code uses `claude -p ...`; Codex uses `codex exec -C <project-root> ...`.
 - The first bootstrap pass is intentionally broad. Review `wiki/gaps.md` afterward to decide what deserves deeper documentation.

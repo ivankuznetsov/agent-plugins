@@ -1,9 +1,9 @@
 ---
-name: wiki-plugin-status
+name: status
 description: Check whether the llm-wiki plugin is current, detect newer marketplace versions, and suggest or run the right update command for Claude Code or Codex. Use when the user asks about llm-wiki version, plugin updates, marketplace refresh, upgrade instructions, or whether a new llm-wiki release is available.
 ---
 
-# Wiki Plugin Status
+# LLM Wiki Status
 
 Check whether `llm-wiki` is current and report the exact update command for the current agent environment.
 

@@ -1,6 +1,6 @@
 {
   "name": "llm-wiki",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
   "author": {
     "name": "ivankuznetsov",
@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "LLM Wiki",
     "shortDescription": "Bootstrap and query LLM-maintained project wikis.",
-    "longDescription": "LLM Wiki packages workflows for creating a project-local wiki, researching project and master wiki knowledge, planning with wiki context before implementation, and checking plugin update status. QMD is used when available, with CLI and ripgrep fallbacks.",
+    "longDescription": "LLM Wiki packages workflows for creating a project-local wiki, researching project and main cross-project wiki knowledge, planning with wiki context before implementation, and checking plugin update status. QMD is used when available, with CLI and ripgrep fallbacks.",
     "developerName": "ivankuznetsov",
     "category": "Coding",
     "capabilities": [

@@ -1,6 +1,6 @@
 ---
 name: wiki-plan
-description: Plan a feature, bugfix, refactor, or improvement with wiki research first. Searches project and master wiki context, synthesizes Past Knowledge, then delegates to Compound Engineering planning when available or writes a standalone plan outline.
+description: Plan a feature, bugfix, refactor, or improvement with wiki research first. Searches project and main cross-project wiki context, synthesizes Past Knowledge, then delegates to Compound Engineering planning when available or writes a standalone plan outline.
 ---
 
 # Wiki Plan
@@ -19,7 +19,7 @@ If the feature description is empty, ask the user what they want to plan and wai
 
 ## Step 1: Run Wiki Research
 
-Use the `wiki-researcher` skill on the feature description before any other planning research.
+Use the `research` skill on the feature description before any other planning research.
 
 The output must include a `Past Knowledge` section with:
 
@@ -35,7 +35,7 @@ If no wiki exists, continue with an explicit note:
 ```markdown
 ### Past Knowledge
 
-No project wiki was found. Consider running `bootstrap-wiki` after this plan. Proceeding with normal planning.
+No project wiki was found. Consider running `bootstrap` after this plan. Proceeding with normal planning.
 ```
 
 ## Step 2: Delegate to Compound Engineering When Available
