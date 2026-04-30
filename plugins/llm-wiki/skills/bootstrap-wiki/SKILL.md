@@ -155,9 +155,11 @@ Always set up scheduled wiki refresh automation during bootstrap. Do not ask whe
 Create `.llm-wiki/refresh-wiki.sh` and make it executable. It should run the current agent's headless CLI from the project root:
 
 - Codex setup: use `codex exec -C "<project-root>" "<refresh prompt>"`.
-- Claude Code setup: use Claude Code's headless command only when the current tool is Claude Code.
+- Claude Code setup: use `claude -p "<refresh prompt>"` with the same refresh intent.
 
 For Codex setup, never write automation that shells out to `claude`, `claude -p`, or Claude-specific hooks. Do not fall back from Codex automation to Claude if `codex` is missing; report the missing `codex` CLI instead.
+
+For Claude Code setup, never write automation that shells out to `codex exec`. Do not fall back from Claude automation to Codex if `claude` is missing; report the missing `claude` CLI instead.
 
 Codex refresh script shape:
 
@@ -168,6 +170,17 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
 codex exec -C "$project_root" "Refresh this project's LLM wiki. Read AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If ~/wikis/master/wiki/ or ~/wikis/main/wiki/ exists, search that main cross-project wiki for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
+```
+
+Claude Code refresh script shape:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$project_root"
+
+claude -p "Refresh this project's LLM wiki. Read CLAUDE.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If ~/wikis/master/wiki/ or ~/wikis/main/wiki/ exists, search that main cross-project wiki for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50
 ```
 
 Install the best available scheduler without prompting:
@@ -187,7 +200,11 @@ The post-commit script must detect changed files and run focused headless refres
 - Dependency changes: `Gemfile`, `package.json`, `go.mod`, `Cargo.toml`, `requirements.txt`, `pyproject.toml`, `composer.json`.
 - Plans, todos, docs changes: update roadmap, technical debt, plans/initiatives pages when those pages exist or should exist.
 
-For Codex setup, every focused refresh command must use `codex exec -C "$project_root" "<focused prompt>"` in the background. Never use `claude -p`. After focused refreshes, run `qmd embed` in the background when `qmd` exists, then create `~/wikis/.sync-needed/<project-name>` when `~/wikis/` exists so the main cross-project wiki can sync later.
+For Codex setup, every focused refresh command must use `codex exec -C "$project_root" "<focused prompt>"` in the background. Never use `claude -p`.
+
+For Claude Code setup, every focused refresh command must use `claude -p "<focused prompt>" --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50` in the background. Never use `codex exec`.
+
+After focused refreshes, run `qmd embed` in the background when `qmd` exists, then create `~/wikis/.sync-needed/<project-name>` when `~/wikis/` exists so the main cross-project wiki can sync later.
 
 Check whether QMD is installed with `command -v qmd`.
 

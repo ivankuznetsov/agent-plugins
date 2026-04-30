@@ -13,7 +13,7 @@
       "name": "llm-wiki",
       "source": "./plugins/llm-wiki",
       "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"

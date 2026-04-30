@@ -123,5 +123,5 @@ QMD is preferred for semantic and lexical search, but it is optional. During boo
 - `llm-wiki` does not invent documentation. It reads source files and records uncertainty in `wiki/gaps.md`.
 - QMD is optional, but semantic search is better when QMD is installed and indexed.
 - Agent hooks differ between Claude Code and Codex. The bootstrap skill adds only the instructions and hooks that the current tool supports.
-- Bootstrap installs scheduled refresh automation and post-commit wiki maintenance by default. In Codex, headless refreshes use `codex exec -C <project-root> ...`, not `claude` or `claude -p`.
+- Bootstrap installs scheduled refresh automation and post-commit wiki maintenance by default for both Claude Code and Codex. Claude Code uses `claude -p ...`; Codex uses `codex exec -C <project-root> ...`.
 - The first bootstrap pass is intentionally broad. Review `wiki/gaps.md` afterward to decide what deserves deeper documentation.
