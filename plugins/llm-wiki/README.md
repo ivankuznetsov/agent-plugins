@@ -10,11 +10,12 @@ Bootstrap and query LLM-maintained project wikis before planning or implementati
 
 It works with my original six-project setup: project-local `wiki/` folders, a main cross-project wiki at `~/wikis/master/wiki/` or `~/wikis/main/wiki/`, QMD semantic search when available, and ripgrep fallback when it is not.
 
-`llm-wiki` packages three workflows:
+`llm-wiki` packages four workflows:
 
 - `bootstrap-wiki` creates a grounded `wiki/` knowledge base for the current project.
 - `wiki-researcher` searches the project wiki and cross-project master wiki before planning or implementation.
 - `wiki-plan` runs wiki research first, then hands the result to Compound Engineering planning when available.
+- `wiki-plugin-status` checks whether a newer `llm-wiki` release is available and reports the correct update command.
 
 ## Install: Claude Code
 
@@ -36,6 +37,7 @@ Then use the installed plugin commands/skills from Claude Code. The key entrypoi
 /llm-wiki:bootstrap-wiki
 /llm-wiki:wiki-researcher
 /llm-wiki:wiki-plan
+/llm-wiki:wiki-plugin-status
 ```
 
 Claude Code may also expose short forms depending on your plugin setup.
@@ -56,6 +58,7 @@ After restarting Codex, invoke the skills using the namespace shown by `/skills`
 $llm-wiki:bootstrap-wiki
 $llm-wiki:wiki-researcher
 $llm-wiki:wiki-plan
+$llm-wiki:wiki-plugin-status
 ```
 
 If Codex displays a fully qualified marketplace namespace, use that displayed name.
@@ -78,6 +81,12 @@ Plan with wiki context first:
 
 ```text
 $llm-wiki:wiki-plan add billing reminders
+```
+
+Check whether the plugin has an update:
+
+```text
+$llm-wiki:wiki-plugin-status
 ```
 
 ## What It Creates
