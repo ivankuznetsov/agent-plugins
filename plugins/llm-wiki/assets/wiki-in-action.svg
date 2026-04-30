@@ -1,0 +1,35 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" fill="#0f1115"/>
+  <rect x="48" y="40" width="1104" height="640" rx="12" fill="#171a21" stroke="#303642"/>
+  <rect x="48" y="40" width="1104" height="52" rx="12" fill="#222733"/>
+  <circle cx="78" cy="66" r="7" fill="#ff5f57"/>
+  <circle cx="102" cy="66" r="7" fill="#ffbd2e"/>
+  <circle cx="126" cy="66" r="7" fill="#28c840"/>
+  <text x="164" y="72" fill="#d8dee9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Codex · llm-wiki</text>
+
+  <text x="82" y="134" fill="#7dd3fc" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20">$llm-wiki:wiki-plan add billing reminders</text>
+
+  <rect x="80" y="170" width="1040" height="132" rx="8" fill="#111827" stroke="#374151"/>
+  <text x="108" y="210" fill="#f9fafb" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20">### Past Knowledge</text>
+  <text x="108" y="246" fill="#d1d5db" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">• wiki/decisions.md: Billing notifications must remain idempotent.</text>
+  <text x="108" y="278" fill="#d1d5db" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">• master/wiki/patterns.md: Prefer explicit retry state over hidden jobs.</text>
+
+  <rect x="80" y="326" width="500" height="286" rx="8" fill="#111827" stroke="#374151"/>
+  <text x="108" y="366" fill="#f9fafb" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20">wiki/</text>
+  <text x="108" y="404" fill="#a7f3d0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">├── index.md</text>
+  <text x="108" y="436" fill="#a7f3d0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">├── log.md</text>
+  <text x="108" y="468" fill="#a7f3d0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">├── gaps.md</text>
+  <text x="108" y="500" fill="#a7f3d0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">├── architecture.md</text>
+  <text x="108" y="532" fill="#a7f3d0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">├── decisions.md</text>
+  <text x="108" y="564" fill="#a7f3d0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">└── dependencies.md</text>
+
+  <rect x="620" y="326" width="500" height="286" rx="8" fill="#111827" stroke="#374151"/>
+  <text x="648" y="366" fill="#f9fafb" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20">Plan starts with context</text>
+  <text x="648" y="408" fill="#d1d5db" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">1. Search project wiki</text>
+  <text x="648" y="440" fill="#d1d5db" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">2. Search master wiki</text>
+  <text x="648" y="472" fill="#d1d5db" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">3. Read prior decisions</text>
+  <text x="648" y="504" fill="#d1d5db" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">4. Carry gotchas forward</text>
+  <text x="648" y="548" fill="#fde68a" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Then hand off to planning.</text>
+
+  <text x="82" y="650" fill="#9ca3af" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Supports Claude Code + Codex (GPT-5.5) · QMD optional · rg fallback</text>
+</svg>

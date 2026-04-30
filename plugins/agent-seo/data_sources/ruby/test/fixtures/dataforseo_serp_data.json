@@ -1,0 +1,88 @@
+{
+  "version": "0.1.20241101",
+  "status_code": 20000,
+  "status_message": "Ok.",
+  "time": "0.9876 sec.",
+  "cost": 0.001,
+  "tasks_count": 1,
+  "tasks_error": 0,
+  "tasks": [
+    {
+      "id": "serp-task-456",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.6543 sec.",
+      "cost": 0.001,
+      "result_count": 1,
+      "path": ["v3", "serp", "google", "organic", "live", "advanced"],
+      "data": {
+        "keyword": "how to start a podcast",
+        "location_code": 2840,
+        "language_code": "en",
+        "device": "desktop",
+        "os": "windows",
+        "depth": 100
+      },
+      "result": [
+        {
+          "keyword": "how to start a podcast",
+          "type": "organic",
+          "se_domain": "google.com",
+          "location_code": 2840,
+          "language_code": "en",
+          "datetime": "2025-01-31 12:00:00 +00:00",
+          "se_results_count": 2500000000,
+          "items_count": 10,
+          "keyword_data": {
+            "se_type": "google",
+            "keyword": "how to start a podcast",
+            "keyword_info": {
+              "search_volume": 33100,
+              "cpc": 3.50,
+              "competition": 0.75,
+              "competition_level": "MEDIUM"
+            }
+          },
+          "items": [
+            {
+              "type": "organic",
+              "rank_group": 1,
+              "rank_absolute": 1,
+              "domain": "buzzsprout.com",
+              "title": "How to Start a Podcast (2025 Guide)",
+              "url": "https://www.buzzsprout.com/how-to-make-a-podcast",
+              "breadcrumb": "https://www.buzzsprout.com > guides",
+              "description": "Learn everything you need to start a podcast in 2025."
+            },
+            {
+              "type": "organic",
+              "rank_group": 2,
+              "rank_absolute": 2,
+              "domain": "podcastinsights.com",
+              "title": "How to Start a Podcast - Complete Step-by-Step Guide",
+              "url": "https://www.podcastinsights.com/start-a-podcast/",
+              "breadcrumb": "https://www.podcastinsights.com > guides",
+              "description": "The ultimate guide to starting your own podcast."
+            },
+            {
+              "type": "people_also_ask",
+              "rank_group": 3,
+              "rank_absolute": 3,
+              "items": ["How much does it cost to start a podcast?", "Can I start a podcast for free?"]
+            },
+            {
+              "type": "organic",
+              "rank_group": 4,
+              "rank_absolute": 4,
+              "domain": "example.com",
+              "title": "Starting a Podcast: Complete 2025 Tutorial",
+              "url": "https://www.example.com/start-podcast-guide",
+              "breadcrumb": "https://www.example.com > blog",
+              "description": "Our comprehensive guide to launching your podcast."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

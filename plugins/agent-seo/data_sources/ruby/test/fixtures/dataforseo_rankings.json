@@ -1,0 +1,90 @@
+{
+  "version": "0.1.20241101",
+  "status_code": 20000,
+  "status_message": "Ok.",
+  "time": "1.2345 sec.",
+  "cost": 0.001,
+  "tasks_count": 1,
+  "tasks_error": 0,
+  "tasks": [
+    {
+      "id": "test-task-123",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.5432 sec.",
+      "cost": 0.001,
+      "result_count": 1,
+      "path": ["v3", "serp", "google", "organic", "live", "advanced"],
+      "data": {
+        "keyword": "podcast hosting",
+        "location_code": 2840,
+        "language_code": "en",
+        "device": "desktop",
+        "os": "windows"
+      },
+      "result": [
+        {
+          "keyword": "podcast hosting",
+          "type": "organic",
+          "se_domain": "google.com",
+          "location_code": 2840,
+          "language_code": "en",
+          "check_url": "https://www.google.com/search?q=podcast%20hosting&num=100",
+          "datetime": "2025-01-31 12:00:00 +00:00",
+          "spell": null,
+          "item_types": ["organic", "people_also_ask", "related_searches"],
+          "se_results_count": 1250000000,
+          "items_count": 100,
+          "keyword_data": {
+            "se_type": "google",
+            "keyword": "podcast hosting",
+            "keyword_info": {
+              "search_volume": 12100,
+              "cpc": 5.25,
+              "competition": 0.85,
+              "competition_level": "HIGH"
+            }
+          },
+          "items": [
+            {
+              "type": "organic",
+              "rank_group": 1,
+              "rank_absolute": 1,
+              "position": "left",
+              "xpath": "/html/body/div[6]/div[2]/div[10]/div/div[2]/div[2]/div/div/div[1]",
+              "domain": "buzzsprout.com",
+              "title": "Podcast Hosting - Start Your Podcast Today",
+              "url": "https://www.buzzsprout.com/",
+              "breadcrumb": "https://www.buzzsprout.com",
+              "description": "The easiest way to host, promote, and track your podcast."
+            },
+            {
+              "type": "organic",
+              "rank_group": 2,
+              "rank_absolute": 2,
+              "position": "left",
+              "xpath": "/html/body/div[6]/div[2]/div[10]/div/div[2]/div[2]/div/div/div[2]",
+              "domain": "transistor.fm",
+              "title": "Transistor - Podcast Hosting and Analytics",
+              "url": "https://transistor.fm/",
+              "breadcrumb": "https://transistor.fm",
+              "description": "Professional podcast hosting with unlimited storage and bandwidth."
+            },
+            {
+              "type": "organic",
+              "rank_group": 3,
+              "rank_absolute": 3,
+              "position": "left",
+              "xpath": "/html/body/div[6]/div[2]/div[10]/div/div[2]/div[2]/div/div/div[3]",
+              "domain": "example.com",
+              "title": "Best Podcast Hosting Guide",
+              "url": "https://www.example.com/podcast-hosting",
+              "breadcrumb": "https://www.example.com > blog",
+              "description": "Compare the best podcast hosting platforms."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

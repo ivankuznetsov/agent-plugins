@@ -1,0 +1,21 @@
+{
+  "name": "llm-wiki",
+  "version": "0.1.1",
+  "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
+  "author": {
+    "name": "ivankuznetsov",
+    "url": "https://github.com/ivankuznetsov"
+  },
+  "homepage": "https://github.com/ivankuznetsov/llm-wiki",
+  "repository": "https://github.com/ivankuznetsov/llm-wiki",
+  "license": "MIT",
+  "keywords": [
+    "llm-wiki",
+    "qmd",
+    "knowledge-management",
+    "planning",
+    "agent-workflow",
+    "claude-code",
+    "codex"
+  ]
+}

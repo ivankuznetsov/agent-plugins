@@ -1,0 +1,23 @@
+[
+  {"query": "Take a screenshot of the login page", "should_trigger": "screenote"},
+  {"query": "Screenshot http://localhost:3000/dashboard", "should_trigger": "screenote"},
+  {"query": "mobile screenshot of the signup form", "should_trigger": "screenote"},
+  {"query": "tablet screenshot of /pricing", "should_trigger": "screenote"},
+  {"query": "desktop screenshot of /dashboard", "should_trigger": "screenote"},
+  {"query": "Screenshot the signup page at all viewports", "should_trigger": "screenote"},
+  {"query": "screenote the pricing page", "should_trigger": "screenote"},
+  {"query": "Snapshot the entire app", "should_trigger": "snapshot"},
+  {"query": "snapshot mobile http://localhost:3000", "should_trigger": "snapshot"},
+  {"query": "snapshot tablet http://localhost:3000", "should_trigger": "snapshot"},
+  {"query": "snapshot desktop http://localhost:3000", "should_trigger": "snapshot"},
+  {"query": "Take screenshots of all routes", "should_trigger": "snapshot"},
+  {"query": "Get my feedback from screenote", "should_trigger": "feedback"},
+  {"query": "Show me the annotations", "should_trigger": "feedback"},
+  {"query": "Show me the mobile feedback for /login", "should_trigger": "feedback"},
+  {"query": "desktop feedback", "should_trigger": "feedback"},
+  {"query": "What did the designer say about the login page?", "should_trigger": "feedback"},
+  {"query": "Fix the CSS on the header", "should_trigger": null},
+  {"query": "Deploy the app to production", "should_trigger": null},
+  {"query": "Write a test for the user model", "should_trigger": null},
+  {"query": "feedback", "should_trigger": "feedback"}
+]

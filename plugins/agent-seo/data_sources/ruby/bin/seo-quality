@@ -1,0 +1,124 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+require 'agent_seo'
+require 'json'
+require 'optparse'
+
+options = {}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: seo-quality [options]'
+  opts.separator ''
+  opts.separator 'Rate content against SEO best practices and guidelines.'
+  opts.separator ''
+  opts.separator 'Options:'
+
+  opts.on('-f', '--file FILE', 'Content file to analyze (reads from stdin if not provided)') do |f|
+    options[:file] = f
+  end
+
+  opts.on('-k', '--keyword KEYWORD', 'Primary target keyword') do |k|
+    options[:primary_keyword] = k
+  end
+
+  opts.on('-s', '--secondary KEYWORDS', 'Comma-separated secondary keywords') do |s|
+    options[:secondary_keywords] = s.split(',').map(&:strip)
+  end
+
+  opts.on('-t', '--title TITLE', 'Meta title') do |t|
+    options[:meta_title] = t
+  end
+
+  opts.on('-d', '--description DESC', 'Meta description') do |d|
+    options[:meta_description] = d
+  end
+
+  opts.on('--internal-links COUNT', Integer, 'Number of internal links') do |c|
+    options[:internal_link_count] = c
+  end
+
+  opts.on('--external-links COUNT', Integer, 'Number of external links') do |c|
+    options[:external_link_count] = c
+  end
+
+  opts.on('--json', 'Output as JSON') do
+    options[:json] = true
+  end
+
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end.parse!
+
+begin
+  content = if options[:file]
+              File.read(options[:file])
+            elsif !$stdin.tty?
+              $stdin.read
+            else
+              warn 'Error: No content provided. Use -f FILE or pipe content to stdin.'
+              exit 1
+            end
+rescue Errno::ENOENT => e
+  warn "Error: #{e.message}"
+  exit 1
+end
+
+rater = AgentSeo::SeoQualityRater.new
+result = rater.rate(
+  content: content,
+  meta_title: options[:meta_title],
+  meta_description: options[:meta_description],
+  primary_keyword: options[:primary_keyword],
+  secondary_keywords: options[:secondary_keywords],
+  internal_link_count: options[:internal_link_count],
+  external_link_count: options[:external_link_count]
+)
+
+if options[:json]
+  puts JSON.pretty_generate(result)
+else
+  puts 'SEO Quality Rating Results'
+  puts '=' * 50
+  puts ''
+  puts "Overall Score: #{result[:overall_score]}/100 (Grade: #{result[:grade]})"
+  puts "Publishing Ready: #{result[:publishing_ready] ? 'Yes' : 'No'}"
+  puts ''
+
+  puts 'Category Scores:'
+  result[:category_scores].each do |category, score|
+    puts "  #{category.to_s.tr('_', ' ').capitalize}: #{score}/100"
+  end
+  puts ''
+
+  details = result[:details]
+  puts 'Content Details:'
+  puts "  Word Count: #{details[:word_count]}"
+  puts "  H2 Sections: #{details[:h2_count]}"
+  puts "  Has H1: #{details[:has_h1] ? 'Yes' : 'No'}"
+  if options[:primary_keyword]
+    puts "  Keyword in H1: #{details[:keyword_in_h1] ? 'Yes' : 'No'}"
+    puts "  Keyword in First 100 Words: #{details[:keyword_in_first_100] ? 'Yes' : 'No'}"
+  end
+  puts ''
+
+  if result[:critical_issues].any?
+    puts 'Critical Issues:'
+    result[:critical_issues].each { |i| puts "  [!] #{i}" }
+    puts ''
+  end
+
+  if result[:warnings].any?
+    puts 'Warnings:'
+    result[:warnings].each { |w| puts "  [*] #{w}" }
+    puts ''
+  end
+
+  if result[:suggestions].any?
+    puts 'Suggestions:'
+    result[:suggestions].each { |s| puts "  [-] #{s}" }
+  end
+end

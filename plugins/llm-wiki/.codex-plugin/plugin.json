@@ -1,0 +1,41 @@
+{
+  "name": "llm-wiki",
+  "version": "0.1.1",
+  "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
+  "author": {
+    "name": "ivankuznetsov",
+    "url": "https://github.com/ivankuznetsov"
+  },
+  "homepage": "https://github.com/ivankuznetsov/llm-wiki",
+  "repository": "https://github.com/ivankuznetsov/llm-wiki",
+  "license": "MIT",
+  "keywords": [
+    "llm-wiki",
+    "qmd",
+    "knowledge-management",
+    "planning",
+    "agent-workflow",
+    "claude-code",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "LLM Wiki",
+    "shortDescription": "Bootstrap and query LLM-maintained project wikis.",
+    "longDescription": "LLM Wiki packages workflows for creating a project-local wiki, researching project and master wiki knowledge, and planning with wiki context before implementation. QMD is used when available, with CLI and ripgrep fallbacks.",
+    "developerName": "ivankuznetsov",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/ivankuznetsov/llm-wiki",
+    "defaultPrompt": [
+      "Bootstrap an LLM wiki for this project",
+      "Research wiki context for this feature",
+      "Plan this feature with wiki knowledge"
+    ],
+    "screenshots": []
+  }
+}

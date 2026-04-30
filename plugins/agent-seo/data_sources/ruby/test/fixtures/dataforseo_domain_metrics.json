@@ -1,0 +1,44 @@
+{
+  "version": "0.1.20241101",
+  "status_code": 20000,
+  "status_message": "Ok.",
+  "time": "0.8765 sec.",
+  "cost": 0.001,
+  "tasks_count": 1,
+  "tasks_error": 0,
+  "tasks": [
+    {
+      "id": "domain-metrics-task-012",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.5432 sec.",
+      "cost": 0.001,
+      "result_count": 1,
+      "path": ["v3", "dataforseo_labs", "google", "domain_metrics", "live"],
+      "data": {
+        "target": "example.com",
+        "location_code": 2840,
+        "language_code": "en"
+      },
+      "result": [
+        {
+          "target": "example.com",
+          "items_count": 1,
+          "items": [
+            {
+              "target": "example.com",
+              "metrics": {
+                "organic": {
+                  "count": 15420,
+                  "etv": 125000,
+                  "rank": 45
+                },
+                "backlinks": 892456
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

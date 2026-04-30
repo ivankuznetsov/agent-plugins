@@ -1,0 +1,100 @@
+{
+  "version": "0.1.20241101",
+  "status_code": 20000,
+  "status_message": "Ok.",
+  "time": "1.5678 sec.",
+  "cost": 0.002,
+  "tasks_count": 1,
+  "tasks_error": 0,
+  "tasks": [
+    {
+      "id": "keywords-task-789",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "1.2345 sec.",
+      "cost": 0.002,
+      "result_count": 1,
+      "path": ["v3", "dataforseo_labs", "google", "related_keywords", "live"],
+      "data": {
+        "keyword": "podcast",
+        "location_code": 2840,
+        "language_code": "en",
+        "include_serp_info": true,
+        "limit": 100
+      },
+      "result": [
+        {
+          "seed_keyword": "podcast",
+          "items_count": 5,
+          "items": [
+            {
+              "keyword_data": {
+                "keyword": "podcast hosting",
+                "keyword_info": {
+                  "search_volume": 12100,
+                  "cpc": 5.25,
+                  "competition": 0.85
+                }
+              },
+              "serp_info": {
+                "se_results_count": 1250000000
+              }
+            },
+            {
+              "keyword_data": {
+                "keyword": "best podcast apps",
+                "keyword_info": {
+                  "search_volume": 8100,
+                  "cpc": 2.10,
+                  "competition": 0.65
+                }
+              },
+              "serp_info": {
+                "se_results_count": 890000000
+              }
+            },
+            {
+              "keyword_data": {
+                "keyword": "how to start a podcast",
+                "keyword_info": {
+                  "search_volume": 33100,
+                  "cpc": 3.50,
+                  "competition": 0.75
+                }
+              },
+              "serp_info": {
+                "se_results_count": 2500000000
+              }
+            },
+            {
+              "keyword_data": {
+                "keyword": "podcast equipment",
+                "keyword_info": {
+                  "search_volume": 6600,
+                  "cpc": 1.85,
+                  "competition": 0.55
+                }
+              },
+              "serp_info": {
+                "se_results_count": 450000000
+              }
+            },
+            {
+              "keyword_data": {
+                "keyword": "how to monetize a podcast",
+                "keyword_info": {
+                  "search_volume": 2400,
+                  "cpc": 4.10,
+                  "competition": 0.70
+                }
+              },
+              "serp_info": {
+                "se_results_count": 320000000
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

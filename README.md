@@ -2,7 +2,7 @@
 
 Personal agent plugin marketplace for Ivan Kuznetsov projects.
 
-This marketplace is intentionally a catalog. Plugin source remains in separate repositories and is attached here through `plugins/<name>` paths, usually as git submodules.
+This marketplace is intentionally a catalog. Plugin source remains in separate repositories, but the installable plugin files are vendored here under `plugins/<name>`. Codex reads marketplace-local plugin paths from a normal Git clone and does not initialize submodules before loading plugin details.
 
 ## Plugins
 
@@ -51,18 +51,14 @@ Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install t
 ```text
 .claude-plugin/marketplace.json     # Claude Code marketplace catalog
 .agents/plugins/marketplace.json    # Codex marketplace catalog
-plugins/llm-wiki                    # plugin repo, expected as submodule
-plugins/screenote                   # plugin repo, expected as submodule
-plugins/agent-seo                   # plugin repo, expected as submodule
+plugins/llm-wiki                    # vendored plugin files
+plugins/screenote                   # vendored plugin files
+plugins/agent-seo                   # vendored plugin files
 ```
 
 ## Development
 
-After cloning this marketplace with submodules:
-
-```bash
-git submodule update --init --recursive
-```
+When refreshing a plugin, copy the source repository contents into the matching `plugins/<name>` directory without the nested `.git` metadata, then update both marketplace catalogs if the plugin metadata changed.
 
 Validate JSON:
 

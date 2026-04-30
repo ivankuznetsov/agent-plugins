@@ -1,0 +1,126 @@
+# llm-wiki
+
+Bootstrap and query LLM-maintained project wikis before planning or implementation.
+
+**Supports Claude Code + Codex (GPT-5.5).**
+
+![LLM Wiki in action](assets/wiki-in-action.svg)
+
+`llm-wiki` turns the LLM Wiki pattern into installable agent skills. It is based on the setup from [How I Built a Self-Maintaining Knowledge Base for 6 Projects Using Claude Code & Karpathy's LLM Wiki](https://hackernoon.com/how-i-built-a-self-maintaining-knowledge-base-for-6-projects-using-claude-code-and-karpathys-llm-wiki).
+
+It works with my original six-project setup: project-local `wiki/` folders, a cross-project `~/wikis/master/wiki/`, QMD semantic search when available, and ripgrep fallback when it is not.
+
+`llm-wiki` packages three workflows:
+
+- `bootstrap-wiki` creates a grounded `wiki/` knowledge base for the current project.
+- `wiki-researcher` searches the project wiki and cross-project master wiki before planning or implementation.
+- `wiki-plan` runs wiki research first, then hands the result to Compound Engineering planning when available.
+
+## Install: Claude Code
+
+Add the central marketplace:
+
+```text
+/plugin marketplace add ivankuznetsov/agent-plugins
+```
+
+Install this plugin:
+
+```text
+/plugin install llm-wiki@aikuznetsov-marketplace
+```
+
+Then use the installed plugin commands/skills from Claude Code. The key entrypoints are:
+
+```text
+/llm-wiki:bootstrap-wiki
+/llm-wiki:wiki-researcher
+/llm-wiki:wiki-plan
+```
+
+Claude Code may also expose short forms depending on your plugin setup.
+
+## Install: Codex
+
+Register the marketplace:
+
+```bash
+codex plugin marketplace add ivankuznetsov/agent-plugins
+```
+
+Then open Codex, run `/plugins`, select the `aikuznetsov-marketplace` marketplace, and install `llm-wiki`.
+
+After restarting Codex, invoke the skills using the namespace shown by `/skills`. The expected form is:
+
+```text
+$llm-wiki:bootstrap-wiki
+$llm-wiki:wiki-researcher
+$llm-wiki:wiki-plan
+```
+
+If Codex displays a fully qualified marketplace namespace, use that displayed name.
+
+## Usage Examples
+
+Bootstrap a wiki in the current project:
+
+```text
+$llm-wiki:bootstrap-wiki
+```
+
+Research past project knowledge before coding:
+
+```text
+$llm-wiki:wiki-researcher auth flow refactor
+```
+
+Plan with wiki context first:
+
+```text
+$llm-wiki:wiki-plan add billing reminders
+```
+
+## What It Creates
+
+The bootstrap workflow creates a project-local knowledge base:
+
+```text
+wiki/
+  index.md          # catalog of pages
+  log.md            # append-only wiki changelog
+  gaps.md           # open questions and missing coverage
+  architecture.md   # high-level system structure
+  decisions.md      # lightweight ADRs
+  dependencies.md   # important dependency choices
+raw/
+  notes/            # manually added source material
+```
+
+It adapts page names to the project. A Rails app might get models/controllers/services pages; a frontend app might get components/hooks/stores pages; a CLI might get commands/modules pages.
+
+## How `wiki-plan` Works
+
+`wiki-plan` always does wiki research before planning:
+
+1. Search the current project's wiki.
+2. Search the cross-project master wiki.
+3. Read relevant decisions, patterns, gaps, and gotchas.
+4. Produce a `Past Knowledge` section.
+5. Delegate to Compound Engineering planning when installed, or produce a standalone plan outline.
+
+This keeps plans grounded in what already happened instead of rediscovering the codebase from scratch.
+
+## QMD
+
+QMD is preferred for semantic and lexical search, but it is optional. During bootstrap, `llm-wiki` checks for `qmd`; if it is missing, it suggests installing it with `npm install -g @tobilu/qmd` or `bun install -g @tobilu/qmd`, then lets you either install QMD or continue with the `rg` fallback. The workflows fall back to the `qmd` CLI when MCP tools are unavailable, and then to `rg` over `wiki/` and `~/wikis/master/wiki/` when QMD is unavailable.
+
+## Compound Engineering
+
+`wiki-plan` delegates to Compound Engineering planning when the `compound-engineering:ce-plan` skill is installed. Without Compound Engineering, it still produces the Past Knowledge section and continues with a standalone implementation planning outline.
+
+## Limits
+
+- `llm-wiki` does not invent documentation. It reads source files and records uncertainty in `wiki/gaps.md`.
+- QMD is optional, but semantic search is better when QMD is installed and indexed.
+- Agent hooks differ between Claude Code and Codex. The bootstrap skill adds only the instructions and hooks that the current tool supports.
+- The first bootstrap pass is intentionally broad. Review `wiki/gaps.md` afterward to decide what deserves deeper documentation.
