@@ -7,6 +7,15 @@ description: Check whether the llm-wiki plugin is current, detect newer marketpl
 
 Check whether `llm-wiki` is current and report the exact update command for the current agent environment.
 
+Also inspect project-local wiki configuration when available:
+
+- `.llm-wiki/config.json`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `.claude/settings.json`
+- `.llm-wiki/refresh-wiki.sh`
+- `.llm-wiki/post-commit-refresh.sh`
+
 ## Rules
 
 - Detect whether the user is running Claude Code, Codex, or both CLIs are present.
@@ -15,6 +24,17 @@ Check whether `llm-wiki` is current and report the exact update command for the 
 - If the user asks to update, run the update command for the active tool and tell them to restart the tool afterward.
 - Compare semantic versions with `sort -V` when available; otherwise parse major/minor/patch numerically. Do not compare version strings lexicographically.
 - If network access or marketplace metadata is unavailable, report the local version and the command that refreshes marketplace metadata.
+- If `.llm-wiki/config.json` exists, report `headless_agent`, `context_agents`, and `main_wiki_path`.
+- Report managed wiki context using the exact `<!-- BEGIN LLM WIKI -->` and `<!-- END LLM WIKI -->` marker pair.
+- Classify `AGENTS.md` and `CLAUDE.md` context as `managed present`, `unmanaged wiki section only`, `missing`, or `unknown`.
+- Report whether Claude SessionStart context appears configured when `.claude/settings.json` exists.
+- Classify each automation surface as `codex`, `claude`, `mixed`, `missing`, `mismatch`, or `unknown`.
+- Scheduler and post-commit ownership are clean only when the configured owner command is present and the non-owner command is absent.
+- `codex` means `codex exec` is present and `claude -p` is absent.
+- `claude` means `claude -p` is present and `codex exec` is absent.
+- `mixed` means both commands are present.
+- `mismatch` means exactly one owner command is present but it is not the configured `headless_agent`.
+- Count managed `llm-wiki` hook or scheduler entries when possible; report duplicates as `mixed` or `mismatch` rather than clean.
 
 ## Claude Code
 
@@ -88,6 +108,13 @@ Return:
 - Status: current | update available | unknown
 - Update command: ...
 - Restart required: yes | no
+- Headless agent: claude | codex | unknown
+- Context agents: ...
+- AGENTS.md wiki context: managed present | unmanaged wiki section only | missing | unknown
+- CLAUDE.md wiki context: managed present | unmanaged wiki section only | missing | unknown
+- Claude SessionStart context: present | missing | not checked
+- Scheduled refresh owner: claude | codex | mixed | missing | mismatch | unknown
+- Post-commit refresh owner: claude | codex | mixed | missing | mismatch | unknown
 ```
 
 Mention whether the result came from local cache only or from a remote marketplace check.

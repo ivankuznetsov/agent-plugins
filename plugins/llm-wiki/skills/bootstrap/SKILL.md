@@ -13,6 +13,7 @@ Create a self-maintaining project wiki under `wiki/` for the current repository.
 - QMD is optional but recommended. Use it when available; when missing, suggest installing it before falling back to `rg`.
 - Merge existing agent settings and instructions. Do not overwrite existing config files blindly.
 - Detect the main cross-project wiki when present. Check `~/wikis/master/wiki/`, `~/wikis/main/wiki/`, `<parent-of-project>/wikis/master/wiki/`, and `<parent-of-project>/wikis/main/wiki/`.
+- Install wiki context for all supported agents. Only one agent owns headless scheduled and post-commit maintenance.
 
 ## Step 1: Detect Project Shape
 
@@ -114,16 +115,50 @@ Append to `wiki/log.md`:
 
 ## Step 5: Add Agent Instructions
 
-Add a wiki section to the agent instruction file used by the current tool:
+Create `.llm-wiki/` if it does not exist, then create or update `.llm-wiki/config.json`.
+
+Config shape:
+
+```json
+{
+  "headless_agent": "<claude-or-codex>",
+  "context_agents": ["claude", "codex"],
+  "main_wiki_path": "<detected-or-provided-main-wiki-path>",
+  "created_by": "<current-tool>"
+}
+```
+
+Rules:
+
+- `context_agents` is the supported context list and should include both `claude` and `codex`.
+- If `.llm-wiki/config.json` is missing, first check for legacy automation from older `llm-wiki` versions before treating this as a first bootstrap.
+- Infer legacy ownership by searching `.llm-wiki/refresh-wiki.sh`, `.llm-wiki/post-commit-refresh.sh`, `.git/hooks/post-commit`, known `llm-wiki-<project-slug>` systemd or launchd scheduler files, and existing cron entries for `codex exec` or `claude -p`.
+- If exactly one legacy owner is found, preserve it as `headless_agent` and record it in `.llm-wiki/config.json`.
+- If both `codex exec` and `claude -p` are found, or no owner can be inferred from existing automation, ask the user which agent should own headless maintenance before installing or rewriting automation.
+- On true first bootstrap with no existing automation, set `headless_agent` to the current tool: `claude` for Claude Code, `codex` for Codex.
+- On later bootstrap runs, preserve the existing `headless_agent` unless the user explicitly asks to switch it.
+- If the current tool differs from `headless_agent`, still update wiki context for the current tool, but do not change scheduler or post-commit ownership.
+- Scheduled refresh and post-commit refresh must use only `headless_agent`.
+- Never run both Claude and Codex headless maintenance for the same project by default.
+
+Add a wiki section to all agents listed in `context_agents`:
 
 - Claude Code: `CLAUDE.md`
 - Codex: `AGENTS.md`
 
-Create the file if absent. Append, do not replace existing instructions.
+Create files if absent. Append or replace only the managed wiki section between the markers below. Do not replace unrelated instructions or any unmarked user-authored `## Wiki` section.
+
+Legacy migration:
+
+- Older `llm-wiki` versions wrote an unmarked generated `## Wiki` section.
+- If an unmarked `## Wiki` section clearly matches the generated `llm-wiki` template, wrap or replace it with the managed marker block below.
+- Treat a section as generated only when it contains the project wiki bullet list, `wiki/index.md`, `wiki/log.md`, `wiki/gaps.md`, `raw/notes/`, and the QMD/`rg` query protocol.
+- Preserve unmarked `## Wiki` sections that do not match the generated template, and add the managed block separately.
 
 Instruction content:
 
 ```markdown
+<!-- BEGIN LLM WIKI -->
 ## Wiki
 
 This project has an LLM-maintained knowledge base in `wiki/`.
@@ -146,29 +181,47 @@ Never hallucinate. Ground everything in code or existing wiki pages. If unsure, 
 Use `[[page-name]]` backlinks between wiki pages.
 
 Query protocol:
-1. Run `qmd query "<topic>"` or `qmd search "<topic>"` when QMD is available.
-2. Fall back to `rg "<topic>" wiki/`.
-3. Check the main cross-project wiki before making architectural decisions when it exists:
+1. Read `.llm-wiki/config.json` when it exists.
+2. Run `qmd query "<topic>"` or `qmd search "<topic>"` when QMD is available.
+3. Fall back to `rg "<topic>" wiki/`.
+4. Check the configured `main_wiki_path` before making architectural decisions when it exists.
+5. Also check default main cross-project wiki paths when they exist:
    - `~/wikis/master/wiki/`
    - `~/wikis/main/wiki/`
    - `<parent-of-project>/wikis/master/wiki/`
    - `<parent-of-project>/wikis/main/wiki/`
+<!-- END LLM WIKI -->
 ```
 
 ## Step 6: Hooks, Scheduled Automation, and QMD
 
-If this is Claude Code and `.claude/settings.json` exists or the user wants hooks, merge a `SessionStart` hook that prints `wiki/index.md` and recent `wiki/log.md`. Never overwrite unrelated settings.
+Install session context for supported agents separately from headless maintenance ownership.
 
-Always set up scheduled wiki refresh automation during bootstrap. Do not ask whether to add it.
+Claude Code context:
 
-Create `.llm-wiki/refresh-wiki.sh` and make it executable. It should run the current agent's headless CLI from the project root:
+- If `.claude/settings.json` exists, or it can be safely created, merge a `SessionStart` hook that prints `wiki/index.md` and recent `wiki/log.md`.
+- Treat the Claude `SessionStart` hook as a context hook only. It does not mean Claude owns scheduled refresh.
+- Never overwrite unrelated Claude settings.
 
-- Codex setup: use `codex exec -C "<project-root>" "<refresh prompt>"`.
-- Claude Code setup: use `claude -p "<refresh prompt>"` with the same refresh intent.
+Codex context:
 
-For Codex setup, never write automation that shells out to `claude`, `claude -p`, or Claude-specific hooks. Do not fall back from Codex automation to Claude if `codex` is missing; report the missing `codex` CLI instead.
+- Ensure `AGENTS.md` contains the wiki section from Step 5.
+- Codex currently receives repo context through `AGENTS.md`; do not invent a Codex hook system if one is not available.
 
-For Claude Code setup, never write automation that shells out to `codex exec`. Do not fall back from Claude automation to Codex if `claude` is missing; report the missing `claude` CLI instead.
+Always ensure scheduled wiki refresh automation exists for the configured `headless_agent`. Do not ask whether to add it.
+
+If the current tool is not the configured `headless_agent`, update session context for the current tool and validate/report the existing automation owner. Do not rewrite scheduler or post-commit ownership unless automation is missing, unsafe, or the user asks to repair or switch ownership.
+
+The scheduler must use the configured `.llm-wiki/config.json` `headless_agent`.
+
+Create `.llm-wiki/refresh-wiki.sh` and make it executable. It should run the configured headless agent's CLI from the project root:
+
+- `headless_agent: "codex"`: use `codex exec -C "<project-root>" "<refresh prompt>"`.
+- `headless_agent: "claude"`: use `claude -p "<refresh prompt>"` with the same refresh intent.
+
+For Codex-owned headless automation, never write automation that shells out to `claude` or `claude -p`. Do not fall back from Codex automation to Claude if `codex` is missing; report the missing `codex` CLI instead.
+
+For Claude-owned headless automation, never write automation that shells out to `codex exec`. Do not fall back from Claude automation to Codex if `claude` is missing; report the missing `claude` CLI instead.
 
 Codex refresh script shape:
 
@@ -178,7 +231,7 @@ set -euo pipefail
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
-codex exec -C "$project_root" "Refresh this project's LLM wiki. Read AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If a configured main cross-project wiki exists, including ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, or ../wikis/main/wiki/, search it for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
+codex exec -C "$project_root" "Refresh this project's LLM wiki. Read .llm-wiki/config.json, AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
 ```
 
 Claude Code refresh script shape:
@@ -189,7 +242,7 @@ set -euo pipefail
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
-claude -p "Refresh this project's LLM wiki. Read CLAUDE.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If a configured main cross-project wiki exists, including ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, or ../wikis/main/wiki/, search it for relevant patterns before changing project pages. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50
+claude -p "Refresh this project's LLM wiki. Read .llm-wiki/config.json, CLAUDE.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50
 ```
 
 Install the best available scheduler without prompting:
@@ -198,9 +251,16 @@ Install the best available scheduler without prompting:
 - macOS with launchd: create `~/Library/LaunchAgents/com.llm-wiki.<project-slug>.plist` with a 24 hour `StartInterval`, then run `launchctl load`.
 - Other environments: install an equivalent cron entry that runs `.llm-wiki/refresh-wiki.sh` daily.
 
-Use a stable `<project-slug>` from the repository basename plus a short hash of the project root to avoid timer name collisions. If scheduler installation fails because the environment lacks systemd, launchd, cron, or permissions, keep `.llm-wiki/refresh-wiki.sh`, record the failure in `wiki/gaps.md`, and report the exact command the user can run.
+Use a stable `<project-slug>` from the repository basename plus a short hash of the project root to avoid timer name collisions. Replace existing `llm-wiki-<project-slug>` scheduler files instead of adding duplicates. For cron, wrap the entry with `# BEGIN LLM WIKI <project-slug>` and `# END LLM WIKI <project-slug>` markers and replace that block on repeat bootstrap. If scheduler installation fails because the environment lacks systemd, launchd, cron, or permissions, keep `.llm-wiki/refresh-wiki.sh`, record the failure in `wiki/gaps.md`, and report the exact command the user can run.
 
 Also install post-commit wiki maintenance automation. Preserve existing hooks; do not overwrite unrelated hook logic. Prefer creating `.llm-wiki/post-commit-refresh.sh` and wiring `.git/hooks/post-commit` to call it.
+
+Post-commit hook idempotency:
+
+- Add or replace only a managed `.git/hooks/post-commit` block marked `# BEGIN LLM WIKI POST-COMMIT` and `# END LLM WIKI POST-COMMIT`.
+- Remove or replace older direct calls to `.llm-wiki/post-commit-refresh.sh` only when they are clearly attributable to `llm-wiki`.
+- Never add a second managed post-commit block.
+- `.llm-wiki/post-commit-refresh.sh` must acquire a project-local lock, such as `.llm-wiki/post-commit.lock`, before refreshing. If the lock already exists, exit without starting another refresh. Always release the lock on exit.
 
 The post-commit script must detect changed files and run focused headless refreshes:
 
@@ -209,11 +269,11 @@ The post-commit script must detect changed files and run focused headless refres
 - Dependency changes: `Gemfile`, `package.json`, `go.mod`, `Cargo.toml`, `requirements.txt`, `pyproject.toml`, `composer.json`.
 - Plans, todos, docs changes: update roadmap, technical debt, plans/initiatives pages when those pages exist or should exist.
 
-For Codex setup, every focused refresh command must use `codex exec -C "$project_root" "<focused prompt>"` in the background. Never use `claude -p`.
+For `headless_agent: "codex"`, every focused refresh command must use `codex exec -C "$project_root" "<focused prompt>"` in the background. Never use `claude -p`.
 
-For Claude Code setup, every focused refresh command must use `claude -p "<focused prompt>" --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50` in the background. Never use `codex exec`.
+For `headless_agent: "claude"`, every focused refresh command must use `claude -p "<focused prompt>" --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50` in the background. Never use `codex exec`.
 
-After focused refreshes, run `qmd embed` in the background when `qmd` exists, then create `<wikis-root>/.sync-needed/<project-name>` when the detected main wiki root has a `.sync-needed` directory. Use `~/wikis/.sync-needed/<project-name>` for home-based main wikis and `<parent-of-project>/wikis/.sync-needed/<project-name>` for parent-directory main wikis.
+After focused refreshes, run `qmd embed` in the background when `qmd` exists, then create `<wikis-root>/.sync-needed/<project-name>` when the configured or detected main wiki root has a `.sync-needed` directory. Use the root containing `.llm-wiki/config.json` `main_wiki_path` first; otherwise use `~/wikis/.sync-needed/<project-name>` for home-based main wikis and `<parent-of-project>/wikis/.sync-needed/<project-name>` for parent-directory main wikis.
 
 Check whether QMD is installed with `command -v qmd`.
 
@@ -240,6 +300,8 @@ Report:
 
 - Project type detected.
 - Main cross-project wiki path detected, provided, or created.
+- Context agents configured.
+- Headless maintenance agent.
 - Pages created and updated.
 - QMD indexing status.
 - Scheduled refresh automation status.

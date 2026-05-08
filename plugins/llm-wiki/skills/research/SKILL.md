@@ -14,6 +14,7 @@ Determine:
 - Current project name: `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"`
 - Parent of project: `dirname "$(git rev-parse --show-toplevel)"`
 - Whether `wiki/` exists in the repo.
+- Whether `.llm-wiki/config.json` exists and contains `main_wiki_path`.
 - Whether `~/wikis/master/wiki/` exists.
 - Whether `~/wikis/main/wiki/` exists.
 - Whether `<parent-of-project>/wikis/master/wiki/` exists.
@@ -71,6 +72,7 @@ qmd query "<topic>" --collection main
 
 ```bash
 rg "<key terms>" wiki/ --type md -C 2
+rg "<key terms>" "<main_wiki_path from .llm-wiki/config.json>" --type md -C 2
 rg "<key terms>" ~/wikis/master/wiki/ --type md -C 2
 rg "<key terms>" ~/wikis/main/wiki/ --type md -C 2
 rg "<key terms>" ../wikis/master/wiki/ --type md -C 2
@@ -87,6 +89,8 @@ Prioritize:
 - `wiki/technical-debt.md`
 - `wiki/gaps.md`
 - `wiki/architecture.md`
+- `<main_wiki_path from .llm-wiki/config.json>/patterns.md`
+- `<main_wiki_path from .llm-wiki/config.json>/learnings.md`
 - `~/wikis/master/wiki/patterns.md`
 - `~/wikis/master/wiki/learnings.md`
 - `~/wikis/main/wiki/patterns.md`
