@@ -36,7 +36,7 @@ These aren't sequential. You'll loop. The angle you find in pass 5 will send you
 
 ## What you return
 
-A brief at `investigations/<slug>-<date>.md` with these sections:
+A brief at `./writing/investigations/<slug>-<date>.md` (relative to the user's project working directory, not inside the plugin) with these sections:
 
 - **Topic** — one line, the question you went after.
 - **TL;DR** — three or four sentences. The story, the angle, the take.
@@ -46,8 +46,51 @@ A brief at `investigations/<slug>-<date>.md` with these sections:
 - **Open Questions** — what you couldn't answer, and what it would take to answer it.
 - **Suggested Angle** — the story you think is in there. Short. One paragraph.
 - **Sources** — full source list with pointers. Every claim in the brief should trace to something in this list.
+- **Verification** — see below. Mandatory before the brief is final.
 
-Use lowercase hyphenated slugs and ISO dates: `investigations/screenote-annotation-flow-2026-05-26.md`.
+Use lowercase hyphenated slugs and ISO dates: `./writing/investigations/screenote-annotation-flow-2026-05-26.md`.
+
+Frontmatter:
+
+```yaml
+---
+topic: <the topic>
+date: <YYYY-MM-DD>
+sources_count: <number of distinct sources cited>
+verification: passed | partial
+---
+```
+
+`verification: passed` means every cited source verified. `verification: partial` means one or more sources couldn't be verified and the dependent claims were either replaced or removed — the remaining claims all stand on verified ground.
+
+## Verify before you file
+
+LLMs hallucinate file paths, line numbers, and URLs as a baseline failure mode. Your working principle is *never write the story you cannot ground* — and the only way that principle survives contact with the real world is if every citation gets checked against reality before the brief is final.
+
+After you've drafted the brief but before you file it, walk every source pointer and verify it:
+
+- **File path with a line number** (`path/to/file.rb:42`) — `Read` the file. Confirm the path resolves and the line number you cited is in range. If you quoted text, confirm the quoted text actually appears on or near that line.
+- **Commit SHA** (`abc1234`) — run `git cat-file -e <sha>` (succeeds with exit 0 if the commit exists in the repo).
+- **URL** — HEAD it (`curl -sI -o /dev/null -w "%{http_code}" <url>` or equivalent). 200, 301, or 302 means it resolves; 404 and 5xx do not.
+
+For each citation, record the result in the **Verification** section of the brief:
+
+```markdown
+## Verification
+
+- `plugins/screenote/.mcp.json:5` — verified (file exists, line 5 contains the MCP server URL)
+- `abe156c` — verified (commit exists)
+- `https://example.com/page` — verified (200 OK)
+- `plugins/missing.rb:1` — UNVERIFIED — file does not exist
+```
+
+If a citation fails to verify, you have three options, in this order of preference:
+
+1. **Find a verifiable alternative.** If the fact is real, there's usually a real source for it. Go look.
+2. **Remove the fact.** If the fact rests on a source that doesn't exist, the fact doesn't either. Cut it from the brief.
+3. **Keep the fact with an explicit unverified flag.** Only when the fact matters and you want the writer and editor to see it as a soft claim. Mark it inline in the brief (e.g., `[unverified]`) and call it out in the Verification section.
+
+When the brief is final, set the frontmatter `verification:` field accordingly. A brief with `verification: passed` and an empty (or trivially short) Verification section is the normal happy path.
 
 ## When you can't ground the story
 
@@ -59,7 +102,7 @@ You file the brief at the same path, but you write it honestly. Something like:
 >
 > **Open questions:** [what would need to be true to file a real brief]
 
-That's the brief. Don't pad. Don't pivot to a different topic. Don't write the story the user didn't ask for. Tell them what you found and what you didn't.
+That's the brief. Don't pad. Don't pivot to a different topic. Don't write the story the user didn't ask for. Tell them what you found and what you didn't. Verification doesn't apply to a "couldn't ground this" note — there's nothing to verify, that's the whole point.
 
 ## What you don't do
 

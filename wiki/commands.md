@@ -1,7 +1,7 @@
 ---
 title: Interaction Surface
 type: commands
-source: README.md; plugins/llm-wiki/README.md; plugins/llm-wiki/skills/*/SKILL.md; plugins/screenote/README.md; plugins/screenote/codex-skills/*/SKILL.md; plugins/agent-seo/README.md; plugins/agent-seo/skills/seo/SKILL.md; plugins/agent-seo/commands/*.md; plugins/agent-seo/data_sources/ruby/bin/*
+source: README.md; plugins/llm-wiki/README.md; plugins/llm-wiki/skills/*/SKILL.md; plugins/screenote/README.md; plugins/screenote/codex-skills/*/SKILL.md; plugins/agent-seo/README.md; plugins/agent-seo/skills/seo/SKILL.md; plugins/agent-seo/commands/*.md; plugins/agent-seo/data_sources/ruby/bin/*; plugins/agent-writing/README.md; plugins/agent-writing/skills/writing/SKILL.md; plugins/agent-writing/commands/*.md
 created: 2026-05-14
 updated: 2026-05-25
 tags: [commands, api]
@@ -73,12 +73,21 @@ Agent Writing exposes a three-voice team-of-rivals writing pipeline through both
 
 | Command | Description |
 | --- | --- |
-| `/write:journalist <topic>` | Investigate a topic across the project's data; return a grounded brief at `investigations/<slug>-<date>.md`, or an honest "couldn't ground this" note when the evidence is thin. |
+| `/write:journalist <topic>` | Investigate a topic across the project's data; verify every citation; return a grounded brief at `./writing/investigations/<slug>-<date>.md`, or an honest "couldn't ground this" note when the evidence is thin. |
 | `/write:writer <brief>` | Draft from a brief. With `--review <path>`, rewrite a previous draft against an editor's review (bumps the `-vN` suffix). |
 | `/write:editor <draft>` | Read the draft as an adversary. Return cuts, questions, push-back, and a verdict: `ready`, `needs another pass`, or `start over`. |
-| `/write:full <topic>` | Run the full pipeline: journalist gathers the brief, then the writer and editor enter a continuous cycle until verdict `ready` or `--max-rounds` (default 5). |
+| `/write:full <topic>` | Run the full pipeline: journalist gathers and verifies the brief, then the writer and editor enter a continuous cycle until verdict `ready` or `--max-rounds` (default 5). |
 
-Agent Writing maps user intent to durable artifact folders inside the plugin: `investigations/`, `drafts/`, and `reviews/`. Drafts and reviews are versioned per round (`-v1.md`, `-v2.md`, …) so the conversation between writer and editor stays inspectable. Per-project voice loads from `plugins/agent-writing/context/` (`voice.md`, `style-guide.md`, `writing-examples.md`).
+Command arguments from source:
+
+- `/write:journalist <topic> [--scope <path>]`
+- `/write:writer <brief-or-notes> [--style <profile>] [--review <review-path>]`
+- `/write:editor <draft-path>`
+- `/write:full <topic> [--scope <path>] [--max-rounds <N>]`
+
+Agent Writing writes artifacts to the **user's project working directory** under `./writing/` (not inside the plugin): `./writing/investigations/`, `./writing/drafts/`, and `./writing/reviews/`. Drafts and reviews are versioned per round (`-v1.md`, `-v2.md`, ...) so the conversation between writer and editor stays inspectable. The `./writing/` tree is created on demand; users who don't want artifacts versioned can add `/writing/` to their project's `.gitignore`. Per-project voice loads from `plugins/agent-writing/context/` (`voice.md`, `style-guide.md`, `writing-examples.md`).
+
+The journalist verifies every citation against reality before the brief is final (`Read` for file paths, `git cat-file -e` for commit SHAs, HEAD for URLs). The brief's frontmatter carries `verification: passed` or `verification: partial`, and a Verification section in the body lists each citation's pass/fail.
 
 The team-of-rivals shape is the load-bearing design choice: the writer and editor share a model but are deliberately set up as adversaries — cooperation between a generator and its own critic produces flat writing, so the editor does not praise, does not rewrite for the writer, and does not soften its verdict. The cycle is external to both agents; the `write:full` orchestrator owns the loop.
 

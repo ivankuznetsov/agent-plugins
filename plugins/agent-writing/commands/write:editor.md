@@ -10,7 +10,7 @@ Read a draft as an adversary. Cut what doesn't earn its place, question every cl
 
 ## Arguments
 
-- **`<draft-path>`** *(required)* — path to a writer's draft (e.g., `drafts/screenote-annotation-flow-2026-05-26-v1.md`). The editor will produce a paired review at `reviews/<same-slug>-<same-date>-v<same-N>.md`.
+- **`<draft-path>`** *(required)* — path to a writer's draft (e.g., `./writing/drafts/screenote-annotation-flow-2026-05-26-v1.md`). The editor will produce a paired review at `./writing/reviews/<same-slug>-<same-date>-v<same-N>.md`.
 
 ## Behavior
 
@@ -35,13 +35,13 @@ The editor does not rewrite for the writer. The editor points. The writer does t
 
 ## Output
 
-`reviews/<slug>-<date>-v<N>.md` — slug, date, and `N` match the draft being reviewed.
+`./writing/reviews/<slug>-<date>-v<N>.md` — relative to the user's project working directory. Slug, date, and `N` match the draft being reviewed.
 
 Frontmatter:
 
 ```yaml
 ---
-draft: drafts/<slug>-<date>-v<N>.md
+draft: ./writing/drafts/<slug>-<date>-v<N>.md
 date: <YYYY-MM-DD>
 round: <N>
 verdict: ready | needs another pass | start over
@@ -51,7 +51,7 @@ verdict: ready | needs another pass | start over
 Example file trail across a three-round cycle (paired with the drafts in `write:writer`):
 
 ```
-reviews/screenote-annotation-flow-2026-05-26-v1.md   # verdict: needs another pass
-reviews/screenote-annotation-flow-2026-05-26-v2.md   # verdict: needs another pass
-reviews/screenote-annotation-flow-2026-05-26-v3.md   # verdict: ready
+./writing/reviews/screenote-annotation-flow-2026-05-26-v1.md   # verdict: needs another pass
+./writing/reviews/screenote-annotation-flow-2026-05-26-v2.md   # verdict: needs another pass
+./writing/reviews/screenote-annotation-flow-2026-05-26-v3.md   # verdict: ready
 ```

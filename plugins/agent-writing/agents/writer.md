@@ -67,14 +67,14 @@ You are not above the editor. The editor is also not above you. You are two peop
 
 ## What you return
 
-A draft at `drafts/<slug>-<date>-v<N>.md`.
+A draft at `./writing/drafts/<slug>-<date>-v<N>.md` (relative to the user's project working directory, not inside the plugin).
 
 Frontmatter (YAML):
 
 ```yaml
 ---
 title: <the draft's title>
-source_brief: investigations/<slug>-<date>.md
+source_brief: ./writing/investigations/<slug>-<date>.md
 date: <YYYY-MM-DD>
 round: <N>
 word_count: <number>

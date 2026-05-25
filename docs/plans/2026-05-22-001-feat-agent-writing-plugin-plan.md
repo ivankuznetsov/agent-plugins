@@ -271,45 +271,46 @@ fights over.
   editor round 2/5, etc.) or stay quiet until the cycle ends — settle when
   implementing `write:full`.
 
-### Deferred / Open Questions
+### Resolved Open Questions (2026-05-25)
 
-Surfaced by document review (2026-05-22) and intentionally not resolved during
-planning:
+All four open questions surfaced by document review (2026-05-22) were resolved by
+the user on 2026-05-25 before the v1 cycle landed in real use. Records preserved
+here for traceability:
 
-- **Plugin-relative output folder pattern** — `plugins/agent-seo/output/` already
-  shows the failure (generated artifacts committed alongside plugin source). Three
-  options: (a) write artifacts to the host project's CWD (e.g.,
-  `./writing/investigations/<slug>.md`); (b) write to a user-data directory
-  (`$XDG_DATA_HOME/agent-writing/`); (c) accept the current design and document a
-  plugin-update protocol that preserves outputs. Multi-plugin concern; resolution
-  probably touches `agent-seo` too. v1 ships with plugin-relative folders to keep
-  the question reversible.
-- **Journalist source-citation contract — verify or admit.** "Every source is
-  real" is currently the journalist's own promise. LLMs hallucinate paths and URLs
-  as a baseline. Two paths: (a) add a small post-step that opens each cited path,
-  runs `git cat-file` on each SHA, and HEADs each URL before the brief is
-  finalized; (b) trust the persona and tell users in the README that the journalist
-  is doing their honest best but readers should still spot-check important
-  citations. Decide before promising verification in user-facing documentation.
-- **Build-vs-use vs. agent-seo's existing prose-craft pieces.**
-  `agent-seo/agents/editor.md`, `seo:humanize`, and `seo:scrub` already encode
-  prose-craft guidance; this plan duplicates rather than shares. Before shipping
-  U3's writer, skim `agent-seo`'s editor file: which lines are SEO-coupled, which
-  are pure prose craft? If most are generic, extract them to a shared
-  `context/prose-craft.md` referenced by both plugins; if not, document why
-  duplication won.
-- **Journalist's relationship to `llm-wiki:research`.** The marketplace already
-  ships an investigation skill via the `llm-wiki` plugin. Two options:
-  (a) coexist with documented division of labor — journalist produces a narrative
-  brief with an angle, `llm-wiki:research` produces structured Past Knowledge for
-  planning; (b) journalist calls `llm-wiki:research` as a first step and then adds
-  journalist-specific passes (timeline, angle, narrative framing) on top of its
-  output. Option (b) makes the journalist smaller; option (a) keeps the roles
-  cleanly separable.
+- **Output folder location → host CWD.** Briefs, drafts, and reviews write to the
+  user's project working directory (`./writing/investigations/<slug>-<date>.md`,
+  `./writing/drafts/<slug>-<date>-v<N>.md`, `./writing/reviews/<slug>-<date>-v<N>.md`),
+  not inside `plugins/agent-writing/`. Standard CLI-tool convention. The plugin
+  directory no longer holds output folders. Resolves the collision between
+  marketplace-installed plugin source and generated artifacts. Users can add
+  `/writing/` to their project's `.gitignore` if they don't want artifacts
+  versioned.
+- **Source-citation verification → deterministic post-step.** The journalist runs
+  a verify pass before finalizing the brief: opens each cited file path (confirms
+  the line is in range), runs `git cat-file -e <sha>` for each commit SHA, and
+  HEADs each URL. Unverifiable sources either get a verifiable replacement, the
+  dependent claim gets removed, or the claim stays with an inline `[unverified]`
+  flag if it matters and the writer/editor need to see it as soft. The brief's
+  frontmatter carries `verification: passed` or `verification: partial`, and a
+  Verification section in the body lists each citation's pass/fail. This replaces
+  the prior self-attestation contract.
+- **Build-vs-use vs. agent-seo → standalone (no shared context).** Duplication
+  with `agent-seo`'s prose-craft pieces is accepted. agent-writing stays
+  standalone. Revisit only if drift becomes painful enough to be visible.
+- **Journalist vs. llm-wiki:research → standalone (no composition).** The
+  journalist does its own investigation. No call into `llm-wiki:research` from
+  inside the agent. Roles stay cleanly separable.
+
+User direction on the standalone choices: "no need for now to mix writing
+workflows with others."
 
 ---
 
 ## Output Structure
+
+*Updated 2026-05-25 after the host-CWD output decision (see Resolved Open Questions). The plugin no longer holds output folders.*
+
+Plugin layout:
 
     plugins/agent-writing/
     ├── .claude-plugin/
@@ -330,24 +331,28 @@ planning:
     │   ├── write:writer.md
     │   ├── write:editor.md
     │   └── write:full.md
-    ├── context/
-    │   ├── voice.md
-    │   ├── style-guide.md
-    │   └── writing-examples.md
-    ├── investigations/       # journalist output
-    ├── drafts/               # writer output (versioned: -v1.md, -v2.md, …)
-    └── reviews/              # editor output (versioned: -v1.md, -v2.md, …)
+    └── context/
+        ├── voice.md
+        ├── style-guide.md
+        └── writing-examples.md
 
-The `context/` files are scaffolded with section headings and placeholder prose so
-each install site can fill them in. The output folders are created empty (with
-`.gitkeep`).
+Runtime artifacts in the user's project working directory (created on demand):
+
+    <your-project>/
+    └── writing/
+        ├── investigations/       # journalist briefs (with Verification section)
+        ├── drafts/               # writer drafts (versioned: -v1.md, -v2.md, …)
+        └── reviews/              # editor reviews (versioned: -v1.md, -v2.md, …)
+
+The `context/` files are scaffolded with section headings and placeholder prose so each install site can fill them in. The `./writing/` tree is created when the journalist files its first brief; users who don't want artifacts versioned can add `/writing/` to their project's `.gitignore`.
 
 ---
 
 ## High-Level Technical Design
 
 > *This illustrates the intended shape of the work and is directional guidance for
-> review, not implementation specification.*
+> review, not implementation specification. Updated 2026-05-25 with host-CWD
+> output paths and the journalist verification post-step.*
 
 ```
 User invocation
@@ -358,14 +363,18 @@ User invocation
    │            ├─ tools:  rg, git log, Read, WebSearch, qmd (optional)
    │            ├─ voice:  investigates and grounds; names gaps when evidence is
    │            │          thin; never writes the story it cannot ground.
-   │            └─ output: investigations/<slug>-<date>.md
+   │            ├─ verify: opens each cited file path; runs git cat-file -e on
+   │            │          each commit SHA; HEADs each URL. Failed citations get
+   │            │          replaced, cut, or flagged [unverified]. Frontmatter
+   │            │          records verification: passed | partial.
+   │            └─ output: ./writing/investigations/<slug>-<date>.md
    │
    ├── /write:writer <brief-or-notes> [--style <profile>] [--review <review-path>]
    │      └─► agent-writing:writer subagent
    │            ├─ inputs: brief + (optional) prior editor review
    │            ├─ voice:  Generator. Wants to produce. Defends the draft on the
    │            │          merits. Reads aloud before returning. Story first.
-   │            └─ output: drafts/<slug>-<date>-v<N>.md
+   │            └─ output: ./writing/drafts/<slug>-<date>-v<N>.md
    │                       (N = 1 for first draft; the orchestrator passes -v2,
    │                        -v3 on subsequent rounds)
    │
@@ -374,26 +383,30 @@ User invocation
    │            ├─ inputs: a draft
    │            ├─ voice:  Adversary. Cuts. Questions. Pushes back on the angle.
    │            │          Does not praise. Does not rewrite.
-   │            └─ output: reviews/<slug>-<date>-v<N>.md
+   │            └─ output: ./writing/reviews/<slug>-<date>-v<N>.md
    │                       (frontmatter carries verdict: ready | needs another pass
    │                        | start over)
    │
    └── /write:full <topic> [--scope <path>] [--max-rounds <N>]
           └─► orchestrator
-                step 1: journalist  → investigations/<slug>-<date>.md
-                                      (if evidence thin → "couldn't ground this"
-                                       note, orchestrator stops here)
+                step 1: journalist  → ./writing/investigations/<slug>-<date>.md
+                                      (with verification; if evidence thin →
+                                       "couldn't ground this" note, orchestrator
+                                       stops here)
                 step 2: enter the write↔edit cycle:
-                          round 1: writer drafts from brief → drafts/...-v1.md
-                                   editor reviews → reviews/...-v1.md
+                          round 1: writer drafts from brief
+                                   → ./writing/drafts/...-v1.md
+                                   editor reviews
+                                   → ./writing/reviews/...-v1.md
                                    verdict?
                                      ready          → done
                                      needs pass     → continue
                                      start over     → continue (rewrite from
                                                       brief, ignore prior draft)
                           round 2: writer rewrites with editor's review in hand
-                                   → drafts/...-v2.md
-                                   editor reviews → reviews/...-v2.md
+                                   → ./writing/drafts/...-v2.md
+                                   editor reviews
+                                   → ./writing/reviews/...-v2.md
                                    verdict?
                           …
                           round N (cap, default 5): if not yet ready, return final

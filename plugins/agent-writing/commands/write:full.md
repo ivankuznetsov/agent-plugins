@@ -1,6 +1,8 @@
 # Full Cycle Command
 
-Run the whole pipeline on a topic: journalist gathers the brief, then the writer and editor enter a continuous write↔edit cycle until the editor's verdict is `ready` or the configured maximum number of rounds is reached. The cycle is the point. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals — the writer pushes toward output, the editor pulls toward quality, and the loop runs until either the editor releases the draft or the cap stops it.
+Run the whole pipeline on a topic: journalist gathers and verifies the brief, then the writer and editor enter a continuous write↔edit cycle until the editor's verdict is `ready` or the configured maximum number of rounds is reached. The cycle is the point. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals — the writer pushes toward output, the editor pulls toward quality, and the loop runs until either the editor releases the draft or the cap stops it.
+
+All artifacts land in the user's project working directory under `./writing/`, not inside the plugin.
 
 ## Usage
 
@@ -18,9 +20,9 @@ Run the whole pipeline on a topic: journalist gathers the brief, then the writer
 
 This command does not re-encode any voice. It sequences the existing subagents and threads their outputs.
 
-### Step 1 — Investigate
+### Step 1 — Investigate (and verify)
 
-Dispatch `agent-writing:journalist` on the topic. The journalist files the brief at `investigations/<slug>-<date>.md` (where the slug is derived from the topic).
+Dispatch `agent-writing:journalist` on the topic. The journalist files the brief at `./writing/investigations/<slug>-<date>.md` (where the slug is derived from the topic) and runs the source-verification post-step before the brief is final. The brief's frontmatter carries `verification: passed` or `verification: partial`; either is acceptable for entering the cycle, but the writer should be alerted when claims are flagged `[unverified]` in the body.
 
 **If the journalist files an "I couldn't ground this" note** (because the evidence was thin), the orchestrator stops here. Running the writer against an empty brief produces fabrication. The final response surfaces the journalist's honest note and stops the cycle. There is no failure here — the journalist did the right thing, and the user now knows what to investigate further before drafting.
 
@@ -31,9 +33,9 @@ Otherwise, the orchestrator enters the writer↔editor loop. Round counter `N` s
 **Round `N`:**
 
 1. Dispatch `agent-writing:writer`.
-   - On round 1: the writer gets the brief and produces the first draft at `drafts/<slug>-<date>-v1.md`.
-   - On round `N` > 1: the writer gets the brief AND the prior review (`reviews/<slug>-<date>-v<N-1>.md`) via `--review`, and rewrites — saving `drafts/<slug>-<date>-v<N>.md`.
-2. Dispatch `agent-writing:editor` on the draft just produced. The editor reads the draft as an adversary and files `reviews/<slug>-<date>-v<N>.md` with a `verdict:` in the frontmatter.
+   - On round 1: the writer gets the brief and produces the first draft at `./writing/drafts/<slug>-<date>-v1.md`.
+   - On round `N` > 1: the writer gets the brief AND the prior review (`./writing/reviews/<slug>-<date>-v<N-1>.md`) via `--review`, and rewrites — saving `./writing/drafts/<slug>-<date>-v<N>.md`.
+2. Dispatch `agent-writing:editor` on the draft just produced. The editor reads the draft as an adversary and files `./writing/reviews/<slug>-<date>-v<N>.md` with a `verdict:` in the frontmatter.
 3. Read the verdict.
    - **`ready`** → exit the cycle. Go to Step 3.
    - **`needs another pass`** → increment `N`. If `N` exceeds `--max-rounds`, exit the cycle with the cap-hit note (Step 3 covers this). Otherwise, run round `N` again.
@@ -59,16 +61,18 @@ The writer and the editor must not invoke each other from inside their own reaso
 
 ## Output
 
-Three sets of files, all sharing a slug and date derived from the topic:
+Three sets of files in the user's project working directory, all sharing a slug and date derived from the topic:
 
 ```
-investigations/<slug>-<date>.md          # the journalist's brief
-drafts/<slug>-<date>-v1.md               # writer round 1
-reviews/<slug>-<date>-v1.md              # editor round 1
-drafts/<slug>-<date>-v2.md               # writer round 2 (if needed)
-reviews/<slug>-<date>-v2.md              # editor round 2 (if needed)
+./writing/investigations/<slug>-<date>.md      # the journalist's brief (with Verification section)
+./writing/drafts/<slug>-<date>-v1.md           # writer round 1
+./writing/reviews/<slug>-<date>-v1.md          # editor round 1
+./writing/drafts/<slug>-<date>-v2.md           # writer round 2 (if needed)
+./writing/reviews/<slug>-<date>-v2.md          # editor round 2 (if needed)
 …
 ```
+
+The `./writing/` tree is created on demand if it doesn't exist. The user can add `/writing/` to their project's `.gitignore` if they don't want artifacts versioned.
 
 And a final response naming the brief, the final draft, the final review, the round count, and the final verdict.
 
@@ -79,10 +83,11 @@ And a final response naming the brief, the final draft, the final review, the ro
 ```
 $ /write:full "the screenote plugin's annotation flow"
 
-Filed brief: investigations/screenote-annotation-flow-2026-05-26.md
+Filed brief: ./writing/investigations/screenote-annotation-flow-2026-05-26.md
+  Verification: passed (12 of 12 sources verified)
 Round 1:
-  Draft  → drafts/screenote-annotation-flow-2026-05-26-v1.md
-  Review → reviews/screenote-annotation-flow-2026-05-26-v1.md
+  Draft  → ./writing/drafts/screenote-annotation-flow-2026-05-26-v1.md
+  Review → ./writing/reviews/screenote-annotation-flow-2026-05-26-v1.md
   Verdict: ready
 
 Done after 1 round.
@@ -93,12 +98,13 @@ Done after 1 round.
 ```
 $ /write:full "what changed in agent-seo between v0.9 and v1.1"
 
-Filed brief: investigations/agent-seo-v09-to-v11-2026-05-26.md
+Filed brief: ./writing/investigations/agent-seo-v09-to-v11-2026-05-26.md
+  Verification: partial (8 of 10 sources verified; 2 inline-flagged [unverified])
 Round 1: verdict needs another pass
 Round 2: verdict needs another pass
 Round 3:
-  Draft  → drafts/agent-seo-v09-to-v11-2026-05-26-v3.md
-  Review → reviews/agent-seo-v09-to-v11-2026-05-26-v3.md
+  Draft  → ./writing/drafts/agent-seo-v09-to-v11-2026-05-26-v3.md
+  Review → ./writing/reviews/agent-seo-v09-to-v11-2026-05-26-v3.md
   Verdict: ready
 
 Done after 3 rounds.
@@ -109,19 +115,20 @@ Done after 3 rounds.
 ```
 $ /write:full "the philosophy of test-driven development" --max-rounds 5
 
-Filed brief: investigations/philosophy-of-tdd-2026-05-26.md
+Filed brief: ./writing/investigations/philosophy-of-tdd-2026-05-26.md
+  Verification: passed
 Round 1: verdict needs another pass
 Round 2: verdict needs another pass
 …
 Round 5: verdict needs another pass
 
 Cycle hit the cap (5 rounds) without the editor returning ready.
-Final draft:  drafts/philosophy-of-tdd-2026-05-26-v5.md
-Final review: reviews/philosophy-of-tdd-2026-05-26-v5.md
+Final draft:  ./writing/drafts/philosophy-of-tdd-2026-05-26-v5.md
+Final review: ./writing/reviews/philosophy-of-tdd-2026-05-26-v5.md
 
 You can keep iterating manually:
-  /write:writer drafts/philosophy-of-tdd-2026-05-26-v5.md --review reviews/philosophy-of-tdd-2026-05-26-v5.md
-  /write:editor drafts/philosophy-of-tdd-2026-05-26-v6.md
+  /write:writer ./writing/drafts/philosophy-of-tdd-2026-05-26-v5.md --review ./writing/reviews/philosophy-of-tdd-2026-05-26-v5.md
+  /write:editor ./writing/drafts/philosophy-of-tdd-2026-05-26-v6.md
 ```
 
 ### Journalist can't ground the topic
@@ -129,9 +136,9 @@ You can keep iterating manually:
 ```
 $ /write:full "the spaceflight history of the agent-plugins repo"
 
-Filed "couldn't ground this" note: investigations/spaceflight-history-2026-05-26.md
+Filed "couldn't ground this" note: ./writing/investigations/spaceflight-history-2026-05-26.md
 Cycle stopped at the journalist — there was no grounded brief to draft from.
 
-investigations/spaceflight-history-2026-05-26.md names what was searched and what
-would need to be true to file a real brief.
+./writing/investigations/spaceflight-history-2026-05-26.md names what was searched and
+what would need to be true to file a real brief.
 ```

@@ -54,13 +54,13 @@ You do not adjust the verdict to make the writer's life easier. If the first dra
 
 ## What you return
 
-A review at `reviews/<slug>-<date>-v<N>.md`. The version matches the draft you reviewed.
+A review at `./writing/reviews/<slug>-<date>-v<N>.md` (relative to the user's project working directory, not inside the plugin). The version matches the draft you reviewed.
 
 Frontmatter (YAML):
 
 ```yaml
 ---
-draft: drafts/<slug>-<date>-v<N>.md
+draft: ./writing/drafts/<slug>-<date>-v<N>.md
 date: <YYYY-MM-DD>
 round: <N>
 verdict: ready | needs another pass | start over

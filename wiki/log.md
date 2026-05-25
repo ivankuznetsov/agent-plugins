@@ -121,3 +121,39 @@ Append-only log of meaningful wiki updates.
 **Design choice (load-bearing):** writer and editor are deliberately adversarial — cooperation between a generator and its own critic produces flat AI-shaped writing. The editor does not praise, does not rewrite for the writer, and does not soften its verdict (`ready` / `needs another pass` / `start over`). The write-edit cycle is external to both agents: the `write:full` orchestrator owns the loop, threading the prior round's review into the next round's writer invocation. Default cap: 5 rounds.
 **Scope deferred to follow-up work:** (1) plugin-relative output folder pattern — review flagged that artifacts living inside the plugin directory will collide with plugin source for marketplace-installed users; v1 ships with plugin-relative folders matching `agent-seo` to keep the question reversible; (2) journalist source-citation verification — currently self-attested by the agent; (3) whether to share `context/` content with `agent-seo` rather than duplicating prose-craft guidance; (4) journalist's relationship to `llm-wiki:research` (overlap on project-investigation scope).
 **Source:** `docs/plans/2026-05-22-001-feat-agent-writing-plugin-plan.md` (the deepened plan that drove this work).
+
+## [2026-05-25T14:53:33Z] refresh
+
+**Action:** Refreshed command/API surface coverage and adjacent architecture, decision, dependency, activity, index, and gap notes after commit `51dab1a` added Agent Writing.
+**Pages created:** none
+**Pages updated:** wiki/architecture.md, wiki/commands.md, wiki/decisions.md, wiki/dependencies.md, wiki/active-areas.md, wiki/gaps.md, wiki/index.md, wiki/log.md
+**Cross-project wiki:** searched configured `/home/asterio/wikis/master/wiki` for Agent Writing / `write:full` context; no matches were found.
+**Recent source inspected:** `git show` for `51dab1a`, both marketplace catalogs, root `README.md`, `plugins/agent-writing` manifests, README, Codex skill, Claude `/write:*` command files, role subagents, context scaffolds, and existing wiki command/plugin pages.
+**QMD:** did not run `qmd update` or `qmd embed`; a focused `qmd search "agent-writing write full command marketplace"` returned no project-local Agent Writing hit before wrapper maintenance, so source files and direct wiki reads grounded the refresh.
+**Gaps found:** root README still omits Agent Writing from the plugin list/install examples/layout; Agent Writing artifact folder placement is unvalidated for marketplace-installed users; journalist source-citation verification is prompt-enforced rather than executable; relationship to `llm-wiki:research` remains undefined.
+**Source:** Codebase read + git history + direct main-wiki search + qmd search without update/embed.
+
+## [2026-05-25T14:58:41Z] refresh
+
+**Action:** Refreshed planning and documentation coverage after commit `51dab1a` added a completed Agent Writing plan, plugin documentation, context scaffolds, and wiki changes.
+**Pages created:** wiki/planning-docs.md
+**Pages updated:** wiki/index.md, wiki/gaps.md, wiki/log.md
+**Cross-project wiki:** checked configured `/home/asterio/wikis/master/wiki`; direct `rg` found no Agent Writing or `write:full` matches in the main wiki.
+**Recent source inspected:** `AGENTS.md`, `.llm-wiki/config.json`, `git show` for `51dab1a`, `docs/plans/2026-05-22-001-feat-agent-writing-plugin-plan.md`, root `README.md`, both marketplace catalogs, Agent Writing manifests, README, commands, skill, role prompts, context scaffolds, and existing wiki pages.
+**QMD:** did not run `qmd update` or `qmd embed`; focused `qmd search "agent-writing write full command marketplace"` returned a cross-collection `qmd://hive/log.md` result, so source files and direct wiki reads grounded the refresh.
+**Gaps found:** QMD search scope can drift cross-collection; the completed plan still has unchecked implementation-unit boxes; Agent Writing context files are placeholder scaffolds; root README still omits Agent Writing.
+**Source:** Codebase read + git history + direct main-wiki search + qmd search without update/embed.
+
+## [2026-05-25T12:00:00Z] feature: agent-writing v1 open-question resolutions
+
+**Action:** Resolved the four open questions deferred from the original agent-writing planning pass.
+**Pages updated:** wiki/plugins.md, wiki/commands.md, wiki/log.md
+**Resolutions:**
+1. **Output location → host CWD.** Briefs, drafts, and reviews now write to the user's project working directory (`./writing/investigations/<slug>-<date>.md`, `./writing/drafts/<slug>-<date>-v<N>.md`, `./writing/reviews/<slug>-<date>-v<N>.md`), not inside the plugin. Plugin's own `investigations/`, `drafts/`, `reviews/` directories deleted. Users can add `/writing/` to their project's `.gitignore` if they don't want artifacts versioned.
+2. **Journalist source-citation → deterministic verification.** Every citation in a brief is verified before the brief is final: `Read` for file paths, `git cat-file -e` for commit SHAs, HEAD for URLs. Failed citations get a verifiable replacement, get cut, or get flagged `[unverified]`. Brief frontmatter carries `verification: passed | partial`; brief body has a Verification section listing each citation's pass/fail.
+3. **Build-vs-use vs. agent-seo → standalone.** No shared `context/` content with `agent-seo`. Duplication accepted.
+4. **Journalist vs. llm-wiki:research → standalone.** No composition. The journalist does its own investigation.
+**Files changed (plugin):** plugins/agent-writing/agents/{journalist,writer,editor}.md, plugins/agent-writing/commands/write:{journalist,writer,editor,full}.md, plugins/agent-writing/skills/writing/SKILL.md, plugins/agent-writing/README.md. Removed: plugins/agent-writing/{investigations,drafts,reviews}/.gitkeep and the empty directories.
+**Plan updated:** docs/plans/2026-05-22-001-feat-agent-writing-plugin-plan.md — Resolved Open Questions section added; Output Structure and High-Level Technical Design diagrams updated to show host-CWD paths and the verification post-step.
+**User direction on the standalone choices:** "no need for now to mix writing workflows with others."
+**Source:** Codebase edits + user resolutions provided in conversation.

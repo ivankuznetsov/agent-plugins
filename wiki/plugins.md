@@ -77,9 +77,15 @@ Agent Writing ships three writing voices working as a team of rivals: a journali
 
 The cycle is external to both agents: the `write:full` orchestrator owns the loop. Neither the writer nor the editor invokes the other from inside their own reasoning. This separation preserves the rivalry.
 
-Output folders: `investigations/` (journalist briefs), `drafts/` (writer drafts, versioned `-v1.md`, `-v2.md`, …), `reviews/` (editor reviews, paired with drafts). Per-project voice is configured via `context/voice.md`, `context/style-guide.md`, and `context/writing-examples.md`, which ship empty for install-site customization.
+The journalist verifies every citation against reality before the brief is final — `Read` for file paths, `git cat-file -e <sha>` for commit SHAs, HEAD requests for URLs. Failed verifications get a verifiable replacement, get cut, or get flagged `[unverified]` in the brief. The brief's frontmatter records `verification: passed` or `verification: partial`.
+
+Output goes to the **user's project working directory** under `./writing/`, not inside the plugin. `./writing/investigations/<slug>-<date>.md` for briefs, `./writing/drafts/<slug>-<date>-v<N>.md` for drafts, `./writing/reviews/<slug>-<date>-v<N>.md` for reviews. The `./writing/` tree is created on demand. Users who don't want artifacts versioned can add `/writing/` to their project's `.gitignore`.
+
+Per-project voice is configured via `context/voice.md`, `context/style-guide.md`, and `context/writing-examples.md`, which ship empty for install-site customization.
 
 The `agent-writing:editor` is intentionally different from `agent-seo:editor` — the SEO plugin's editor humanizes content, while agent-writing's editor cuts and pushes back. The two live under separate plugin namespaces and do not interfere.
+
+Design posture: agent-writing is intentionally standalone in v1. No shared context with `agent-seo` (duplication accepted), no composition with `llm-wiki:research` (the journalist does its own investigation). Resolved 2026-05-25; revisit only if duplication becomes painful.
 
 ## Refresh Process
 
