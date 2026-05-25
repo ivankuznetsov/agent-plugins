@@ -9,6 +9,7 @@ This marketplace is intentionally a catalog. Plugin source remains in separate r
 - `llm-wiki` — bootstrap and query LLM-maintained project wikis before planning or implementation.
 - `screenote` — screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback.
 - `agent-seo` — research, write, humanize, fact-check, and optimize SEO content.
+- `agent-writing` — investigate, draft, and edit long-form writing with three voices: a journalist who grounds the story, a writer who produces, and an adversarial editor who cuts. The writer and editor run as a continuous write-edit cycle until the editor says the draft is ready.
 
 ## Claude Code
 
@@ -36,6 +37,12 @@ Install Agent SEO:
 /plugin install agent-seo@aikuznetsov-marketplace
 ```
 
+Install Agent Writing:
+
+```text
+/plugin install agent-writing@aikuznetsov-marketplace
+```
+
 ## Codex
 
 Add the marketplace:
@@ -44,7 +51,7 @@ Add the marketplace:
 codex plugin marketplace add ivankuznetsov/agent-plugins
 ```
 
-Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install the plugin you want, including `agent-seo`.
+Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install the plugin you want, including `agent-seo` or `agent-writing`.
 
 ## Repository Layout
 
@@ -54,6 +61,7 @@ Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install t
 plugins/llm-wiki                    # vendored plugin files
 plugins/screenote                   # vendored plugin files
 plugins/agent-seo                   # vendored plugin files
+plugins/agent-writing               # vendored plugin files
 ```
 
 ## Development
