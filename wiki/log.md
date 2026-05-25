@@ -157,3 +157,25 @@ Append-only log of meaningful wiki updates.
 **Plan updated:** docs/plans/2026-05-22-001-feat-agent-writing-plugin-plan.md — Resolved Open Questions section added; Output Structure and High-Level Technical Design diagrams updated to show host-CWD paths and the verification post-step.
 **User direction on the standalone choices:** "no need for now to mix writing workflows with others."
 **Source:** Codebase edits + user resolutions provided in conversation.
+
+## [2026-05-25T15:25:53Z] refresh
+
+**Action:** Refreshed command/API surface-adjacent wiki coverage after commit `9bb78ce` resolved Agent Writing open questions.
+**Pages created:** none
+**Pages updated:** wiki/architecture.md, wiki/decisions.md, wiki/dependencies.md, wiki/active-areas.md, wiki/planning-docs.md, wiki/gaps.md, wiki/index.md, wiki/log.md
+**Cross-project wiki:** read `/home/asterio/wikis/master/wiki/index.md` and `patterns.md`; direct `rg` found no Agent Writing, `write:full`, host-CWD, or verification matches. Default paths `/home/asterio/wikis/main/wiki`, `/home/asterio/Dev/wikis/master/wiki`, and `/home/asterio/Dev/wikis/main/wiki` were missing.
+**Recent source inspected:** `AGENTS.md`, `.llm-wiki/config.json`, `git show` and `git log` for `9bb78ce`, `README.md`, `docs/plans/2026-05-22-001-feat-agent-writing-plugin-plan.md`, Agent Writing README, Codex skill, Claude `/write:*` command files, role prompts, and current wiki command/plugin pages.
+**QMD:** did not run `qmd update` or `qmd embed`; focused `qmd search "agent-writing host CWD verification standalone"` returned cross-collection Hive hits, so source files, direct wiki reads, and main-wiki `rg` grounded the refresh.
+**Gaps found:** root README still omits Agent Writing; the completed Agent Writing plan still has historical plugin-relative path wording and unchecked implementation-unit boxes despite the newer resolution section; Agent Writing context scaffolds remain placeholders.
+**Source:** Codebase read + git history + direct main-wiki search + qmd search without update/embed.
+
+## [2026-05-25T15:31:38Z] refresh
+
+**Action:** Refreshed planning and documentation coverage after commit `9bb78ce` touched the completed Agent Writing plan, plugin docs, command/agent prompt files, and wiki pages.
+**Pages created:** none
+**Pages updated:** wiki/planning-docs.md, wiki/index.md, wiki/gaps.md, wiki/log.md
+**Cross-project wiki:** read `/home/asterio/wikis/master/wiki/index.md` and `patterns.md`; direct `rg` found no Agent Writing, `write:full`, host-CWD, source verification, or `./writing` matches.
+**Recent source inspected:** `AGENTS.md`, `.llm-wiki/config.json`, `git show` for `9bb78ce`, `docs/plans/2026-05-22-001-feat-agent-writing-plugin-plan.md`, Agent Writing README, Codex skill, Claude `/write:*` command files, role prompts, context scaffolds, root `README.md`, and current wiki pages.
+**QMD:** did not run `qmd update` or `qmd embed`; focused `qmd search "agent-writing planning docs context host CWD verification"` returned cross-collection Hive hits, so direct source reads grounded the refresh.
+**Gaps found:** root README still omits Agent Writing; the completed Agent Writing plan keeps historical plugin-relative wording in early requirements, key decisions, implementation units, verification notes, and risk sections; Agent Writing context scaffolds remain placeholders.
+**Source:** Codebase read + git history + direct main-wiki search + qmd search without update/embed.
