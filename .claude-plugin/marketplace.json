@@ -96,6 +96,37 @@
         "optimization",
         "humanization"
       ]
+    },
+    {
+      "name": "agent-writing",
+      "source": "./plugins/agent-writing",
+      "description": "A team of three writing voices — journalist, writer, editor — that work together as a continuous write-edit cycle. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals.",
+      "version": "0.1.0",
+      "author": {
+        "name": "ivankuznetsov",
+        "url": "https://github.com/ivankuznetsov"
+      },
+      "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+      "repository": "https://github.com/ivankuznetsov/agent-plugins",
+      "license": "MIT",
+      "keywords": [
+        "agent-writing",
+        "claude-code",
+        "codex",
+        "writing",
+        "journalism",
+        "prose-craft",
+        "editor",
+        "team-of-rivals"
+      ],
+      "category": "content",
+      "tags": [
+        "writing",
+        "journalism",
+        "editor",
+        "team-of-rivals",
+        "prose-craft"
+      ]
     }
   ]
 }
