@@ -1,59 +1,42 @@
-# aikuznetsov-marketplace
+# agent-plugins
 
-Personal agent plugin marketplace for Ivan Kuznetsov projects.
+This is the toolkit [Ivan Kuznetsov](https://ikuznetsov.com) actually uses when working with coding agents. Four plugins, vendored here so both Claude Code and Codex can install them from a single Git clone. It happens to be packaged as a marketplace because that's what the agents read — but the shape of the repo is a working environment, not a catalog.
 
-This marketplace is intentionally a catalog. Plugin source remains in separate repositories, but the installable plugin files are vendored here under `plugins/<name>`. Codex reads marketplace-local plugin paths from a normal Git clone and does not initialize submodules before loading plugin details.
+The four plugins compose into a loop. They were not picked off a shelf; they were built or chosen because each one fills a hole the others leave open.
 
-## Plugins
+## The loop
 
-- `llm-wiki` — bootstrap and query LLM-maintained project wikis before planning or implementation.
-- `screenote` — screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback.
-- `agent-seo` — research, write, humanize, fact-check, and optimize SEO content.
-- `agent-writing` — investigate, draft, and edit long-form writing with three voices: a journalist who grounds the story, a writer who produces, and an adversarial editor who cuts. The writer and editor run as a continuous write-edit cycle until the editor says the draft is ready.
+**Research before you plan.** [`llm-wiki`](plugins/llm-wiki/) bootstraps an LLM-maintained wiki for the project and indexes it with [QMD](https://github.com/tobilu/qmd) so the next agent that touches the codebase reads what the last one learned. The pattern is Karpathy's — the wiki is the agent's memory across sessions, not yours.
 
-## Claude Code
+**See what the agent built.** [`screenote`](plugins/screenote/) gives the agent eyes. It captures the rendered page, uploads it to [Screenote](https://screenote.ai) for human annotation, and pulls the comments back into the agent's context. Visual ground truth for UI work, instead of guessing from the DOM.
 
-Add the marketplace:
+**Turn research into long-form.** [`agent-seo`](plugins/agent-seo/) is the SEO pipeline — research a topic, draft the article, humanize the prose, fact-check the claims, and optimize against the existing site. It ships `/seo:fact-check` as a first-class command because the worldview running through this whole repo doesn't tolerate ungrounded prose.
+
+**Hold the writing accountable.** [`agent-writing`](plugins/agent-writing/) runs three voices as rivals: a journalist who investigates and grounds, a writer who drafts, and an editor who cuts. The writer and editor never call each other — the cycle is external to both — because cooperation creates sycophancy. A single agent that drafts and then polishes its own work will praise the parts it just wrote.
+
+The connections are real, not aspirational. `agent-writing`'s journalist explicitly looks for `qmd` and uses `llm-wiki`'s index when it's available. `llm-wiki:wiki-plan` delegates to Compound Engineering when that plugin is present. The plugins know about each other.
+
+## Install
+
+### Claude Code
 
 ```text
 /plugin marketplace add ivankuznetsov/agent-plugins
-```
-
-Install `llm-wiki`:
-
-```text
 /plugin install llm-wiki@aikuznetsov-marketplace
-```
-
-Install Screenote:
-
-```text
 /plugin install screenote@aikuznetsov-marketplace
-```
-
-Install Agent SEO:
-
-```text
 /plugin install agent-seo@aikuznetsov-marketplace
-```
-
-Install Agent Writing:
-
-```text
 /plugin install agent-writing@aikuznetsov-marketplace
 ```
 
-## Codex
-
-Add the marketplace:
+### Codex
 
 ```bash
 codex plugin marketplace add ivankuznetsov/agent-plugins
 ```
 
-Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install the plugin you want, including `agent-seo` or `agent-writing`.
+Open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install the plugins you want.
 
-## Repository Layout
+## Repository layout
 
 ```text
 .claude-plugin/marketplace.json     # Claude Code marketplace catalog
@@ -64,13 +47,21 @@ plugins/agent-seo                   # vendored plugin files
 plugins/agent-writing               # vendored plugin files
 ```
 
+Plugins are vendored as plain directories, not submodules. Codex reads marketplace-local plugin paths from a normal clone and doesn't initialize submodules before loading plugin details, so vendoring is what makes a single repo work for both agents. Some plugins (`llm-wiki`, `screenote`, `agent-seo`) have upstream source repositories; `agent-writing` is born here.
+
 ## Development
 
-When refreshing a plugin, copy the source repository contents into the matching `plugins/<name>` directory without the nested `.git` metadata, then update both marketplace catalogs if the plugin metadata changed.
+When refreshing a plugin from an upstream source repo, copy the contents into the matching `plugins/<name>` directory without the nested `.git` metadata, then update both marketplace catalogs if the plugin metadata changed.
 
-Validate JSON:
+Validate the catalogs after any edit:
 
 ```bash
 jq . .claude-plugin/marketplace.json
 jq . .agents/plugins/marketplace.json
 ```
+
+## The worldview
+
+One principle runs through all four plugins: **ground claims before you produce them.** `llm-wiki` does not invent documentation — it reads source files and records uncertainty in `wiki/gaps.md`. `agent-writing`'s journalist never writes the story they cannot ground; every citation in a brief is verified against reality before the brief is final. `agent-seo` runs fact-check as a workflow step, not a final polish. `screenote` exists because pixels are easier to lie about than to look at.
+
+That is what makes these four a kit, and not just four installs.
