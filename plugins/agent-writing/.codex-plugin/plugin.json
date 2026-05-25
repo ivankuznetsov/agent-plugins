@@ -1,0 +1,43 @@
+{
+  "name": "agent-writing",
+  "version": "0.1.0",
+  "description": "A team of three writing voices — a tech-journalism investigator, a story-first writer, and an adversarial editor — that work together as a continuous write-edit cycle. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals.",
+  "author": {
+    "name": "Ivan Kuznetsov",
+    "email": "github@ivankuznetsov",
+    "url": "https://github.com/ivankuznetsov"
+  },
+  "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+  "repository": "https://github.com/ivankuznetsov/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agent-writing",
+    "codex-plugin",
+    "claude-code",
+    "writing",
+    "journalism",
+    "prose-craft",
+    "editor",
+    "team-of-rivals"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Agent Writing",
+    "shortDescription": "Investigate, draft, and edit — three voices working as a team of rivals.",
+    "longDescription": "Agent Writing provides a skill-driven writing workflow for Codex and a slash-command workflow for Claude Code. A journalist investigates a topic across the project's data and returns a grounded brief; a writer turns the brief into a draft with deliberate sentence rhythm and the Read-Aloud Test; an editor reads the draft as an adversary — cutting what doesn't earn its place, questioning claims, pushing back on the angle. The writer and editor run as a continuous cycle until the editor returns the verdict 'ready' or a configured maximum number of rounds is reached. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals.",
+    "developerName": "Ivan Kuznetsov",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/ivankuznetsov/agent-plugins",
+    "defaultPrompt": [
+      "Use Agent Writing to investigate a topic and produce a grounded brief.",
+      "Use Agent Writing to draft a story from a brief.",
+      "Use Agent Writing to run the writer-editor cycle on a draft until it is ready."
+    ],
+    "screenshots": []
+  }
+}
