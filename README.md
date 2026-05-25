@@ -1,20 +1,18 @@
 # agent-plugins
 
-This is the toolkit [Ivan Kuznetsov](https://ikuznetsov.com) actually uses when working with coding agents. Four plugins, vendored here so both Claude Code and Codex can install them from a single Git clone. It happens to be packaged as a marketplace because that's what the agents read — but the shape of the repo is a working environment, not a catalog.
+This is the toolkit I use when working with coding agents. Four plugins, vendored here so both Claude Code and Codex can install them from a single Git clone. I package it as a marketplace because that's what the agents read.
 
-The four plugins compose into a loop. They were not picked off a shelf; they were built or chosen because each one fills a hole the others leave open.
+Four tools, four jobs. I picked or built each one to do a thing the others don't.
 
-## The loop
+## What I use each for
 
-**Research before you plan.** [`llm-wiki`](plugins/llm-wiki/) bootstraps an LLM-maintained wiki for the project and indexes it with [QMD](https://github.com/tobilu/qmd) so the next agent that touches the codebase reads what the last one learned. The pattern is Karpathy's — the wiki is the agent's memory across sessions, not yours.
+**Customer-facing writing.** [`agent-writing`](plugins/agent-writing/) is what I reach for when the output is going to be read by humans who'll notice if the prose is flat. Posts, customer-facing copy, anything where voice matters. It runs three voices as rivals: a journalist who investigates and grounds, a writer who drafts, and an editor who cuts. The writer and editor never call each other — the cycle is external to both — because cooperation creates sycophancy. A single agent that drafts and then polishes its own work will praise the parts it just wrote.
 
-**See what the agent built.** [`screenote`](plugins/screenote/) gives the agent eyes. It captures the rendered page, uploads it to [Screenote](https://screenote.ai) for human annotation, and pulls the comments back into the agent's context. Visual ground truth for UI work, instead of guessing from the DOM.
+**SEO content.** [`agent-seo`](plugins/agent-seo/) is my long-form pipeline for search — keyword research, drafting, humanizing AI-shaped prose, fact-checking, and optimizing against my existing site. `/seo:fact-check` ships as a first-class command because I want fact-checking inside the workflow, not bolted on after the article's already convinced me.
 
-**Turn research into long-form.** [`agent-seo`](plugins/agent-seo/) is the SEO pipeline — research a topic, draft the article, humanize the prose, fact-check the claims, and optimize against the existing site. It ships `/seo:fact-check` as a first-class command because the worldview running through this whole repo doesn't tolerate ungrounded prose.
+**UI work.** [`screenote`](plugins/screenote/) gives the agent eyes. It captures the rendered page, uploads it to [Screenote](https://screenote.ai) for human annotation, and pulls the comments back into the agent's context. I use it when the agent needs to see what it just built, instead of guessing from the DOM.
 
-**Hold the writing accountable.** [`agent-writing`](plugins/agent-writing/) runs three voices as rivals: a journalist who investigates and grounds, a writer who drafts, and an editor who cuts. The writer and editor never call each other — the cycle is external to both — because cooperation creates sycophancy. A single agent that drafts and then polishes its own work will praise the parts it just wrote.
-
-The connections are real, not aspirational. `agent-writing`'s journalist explicitly looks for `qmd` and uses `llm-wiki`'s index when it's available. `llm-wiki:wiki-plan` delegates to Compound Engineering when that plugin is present. The plugins know about each other.
+**Project documentation.** [`llm-wiki`](plugins/llm-wiki/) bootstraps and maintains an LLM-readable wiki for the project, indexed by [QMD](https://github.com/tobilu/qmd). I use it to keep what one agent learned available to the next one, across sessions and across machines. The pattern is Karpathy's — the wiki is the agent's memory, not mine.
 
 ## Install
 
@@ -22,10 +20,10 @@ The connections are real, not aspirational. `agent-writing`'s journalist explici
 
 ```text
 /plugin marketplace add ivankuznetsov/agent-plugins
-/plugin install llm-wiki@aikuznetsov-marketplace
-/plugin install screenote@aikuznetsov-marketplace
-/plugin install agent-seo@aikuznetsov-marketplace
 /plugin install agent-writing@aikuznetsov-marketplace
+/plugin install agent-seo@aikuznetsov-marketplace
+/plugin install screenote@aikuznetsov-marketplace
+/plugin install llm-wiki@aikuznetsov-marketplace
 ```
 
 ### Codex
@@ -41,17 +39,17 @@ Open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install the pl
 ```text
 .claude-plugin/marketplace.json     # Claude Code marketplace catalog
 .agents/plugins/marketplace.json    # Codex marketplace catalog
-plugins/llm-wiki                    # vendored plugin files
-plugins/screenote                   # vendored plugin files
-plugins/agent-seo                   # vendored plugin files
 plugins/agent-writing               # vendored plugin files
+plugins/agent-seo                   # vendored plugin files
+plugins/screenote                   # vendored plugin files
+plugins/llm-wiki                    # vendored plugin files
 ```
 
-Plugins are vendored as plain directories, not submodules. Codex reads marketplace-local plugin paths from a normal clone and doesn't initialize submodules before loading plugin details, so vendoring is what makes a single repo work for both agents. Some plugins (`llm-wiki`, `screenote`, `agent-seo`) have upstream source repositories; `agent-writing` is born here.
+Plugins are vendored as plain directories, not submodules. Codex reads marketplace-local plugin paths from a normal clone and doesn't initialize submodules first, so vendoring is what makes a single repo work for both agents. `llm-wiki`, `screenote`, and `agent-seo` have upstream source repositories; `agent-writing` is born here.
 
 ## Development
 
-When refreshing a plugin from an upstream source repo, copy the contents into the matching `plugins/<name>` directory without the nested `.git` metadata, then update both marketplace catalogs if the plugin metadata changed.
+When refreshing a plugin from an upstream source repo, I copy the contents into the matching `plugins/<name>` directory without the nested `.git` metadata, then update both marketplace catalogs if the plugin metadata changed.
 
 Validate the catalogs after any edit:
 
@@ -60,8 +58,10 @@ jq . .claude-plugin/marketplace.json
 jq . .agents/plugins/marketplace.json
 ```
 
-## The worldview
+## The through-line
 
-One principle runs through all four plugins: **ground claims before you produce them.** `llm-wiki` does not invent documentation — it reads source files and records uncertainty in `wiki/gaps.md`. `agent-writing`'s journalist never writes the story they cannot ground; every citation in a brief is verified against reality before the brief is final. `agent-seo` runs fact-check as a workflow step, not a final polish. `screenote` exists because pixels are easier to lie about than to look at.
+One principle shows up across all four plugins: **ground claims before producing them.** `llm-wiki` doesn't invent documentation — it reads source files and records uncertainty in `wiki/gaps.md`. `agent-writing`'s journalist never writes the story they cannot ground; every citation in a brief is verified against reality before the brief is final. `agent-seo` runs fact-check as a workflow step, not a final polish. `screenote` exists because pixels are easier to lie about than to look at.
 
-That is what makes these four a kit, and not just four installs.
+That's the style I want my agents to work in. The plugins are the implementation.
+
+— [Ivan Kuznetsov](https://ikuznetsov.com)
