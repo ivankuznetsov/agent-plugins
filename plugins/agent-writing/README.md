@@ -45,6 +45,7 @@ Use Agent Writing to run the writer-editor cycle on ./writing/drafts/screenote-a
 | --- | --- |
 | `/write:journalist <topic>` | Investigate a topic across the project's data; return a grounded brief or an honest "couldn't ground this" note. |
 | `/write:writer <brief-or-notes>` | Draft from a brief. With `--review <path>`, rewrite a previous draft against an editor's review. |
+| `/write:writer-ru <brief-or-notes>` | Same as `/write:writer`, but produces in the working-engineer's-notebook voice in Russian. Use when the brief or audience is Russian. |
 | `/write:editor <draft-path>` | Read the draft as an adversary. Return cuts, questions, push-back, and a verdict: `ready`, `needs another pass`, or `start over`. |
 | `/write:full <topic>` | Run the full pipeline: journalist gathers the brief, then the writer and editor cycle until `ready` or `--max-rounds` (default 5). |
 
