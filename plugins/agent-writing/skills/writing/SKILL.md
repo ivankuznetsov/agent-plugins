@@ -41,7 +41,8 @@ Do not promise Codex-native `/write:*` slash commands. Those command names are t
 | Draft from a brief (default voice) | `/write:writer [brief]` | `./writing/drafts/<slug>-<date>-v1.md` |
 | Draft from a brief (Russian voice) | `/write:writer-ru [brief]` | `./writing/drafts/<slug>-<date>-v1.md` (with `lang: ru`) |
 | Rewrite against an editor's review | `/write:writer [brief] --review [review-path]` (or `/write:writer-ru` for Russian) | `./writing/drafts/<slug>-<date>-v<N+1>.md` |
-| Review a draft as an adversary | `/write:editor [draft-path]` | `./writing/reviews/<slug>-<date>-v<N>.md` (verdict: `ready` / `needs another pass` / `start over`) |
+| Review a draft as an adversary (default) | `/write:editor [draft-path]` | `./writing/reviews/<slug>-<date>-v<N>.md` (verdict: `ready` / `needs another pass` / `start over`) |
+| Review a draft as an adversary (Russian voice) | `/write:editor-ru [draft-path]` | `./writing/reviews/<slug>-<date>-v<N>.md` with `lang: ru` (same verdicts; voice drift counts as a cut) |
 | Run the full pipeline | `/write:full [topic]` | Brief, versioned drafts, versioned reviews; loop ends on `ready` or `--max-rounds` (default 5) |
 
 ## Role Summaries
@@ -49,7 +50,8 @@ Do not promise Codex-native `/write:*` slash commands. Those command names are t
 - **Journalist** — `agents/journalist.md`. Reads the project's data the way a working tech journalist would. Files a grounded brief or an honest "I couldn't ground this" note. Verifies every citation against reality before finalizing. The source of truth the writer and editor will fight over.
 - **Writer** *(Generator)* — `agents/writer.md`. Opens with the user's verbatim framing. Thinks in stories. Varies sentence length deliberately. Reads the draft aloud before returning it. Defends the draft against the editor on the merits, takes the cuts they cannot defend.
 - **Writer — Russian** *(Generator, RU voice)* — `agents/writer-ru.md`. Same Generator role as the default writer; same rivalry with the editor. Replaces only the voice: a working engineer's notebook in Russian. Bilingual at the word level (loanwords and native idioms share the same paragraph), monolingual at the syntactic level (no English-rhythm constructions imported into Russian). Use when the brief, sources, or audience is Russian-speaking.
-- **Editor** *(Adversary)* — `agents/editor.md`. Reads the draft as a skeptic. Cuts what doesn't earn its place. Questions claims. Pushes back on the angle. Does not praise. Does not rewrite for the writer. Returns one of three verdicts: `ready`, `needs another pass`, or `start over`. Not currently language-aware — for Russian drafts, voice drift can still slip through unless you ask for a focused pass.
+- **Editor** *(Adversary)* — `agents/editor.md`. Reads the draft as a skeptic. Cuts what doesn't earn its place. Questions claims. Pushes back on the angle. Does not praise. Does not rewrite for the writer. Returns one of three verdicts: `ready`, `needs another pass`, or `start over`.
+- **Editor — Russian** *(Adversary, RU voice)* — `agents/editor-ru.md`. Same adversarial role as the default editor; same verdict semantics. Adds a second test: does the draft sound like a working engineer's notebook in Russian, or has it drifted into translated journalism? Voice drift counts as a cut. Use to review drafts produced by `/write:writer-ru`, or as a focused follow-up pass when a default-editor review came back `ready` but the Russian still sounds translated.
 
 ## Investigate Workflow
 

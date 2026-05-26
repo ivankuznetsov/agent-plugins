@@ -47,6 +47,7 @@ Use Agent Writing to run the writer-editor cycle on ./writing/drafts/screenote-a
 | `/write:writer <brief-or-notes>` | Draft from a brief. With `--review <path>`, rewrite a previous draft against an editor's review. |
 | `/write:writer-ru <brief-or-notes>` | Same as `/write:writer`, but produces in the working-engineer's-notebook voice in Russian. Use when the brief or audience is Russian. |
 | `/write:editor <draft-path>` | Read the draft as an adversary. Return cuts, questions, push-back, and a verdict: `ready`, `needs another pass`, or `start over`. |
+| `/write:editor-ru <draft-path>` | Same as `/write:editor`, but holds the Russian draft to the working-engineer's-notebook voice as well as to the structural bar. Voice drift (calques, translated rhythms, narrator establishing shots) counts as a cut. |
 | `/write:full <topic>` | Run the full pipeline: journalist gathers the brief, then the writer and editor cycle until `ready` or `--max-rounds` (default 5). |
 
 ## The write-edit cycle
