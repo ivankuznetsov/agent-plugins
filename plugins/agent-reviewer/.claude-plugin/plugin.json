@@ -1,0 +1,22 @@
+{
+  "name": "agent-reviewer",
+  "version": "0.2.0",
+  "description": "Clone your team's best code reviewers. Reads their PR review history in context, extracts a persona per reviewer — what they care about, what they catch, how they sound — and runs them as a code-review panel. Personas, not rule lists.",
+  "author": {
+    "name": "Ivan Kuznetsov",
+    "url": "https://github.com/ivankuznetsov"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+  "repository": "https://github.com/ivankuznetsov/agent-plugins",
+  "keywords": [
+    "claude-skill",
+    "claude-code",
+    "codex-plugin",
+    "codex",
+    "code-review",
+    "reviewer-persona",
+    "pull-request",
+    "team-of-rivals"
+  ]
+}
