@@ -1,0 +1,650 @@
+[
+  {
+    "pr": 56471,
+    "repo": "rails",
+    "title": "Override inspect in Combined, Env & Encrypted Configurations",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -130,7 +130,14 @@ def config\n       @config ||= deep_symbolize_keys(deserialize(read))\n     end\n \n+    # Returns an array of all configuration keys.\n+    def keys\n+      config.keys\n+    end",
+    "body": "Don't think we need to expose this as a public method. Can just do it in the inspect.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 56471,
+    "repo": "rails",
+    "title": "Override inspect in Combined, Env & Encrypted Configurations",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -130,7 +130,14 @@ def config\n       @config ||= deep_symbolize_keys(deserialize(read))\n     end\n \n+    # Returns an array of all configuration keys.\n+    def keys\n+      config.keys\n+    end\n+\n     def inspect # :nodoc:\n+      \"#<#{self.class.name}:#{'%#016x' % (object_id << 1)} keys=#{keys.inspect}>\"\n+    rescue\n       \"#<#{self.class.name}:#{'%#016x' % (object_id << 1)}>\"",
+    "body": "What are we rescuing?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 56471,
+    "repo": "rails",
+    "title": "Override inspect in Combined, Env & Encrypted Configurations",
+    "path": "activesupport/CHANGELOG.md",
+    "diff_hunk": "@@ -1,22 +1,30 @@\n-*   Override `inspect` methods in `CombinedConfiguration` and `EnvConfiguration` to prevent\n-    sensitive ENV variables and credentials from being exposed in console or logs.\n-    This matches the existing security behavior of `EncryptedConfiguration`.\n+*   Override `inspect` methods in `CombinedConfiguration`, `EnvConfiguration`, and\n+    `EncryptedConfiguration` to show key names while hiding sensitive values. This prevents\n+    accidental exposure of secrets in console or logs while still providing useful debugging\n+    information about what configuration keys are available.\n \n     Before:\n \n     ```ruby\n+    Rails.app.creds\n     #<ActiveSupport::CombinedConfiguration:0x0000000122b45870\n      @configurations=[\n        #<ActiveSupport::EnvConfiguration:0x0000000122b465b8\n-        @envs={\"SECRET\" => \"SECRET_MSG\", ... }>,\n+        @envs={\"SOME_SECRET\" =>  \"secret_value\", ...}>,\n        #<ActiveSupport::EncryptedConfiguration:0x00000000007af0>]>\n     ```\n \n     After:\n \n     ```ruby\n     Rails.app.creds\n-    => #<ActiveSupport::CombinedConfiguration:0x0000000122b45870>\n+    #<ActiveSupport::CombinedConfiguration:0x00000000006490 keys=[\"RAILS_ENV\", \"SOME_SECRET\", ..., :secret_key_base, :stripe_webhook_secret]>",
+    "body": "We should be converting all these keys to symbols, since that's how you're going to access them.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 56471,
+    "repo": "rails",
+    "title": "Override inspect in Combined, Env & Encrypted Configurations",
+    "path": "activesupport/lib/active_support/combined_configuration.rb",
+    "diff_hunk": "@@ -50,5 +50,16 @@ def option(*key, default: nil)\n     def reload\n       @configurations.each { |config| config.try(:reload) }\n     end\n+\n+    def inspect # :nodoc:\n+      keys = @configurations.flat_map { |config|\n+        if config.is_a?(ActiveSupport::EnvConfiguration)\n+          config.instance_variable_get(:@envs).keys.map { |k| k.downcase.to_sym }\n+        elsif config.is_a?(ActiveSupport::EncryptedConfiguration)\n+          config.config.keys\n+        end\n+      }.compact.uniq",
+    "body": "Hmm, this is indeed rather messy. Probably fine to add #keys back just to provide this in a cleaner manner, so you can do `@configurations.flat_map(&:keys).uniq`.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 56471,
+    "repo": "rails",
+    "title": "Override inspect in Combined, Env & Encrypted Configurations",
+    "path": "activesupport/CHANGELOG.md",
+    "diff_hunk": "@@ -1,3 +1,34 @@\n+*   Override `inspect` methods in `CombinedConfiguration`, `EnvConfiguration`, and\n+    `EncryptedConfiguration` to show key names while hiding sensitive values. This prevents\n+    accidental exposure of secrets in console or logs while still providing useful debugging\n+    information about what configuration keys are available.\n+\n+    Before:\n+\n+    ```ruby\n+    Rails.app.creds\n+    #<ActiveSupport::CombinedConfiguration:0x0000000122b45870\n+     @configurations=[\n+       #<ActiveSupport::EnvConfiguration:0x0000000122b465b8\n+        @envs={\"SOME_SECRET\" =>  \"secret_value\", ...}>,\n+       #<ActiveSupport::EncryptedConfiguration:0x00000000007af0>]>\n+    ```\n+\n+    After:\n+\n+    ```ruby\n+    Rails.app.creds\n+    #<ActiveSupport::CombinedConfiguration:0x00000000006490 keys=[:rails_env, :some_secret, ..., :secret_key_base, :stripe_webhook_secret]>\n+\n+    Rails.app.credentials\n+    #<ActiveSupport::EncryptedConfiguration:0x00000000008cd0 keys=[:secret_key_base, :stripe_webhook_secret]>\n+\n+    Rails.app.envs\n+    #<ActiveSupport::EnvConfiguration:0x0000000000a6a0 keys=[:rails_env, :some_secret, :path, :home, ...]>\n+    ```\n+\n+    *Emmanuel Hayford*",
+    "body": "Since this is an unreleased feature, we don't need a CHANGELOG entry. But we can amend the other entries to note that these new configuration objects are inspect safe.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 56471,
+    "repo": "rails",
+    "title": "Override inspect in Combined, Env & Encrypted Configurations",
+    "path": "activesupport/lib/active_support/env_configuration.rb",
+    "diff_hunk": "@@ -53,6 +53,25 @@ def reload\n       @envs = ENV.to_h\n     end\n \n+    # Returns an array of symbolized keys from the environment variables.\n+    #\n+    # Examples:\n+    #\n+    #   ENV[\"DB_HOST\"] = \"localhost\"\n+    #   ENV[\"DATABASE__PORT\"] = \"5432\"\n+    #\n+    #   env_config = ActiveSupport::EnvConfiguration.new\n+    #   env_config.keys\n+    #   # => [:db_host, :database__port, ...]",
+    "body": "`:database__port` is not a valid key, actually. The keys are nested, so it would need to be presented as `database: [ :port ]` or the like. Not entirely trivial, but we can't present keys that aren't correct either.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 56471,
+    "repo": "rails",
+    "title": "Override inspect in Combined, Env & Encrypted Configurations",
+    "path": "activesupport/lib/active_support/env_configuration.rb",
+    "diff_hunk": "@@ -53,6 +53,25 @@ def reload\n       @envs = ENV.to_h\n     end\n \n+    # Returns an array of symbolized keys from the environment variables.\n+    #\n+    # Examples:\n+    #\n+    #   ENV[\"DB_HOST\"] = \"localhost\"\n+    #   ENV[\"DATABASE__PORT\"] = \"5432\"\n+    #\n+    #   env_config = ActiveSupport::EnvConfiguration.new\n+    #   env_config.keys\n+    #   # => [:db_host, :database__port, ...]\n+    #\n+    def keys\n+      @envs.keys.map { |k| k.downcase.to_sym }\n+    end\n+\n+  def inspect # :nodoc:\n+    \"#<#{self.class.name}:#{'%#016x' % (object_id << 1)} keys=#{keys.inspect}>\"\n+  end",
+    "body": "Misindented.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 56430,
+    "repo": "rails",
+    "title": "Fix & standardize comments for CombinedConfiguration",
+    "path": "activesupport/lib/active_support/combined_configuration.rb",
+    "diff_hunk": "@@ -13,7 +13,8 @@ def initialize(*configurations)\n       @configurations = configurations\n     end\n \n-    # Find singular or nested keys across all backends. If no backend holds the key, it raises +KeyError+.\n+    # Find singular or nested keys across all backends.\n+    # Raises +KeyError+ if no backend holds the key or if the value is nil.",
+    "body": "I don't think nil should be respected, no. We should search through all the configurations for a not-nil value. If we can't find one, we raise MissingKey.",
+    "in_reply_to": 2640480995
+  },
+  {
+    "pr": 56430,
+    "repo": "rails",
+    "title": "Fix & standardize comments for CombinedConfiguration",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -58,13 +58,13 @@ def initialize(config_path:, key_path:, env_key:, raise_if_missing_key:)\n       @options = nil\n     end\n \n-    # Find the referenced key\n-    # Raises +KeyError+ if not found.\n+    # Find singular or nested keys.\n+    # Raises +KeyError+ if not found or nil.\n     #\n     # Examples:\n     #\n-    #   require(:db_host)         # => ENV.fetch(\"DB_HOST\")\n-    #   require(:database, :host) # => ENV.fetch(\"DATABASE__HOST\")\n+    #   require(:db_host)         # => dig(:db_host) || raise(KeyError)\n+    #   require(:database, :host) # => dig(:database, :host) || raise(KeyError)",
+    "body": "Yes, that's better.",
+    "in_reply_to": 2640452939
+  },
+  {
+    "pr": 56430,
+    "repo": "rails",
+    "title": "Fix & standardize comments for CombinedConfiguration",
+    "path": "activesupport/lib/active_support/combined_configuration.rb",
+    "diff_hunk": "@@ -13,7 +13,8 @@ def initialize(*configurations)\n       @configurations = configurations\n     end\n \n-    # Find singular or nested keys across all backends. If no backend holds the key, it raises +KeyError+.\n+    # Find singular or nested keys across all backends.\n+    # Raises +KeyError+ if no backend holds the key or if the value is nil.",
+    "body": "When you do #require, we should blow up if nil or blank 👍",
+    "in_reply_to": 2640480995
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/env_configuration.rb",
+    "diff_hunk": "@@ -0,0 +1,58 @@\n+# frozen_string_literal: true\n+\n+# require \"active_support/core_ext/module/delegation\"\n+\n+module ActiveSupport\n+  # Provide a better interface for accessing configuration options stored in ENV.\n+  # Keys are accepted as symbols and turned into upcased strings. Nesting is provided by double underscores.\n+  #\n+  # This interface mirrors what is used for +ActiveSupport::EncryptedConfiguration+ and thus allows both\n+  # to serve as interchangeable backends for +Rails.app.credentials+.\n+  #\n+  # Examples:\n+  #\n+  #   config = EnvConfiguration.new\n+  #   config[:db_host] # => ENV[\"DB_HOST\"]\n+  #   config.dig(:database, :host) # => ENV[\"DATABASE__HOST\"]\n+  class EnvConfiguration\n+    # Combined interface for #[] and #dig. Examples:\n+    #\n+    #   creds.grab(:db_host) # => creds[:db_host]\n+    #   creds.grab(:database, :host) # => creds.dig(:database, :host)\n+    def grab(*keys)\n+      if keys.many?\n+        dig(*keys)\n+      else\n+        self[keys.first]\n+      end\n+    end\n+\n+    # Find a upcased string-version of the +key+ in ENV.\n+    #\n+    # Example:\n+    #\n+    #   config[:db_host] # => ENV[\"DB_HOST\"]\n+    def [](key)\n+      lookup envify(key)\n+    end\n+\n+    # Find a upcased and double-underscored-joined string-version of the +keys+ in ENV.\n+    #\n+    # Examples:\n+    #\n+    #   config.dig(:db_host) # => ENV[\"DB_HOST\"]\n+    #   config.dig(:database, :host) # => ENV[\"DATABASE__HOST\"]\n+    def dig(*keys)\n+      lookup(Array(keys).collect { |key| envify(key) }.join(\"__\"))\n+    end\n+\n+    private\n+      def lookup(env_key)\n+        ENV[env_key]",
+    "body": "I like that idea. Think it's totally fine to cache upfront too with a #reload. This is almost always about having these values set at boot time anyway.",
+    "in_reply_to": 2634055664
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/env_configuration.rb",
+    "diff_hunk": "@@ -0,0 +1,58 @@\n+# frozen_string_literal: true\n+\n+# require \"active_support/core_ext/module/delegation\"\n+\n+module ActiveSupport\n+  # Provide a better interface for accessing configuration options stored in ENV.\n+  # Keys are accepted as symbols and turned into upcased strings. Nesting is provided by double underscores.\n+  #\n+  # This interface mirrors what is used for +ActiveSupport::EncryptedConfiguration+ and thus allows both\n+  # to serve as interchangeable backends for +Rails.app.credentials+.\n+  #\n+  # Examples:\n+  #\n+  #   config = EnvConfiguration.new\n+  #   config[:db_host] # => ENV[\"DB_HOST\"]\n+  #   config.dig(:database, :host) # => ENV[\"DATABASE__HOST\"]\n+  class EnvConfiguration\n+    # Combined interface for #[] and #dig. Examples:\n+    #\n+    #   creds.grab(:db_host) # => creds[:db_host]\n+    #   creds.grab(:database, :host) # => creds.dig(:database, :host)\n+    def grab(*keys)\n+      if keys.many?\n+        dig(*keys)\n+      else\n+        self[keys.first]\n+      end\n+    end",
+    "body": "Doh. Yeah, we don't need grab at all.",
+    "in_reply_to": 2634057671
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/combined_configuration.rb",
+    "diff_hunk": "@@ -0,0 +1,45 @@\n+# frozen_string_literal: true\n+\n+require \"active_support/core_ext/enumerable\"\n+\n+module ActiveSupport\n+  # Allows for configuration keys to be pulled from multiple backends. Keys are pulled in first-found order from\n+  # the configuration backends that the combined configuration has been initialized with.\n+  #\n+  # This is used by Rails to offer a unified API for fetching credentials from both ENV and the encrypted file.\n+  class CombinedConfiguration\n+    def initialize(*configurations)\n+      @configurations = configurations\n+    end\n+\n+    # Combined interface for #[] and #dig. Examples:\n+    #\n+    #   creds.grab(:db_host) # => creds[:db_host]\n+    #   creds.grab(:database, :host) # => creds.dig(:database, :host)\n+    def grab(*keys)",
+    "body": "Yes, we should. I was thinking it was either dig for multiple or [] for single, but of course you can just use dig for both.",
+    "in_reply_to": 2634060965
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/env_configuration.rb",
+    "diff_hunk": "@@ -0,0 +1,58 @@\n+# frozen_string_literal: true\n+\n+# require \"active_support/core_ext/module/delegation\"\n+\n+module ActiveSupport\n+  # Provide a better interface for accessing configuration options stored in ENV.\n+  # Keys are accepted as symbols and turned into upcased strings. Nesting is provided by double underscores.\n+  #\n+  # This interface mirrors what is used for +ActiveSupport::EncryptedConfiguration+ and thus allows both\n+  # to serve as interchangeable backends for +Rails.app.credentials+.\n+  #\n+  # Examples:\n+  #\n+  #   config = EnvConfiguration.new\n+  #   config[:db_host] # => ENV[\"DB_HOST\"]\n+  #   config.dig(:database, :host) # => ENV[\"DATABASE__HOST\"]\n+  class EnvConfiguration\n+    # Combined interface for #[] and #dig. Examples:\n+    #\n+    #   creds.grab(:db_host) # => creds[:db_host]\n+    #   creds.grab(:database, :host) # => creds.dig(:database, :host)\n+    def grab(*keys)\n+      if keys.many?\n+        dig(*keys)\n+      else\n+        self[keys.first]\n+      end\n+    end\n+\n+    # Find a upcased string-version of the +key+ in ENV.\n+    #\n+    # Example:\n+    #\n+    #   config[:db_host] # => ENV[\"DB_HOST\"]\n+    def [](key)\n+      lookup envify(key)\n+    end\n+\n+    # Find a upcased and double-underscored-joined string-version of the +keys+ in ENV.\n+    #\n+    # Examples:\n+    #\n+    #   config.dig(:db_host) # => ENV[\"DB_HOST\"]\n+    #   config.dig(:database, :host) # => ENV[\"DATABASE__HOST\"]\n+    def dig(*keys)\n+      lookup(Array(keys).collect { |key| envify(key) }.join(\"__\"))\n+    end\n+\n+    private\n+      def lookup(env_key)\n+        ENV[env_key]",
+    "body": "Implemented that in [116e36b](https://github.com/rails/rails/pull/56404/commits/116e36b159e7a95fa27411dba00b58f93005459a).",
+    "in_reply_to": 2634055664
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -58,6 +58,42 @@ def initialize(config_path:, key_path:, env_key:, raise_if_missing_key:)\n       @options = nil\n     end\n \n+    # Find the referenced key\n+    # Raises +KeyError+ if not found.\n+    #\n+    # Examples:\n+    #\n+    #   require(:db_host)         # => ENV.fetch(\"DB_HOST\")\n+    #   require(:database, :host) # => ENV.fetch(\"DATABASE__HOST\")\n+    def require(*key)\n+      dig(*key) || raise(KeyError)\n+    end\n+\n+    # Find a upcased and double-underscored-joined string-version of the +keys+ in ENV.\n+    # Returns nil if the key isn't found or the value of default when passed If default is\n+    # a block, it's called first.\n+    #\n+    # Examples:\n+    #\n+    #   config.option(:db_host)                                    # => ENV[\"DB_HOST\"]\n+    #   config.option(:database, :host)                            # => ENV[\"DATABASE__HOST\"]\n+    #   config.option(:database, :host, default: \"missing\")        # => ENV.fetch(\"DATABASE__HOST\", \"missing\")\n+    #   config.option(:database, :host, default: -> { \"missing\" }) # => ENV.fetch(\"DATABASE__HOST\", default.call)",
+    "body": "I considered this, as it would match fetch, but never liked the unexplained block. And since we're doing a totally new API here with require/option, I prefer to be explicit about the default. Like we do in other places, like attributes.",
+    "in_reply_to": 2636918318
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -58,6 +58,42 @@ def initialize(config_path:, key_path:, env_key:, raise_if_missing_key:)\n       @options = nil\n     end\n \n+    # Find the referenced key\n+    # Raises +KeyError+ if not found.\n+    #\n+    # Examples:\n+    #\n+    #   require(:db_host)         # => ENV.fetch(\"DB_HOST\")\n+    #   require(:database, :host) # => ENV.fetch(\"DATABASE__HOST\")\n+    def require(*key)\n+      dig(*key) || raise(KeyError)\n+    end\n+\n+    # Find a upcased and double-underscored-joined string-version of the +keys+ in ENV.\n+    # Returns nil if the key isn't found or the value of default when passed If default is\n+    # a block, it's called first.\n+    #\n+    # Examples:\n+    #\n+    #   config.option(:db_host)                                    # => ENV[\"DB_HOST\"]\n+    #   config.option(:database, :host)                            # => ENV[\"DATABASE__HOST\"]\n+    #   config.option(:database, :host, default: \"missing\")        # => ENV.fetch(\"DATABASE__HOST\", \"missing\")\n+    #   config.option(:database, :host, default: -> { \"missing\" }) # => ENV.fetch(\"DATABASE__HOST\", default.call)\n+    def option(*keys, default: nil)\n+      if default.respond_to?(:call)\n+        dig(*keys) || default.call\n+      elsif default\n+        dig(*keys) || default",
+    "body": "Good point.",
+    "in_reply_to": 2636918423
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -58,6 +58,42 @@ def initialize(config_path:, key_path:, env_key:, raise_if_missing_key:)\n       @options = nil\n     end\n \n+    # Find the referenced key\n+    # Raises +KeyError+ if not found.\n+    #\n+    # Examples:\n+    #\n+    #   require(:db_host)         # => ENV.fetch(\"DB_HOST\")\n+    #   require(:database, :host) # => ENV.fetch(\"DATABASE__HOST\")\n+    def require(*key)\n+      dig(*key) || raise(KeyError)\n+    end\n+\n+    # Find a upcased and double-underscored-joined string-version of the +keys+ in ENV.\n+    # Returns nil if the key isn't found or the value of default when passed If default is\n+    # a block, it's called first.\n+    #\n+    # Examples:\n+    #\n+    #   config.option(:db_host)                                    # => ENV[\"DB_HOST\"]\n+    #   config.option(:database, :host)                            # => ENV[\"DATABASE__HOST\"]\n+    #   config.option(:database, :host, default: \"missing\")        # => ENV.fetch(\"DATABASE__HOST\", \"missing\")\n+    #   config.option(:database, :host, default: -> { \"missing\" }) # => ENV.fetch(\"DATABASE__HOST\", default.call)\n+    def option(*keys, default: nil)\n+      if default.respond_to?(:call)\n+        dig(*keys) || default.call\n+      elsif default\n+        dig(*keys) || default",
+    "body": "Fixed in 82b6e09c556b83f835e9fc69cbcc4155eb1e66d8.",
+    "in_reply_to": 2636918423
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/combined_configuration.rb",
+    "diff_hunk": "@@ -0,0 +1,56 @@\n+# frozen_string_literal: true\n+\n+require \"active_support/core_ext/enumerable\"\n+\n+module ActiveSupport\n+  # Allows for configuration keys to be pulled from multiple backends. Keys are pulled in first-found order from\n+  # the configuration backends that the combined configuration has been initialized with.\n+  #\n+  # This is used by Rails to offer a unified API for fetching credentials from both ENV and the encrypted file.\n+  # You can access this through +Rails.app.creds+ within a Rails application.\n+  class CombinedConfiguration\n+    def initialize(*configurations)\n+      @configurations = configurations",
+    "body": "That's a good idea, but I think in most cases, you'd want this inserted after the ENVs lookups. So you can still overwrite through that. So I've added `Rails.app.creds=`, which can take a custom `ActiveSupport::CombinedConfiguration` instance. I've also split out `Rails.app.envs`, so you could do:\r\n\r\n```ruby\r\nRails.app.creds = ActiveSupport::CombinedConfiguration.new \\\r\n  Rails.app.envs, EjsonConfiguration.new\r\n```",
+    "in_reply_to": 2636917636
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -58,6 +58,42 @@ def initialize(config_path:, key_path:, env_key:, raise_if_missing_key:)\n       @options = nil\n     end\n \n+    # Find the referenced key\n+    # Raises +KeyError+ if not found.\n+    #\n+    # Examples:\n+    #\n+    #   require(:db_host)         # => ENV.fetch(\"DB_HOST\")\n+    #   require(:database, :host) # => ENV.fetch(\"DATABASE__HOST\")\n+    def require(*key)\n+      dig(*key) || raise(KeyError)",
+    "body": "Ah yes. What an awkward implementation that gives, though. Wish Ruby had an || like operator for this purpose. |? or whatever.",
+    "in_reply_to": 2637211298
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -58,6 +59,48 @@ def initialize(config_path:, key_path:, env_key:, raise_if_missing_key:)\n       @options = nil\n     end\n \n+    # Find the referenced key\n+    # Raises +KeyError+ if not found.\n+    #\n+    # Examples:\n+    #\n+    #   require(:db_host)         # => ENV.fetch(\"DB_HOST\")\n+    #   require(:database, :host) # => ENV.fetch(\"DATABASE__HOST\")\n+    def require(*key)\n+      value = dig(*key)\n+\n+      if value.defined?\n+        value\n+      else\n+        raise(KeyError)\n+      end",
+    "body": "I've wanted this for a long time. Just like we have present/blank. Every existential predicate should come in a positive and a negative. This goes right to Ruby's if/unless insight. So this is just riding along with this PR, because it highlighted it.\r\n\r\nAlso, I really dislike guard statements inside methods that produce multi exit wounds.",
+    "in_reply_to": 2637249911
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -58,6 +59,48 @@ def initialize(config_path:, key_path:, env_key:, raise_if_missing_key:)\n       @options = nil\n     end\n \n+    # Find the referenced key\n+    # Raises +KeyError+ if not found.\n+    #\n+    # Examples:\n+    #\n+    #   require(:db_host)         # => ENV.fetch(\"DB_HOST\")\n+    #   require(:database, :host) # => ENV.fetch(\"DATABASE__HOST\")\n+    def require(*key)\n+      value = dig(*key)\n+\n+      if value.defined?\n+        value\n+      else\n+        raise(KeyError)\n+      end",
+    "body": "But would entertain a different method name than `defined?` if you have a great one.",
+    "in_reply_to": 2637249911
+  },
+  {
+    "pr": 56404,
+    "repo": "rails",
+    "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+    "path": "activesupport/lib/active_support/encrypted_configuration.rb",
+    "diff_hunk": "@@ -58,6 +59,48 @@ def initialize(config_path:, key_path:, env_key:, raise_if_missing_key:)\n       @options = nil\n     end\n \n+    # Find the referenced key\n+    # Raises +KeyError+ if not found.\n+    #\n+    # Examples:\n+    #\n+    #   require(:db_host)         # => ENV.fetch(\"DB_HOST\")\n+    #   require(:database, :host) # => ENV.fetch(\"DATABASE__HOST\")\n+    def require(*key)\n+      value = dig(*key)\n+\n+      if value.defined?\n+        value\n+      else\n+        raise(KeyError)\n+      end",
+    "body": "Actually, fair point that we already have Kernel#defined? with different semantics. I'll yank and find a better name before reintroducing in a separate PR (maybe #set?).",
+    "in_reply_to": 2637249911
+  },
+  {
+    "pr": 56049,
+    "repo": "rails",
+    "title": "Add a summary report at the end of `ContinousIntegration.run`",
+    "path": "activesupport/lib/active_support/continuous_integration.rb",
+    "diff_hunk": "@@ -123,13 +123,25 @@ def report(title, &block)\n         echo \"\\n✅ #{title} passed in #{elapsed}\", type: :success\n       else\n         echo \"\\n❌ #{title} failed in #{elapsed}\", type: :error\n+        ci.failure_summary(title)\n       end\n \n       results.concat ci.results\n     ensure\n       Signal.trap(\"INT\", \"-\")\n     end\n \n+    # :nodoc:\n+    def failure_summary(title)\n+      return if success? || results.size < 2",
+    "body": "We're already on the failure branch of the former conditional, so think we can drop `success?` and I also think we should probably extract `results.size < 2` as `multiple_steps?` and put that into the caller, so it's `ci.failure_summary(title) if multiple_steps?`, so it's clear where the presentation is being made whether it needs a summary. ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 56049,
+    "repo": "rails",
+    "title": "Add a summary report at the end of `ContinousIntegration.run`",
+    "path": "activesupport/lib/active_support/continuous_integration.rb",
+    "diff_hunk": "@@ -123,13 +123,25 @@ def report(title, &block)\n         echo \"\\n✅ #{title} passed in #{elapsed}\", type: :success\n       else\n         echo \"\\n❌ #{title} failed in #{elapsed}\", type: :error\n+        ci.failure_summary(title)",
+    "body": "Actually, I would inline the production of the output here like this:\r\n\r\n```ruby\r\ndef report(title, &block)\r\n  Signal.trap(\"INT\") { abort colorize(:error, \"\\n❌ #{title} interrupted\") }\r\n\r\n  ci = self.class.new\r\n  elapsed = timing { ci.instance_eval(&block) }\r\n\r\n  if ci.success?\r\n    echo \"\\n✅ #{title} passed in #{elapsed}\", type: :success\r\n  else\r\n    echo \"\\n❌ #{title} failed in #{elapsed}\", type: :error\r\n\r\n    failures.each do |title|\r\n      echo \"   ↳ #{title} failed\", type: :error\r\n    end\r\n  end\r\n\r\n  results.concat ci.results\r\nensure\r\n  Signal.trap(\"INT\", \"-\")\r\nend\r\n\r\ndef failures\r\n  results.select(&:first)\r\nend\r\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 54938,
+    "repo": "rails",
+    "title": "Add assert_in_body/assert_not_in_body",
+    "path": "actionpack/lib/action_dispatch/testing/assertions/response.rb",
+    "diff_hunk": "@@ -71,6 +71,20 @@ def assert_redirected_to(url_options = {}, options = {}, message = nil)\n         assert_operator redirect_expected, :===, redirect_is, message\n       end\n \n+      # Asserts that the given +text+ is present somewhere in the response body.\n+      #\n+      #     assert_in_body fixture(:name).description\n+      def assert_in_body(text)\n+        assert_match(/#{text}/, @response.body)",
+    "body": "Good idea 👍",
+    "in_reply_to": 2050721822
+  },
+  {
+    "pr": 54693,
+    "repo": "rails",
+    "title": "Structured CI with bin/ci",
+    "path": "activesupport/lib/active_support/continuous_integration.rb",
+    "diff_hunk": "@@ -0,0 +1,58 @@\n+module ActiveSupport\n+  class ContinuousIntegration\n+    COLORS = {\n+      banner: \"\\033[1;32m\",   # Green\n+      title: \"\\033[1;35m\",    # Purple\n+      subtitle: \"\\033[1;90m\", # Medium Gray\n+      error: \"\\033[1;31m\",    # Red\n+      success: \"\\033[1;32m\"   # Green\n+    }\n+\n+    def self.run(ci_declaration_path)\n+      new.instance_eval(ci_declaration_path.read)\n+    end\n+\n+    def initialize\n+    end\n+\n+    def step(title, command)\n+      echo :title, \"\\n\\n#{title}\"\n+      echo :subtitle, \"#{command}\\n\"\n+\n+      report(title) { system command }",
+    "body": "Added the option for multi-arg system calls, but find the syntax cumbersome when it's not adding an escaping benefit, so think we'll just leave the default ci DSL as-is. But now people can at least take advantage of the escaping if they need it. Good suggestion!",
+    "in_reply_to": 1982034743
+  },
+  {
+    "pr": 54693,
+    "repo": "rails",
+    "title": "Structured CI with bin/ci",
+    "path": ".rubocop.yml",
+    "diff_hunk": "@@ -387,9 +387,6 @@ Performance/StringInclude:\n Minitest/AssertNil:\n   Enabled: true\n \n-Minitest/AssertPredicate:\n-  Enabled: true",
+    "body": "I don't think that carries the weight for how ugly that method is. To fix what's wrong, you still have to look at the line, and when you do, you'll see what the predicate is. Appreciate that the output is marginally better, but to me that doesn't outweigh the aesthetic regression.",
+    "in_reply_to": 1986039595
+  },
+  {
+    "pr": 54693,
+    "repo": "rails",
+    "title": "Structured CI with bin/ci",
+    "path": "activesupport/lib/active_support/continuous_integration.rb",
+    "diff_hunk": "@@ -0,0 +1,145 @@\n+# frozen_string_literal: true\n+\n+module ActiveSupport\n+  # Provides a DSL for declaring a continuous integration workflow that can be run either locally or in the cloud.\n+  # Each step is timed, reports success/error, and is aggregated into a collective report that reports total runtime,\n+  # as well as whether the entire run was successful or not.\n+  #\n+  # Example:\n+  #\n+  #   ActiveSupport::ContinuousIntegration.run do\n+  #     step \"Setup\", \"bin/setup --skip-server\"\n+  #     step \"Style: Ruby\", \"bin/rubocop\"\n+  #     step \"Security: Gem audit\", \"bin/bundler-audit\"\n+  #     step \"Tests: Rails\", \"bin/rails test test:system\"\n+  #\n+  #     if success?\n+  #       step \"Signoff: Ready for merge and deploy\", \"gh signoff\"\n+  #     else\n+  #       failure \"Skipping signoff; CI failed.\", \"Fix the issues and try again.\"\n+  #     end\n+  #   end\n+  #\n+  # Starting with Rails 8.1, a default `bin/ci` and `config/ci.rb` file are created to provide out-of-the-box CI.\n+  class ContinuousIntegration\n+    COLORS = {\n+      banner: \"\\033[1;32m\",   # Green\n+      title: \"\\033[1;35m\",    # Purple\n+      subtitle: \"\\033[1;90m\", # Medium Gray\n+      error: \"\\033[1;31m\",    # Red\n+      success: \"\\033[1;32m\"   # Green\n+    }\n+\n+    attr_reader :results\n+\n+    # Perform a CI run. Execute each step, show their results and runtime, and exit with a non-zero status if there are any failures.\n+    #\n+    # Pass an optional title, subtitle, and a block that declares the steps to be executed.\n+    #\n+    # Sets the CI environment variable to \"true\" to allow for conditional behavior in the app, like enabling eager loading and disabling logging.\n+    #\n+    # Example:\n+    #\n+    #   ActiveSupport::ContinuousIntegration.run do\n+    #     step \"Setup\", \"bin/setup --skip-server\"\n+    #     step \"Style: Ruby\", \"bin/rubocop\"\n+    #     step \"Security: Gem audit\", \"bin/bundler-audit\"\n+    #     step \"Tests: Rails\", \"bin/rails test test:system\"\n+    #\n+    #     if success?\n+    #       step \"Signoff: Ready for merge and deploy\", \"gh signoff\"\n+    #     else\n+    #       failure \"Skipping signoff; CI failed.\", \"Fix the issues and try again.\"\n+    #     end\n+    #   end\n+    def self.run(title = \"Continuous Integration\", subtitle = \"Running tests, style checks, and security audits\", &block)\n+      new.tap do |ci|\n+        ENV[\"CI\"] = \"true\"\n+        ci.heading title, subtitle, padding: false\n+        ci.report(title, &block)\n+        abort unless ci.success?\n+      end\n+    end\n+\n+    def initialize(&block)",
+    "body": "Good catch. Removed in f98c0188ae2e.",
+    "in_reply_to": 1986083118
+  },
+  {
+    "pr": 54693,
+    "repo": "rails",
+    "title": "Structured CI with bin/ci",
+    "path": "railties/lib/rails/generators/rails/app/templates/config/ci.rb.tt",
+    "diff_hunk": "@@ -0,0 +1,33 @@\n+# Run using bin/ci\n+\n+CI.run do\n+  step \"Setup\", \"bin/setup --skip-server\"\n+<% unless options.skip_rubocop? %>\n+  step \"Style: Ruby\", \"bin/rubocop\"\n+<% end -%>\n+\n+  step \"Security: Gem audit\", \"bin/bundler-audit\"\n+<% if using_node? -%>\n+  step \"Security: Yarn vulnerability audit\", \"yarn audit\"\n+<% end -%>\n+<% if options[:javascript] == \"importmap\" && !options[:api] && !options[:skip_javascript] -%>\n+  step \"Security: Importmap vulnerability audit\", \"bin/importmap audit\"\n+<% end -%>\n+<% unless options.skip_brakeman? -%>\n+  step \"Security: Brakeman code analysis\", \"bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error\"\n+<% end -%>\n+<% if options[:api] || options[:skip_system_test] -%>\n+  step \"Tests: Rails\", \"bin/rails test\"\n+<% else %>\n+  step \"Tests: Rails\", \"bin/rails test test:system\"",
+    "body": "No, I think test:all mixes all tests together. We want to run all the regular tests first, then the system tests. But we can also just split it into two separate steps?",
+    "in_reply_to": 1989964918
+  },
+  {
+    "pr": 53726,
+    "repo": "rails",
+    "title": "Generate session controller tests for auth generator",
+    "path": "railties/lib/rails/generators/rails/authentication/templates/test/test_helpers/session_test_helper.rb.tt",
+    "diff_hunk": "@@ -12,4 +12,8 @@ module SessionTestHelper\n     Current.session&.destroy!\n     cookies.delete(:session_id)\n   end\n+\n+  def parsed_cookies",
+    "body": "This doesn't feel like it belongs here.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 53726,
+    "repo": "rails",
+    "title": "Generate session controller tests for auth generator",
+    "path": "railties/lib/rails/generators/test_unit/authentication/templates/test/controllers/sessions_controller_test.rb",
+    "diff_hunk": "@@ -0,0 +1,31 @@\n+require \"test_helper\"\n+\n+class SessionsControllerTest < ActionDispatch::IntegrationTest\n+  test \"new\" do\n+    get new_session_url\n+    assert_response :success\n+  end\n+\n+  test \"create with valid credentials\" do\n+    post session_url, params: { email_address: \"one@example.com\", password: \"password\" }\n+\n+    assert_redirected_to root_url\n+    assert parsed_cookies.signed[:session_id]\n+  end\n+\n+  test \"create with invalid credentials\" do\n+    post session_url, params: { email_address: \"one@example.com\", password: \"wrong\" }\n+\n+    assert_redirected_to new_session_url\n+    assert_nil parsed_cookies.signed[:session_id]",
+    "body": "Why can't this just use the same assertion as in destroy?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 53726,
+    "repo": "rails",
+    "title": "Generate session controller tests for auth generator",
+    "path": "railties/lib/rails/generators/test_unit/authentication/templates/test/controllers/sessions_controller_test.rb",
+    "diff_hunk": "@@ -0,0 +1,31 @@\n+require \"test_helper\"\n+\n+class SessionsControllerTest < ActionDispatch::IntegrationTest\n+  test \"new\" do\n+    get new_session_url\n+    assert_response :success\n+  end\n+\n+  test \"create with valid credentials\" do\n+    post session_url, params: { email_address: \"one@example.com\", password: \"password\" }",
+    "body": "Yes, think we should do the same `setup { @user = User.take }` as we do in the PasswordsControllerTest 👍",
+    "in_reply_to": 1982842029
+  },
+  {
+    "pr": 53726,
+    "repo": "rails",
+    "title": "Generate session controller tests for auth generator",
+    "path": "railties/lib/rails/generators/test_unit/authentication/templates/test/controllers/sessions_controller_test.rb",
+    "diff_hunk": "@@ -0,0 +1,31 @@\n+require \"test_helper\"\n+\n+class SessionsControllerTest < ActionDispatch::IntegrationTest\n+  test \"new\" do\n+    get new_session_url\n+    assert_response :success\n+  end\n+\n+  test \"create with valid credentials\" do\n+    post session_url, params: { email_address: \"one@example.com\", password: \"password\" }",
+    "body": "(And then do as you suggest here, so the tests don't break when you start adding/changing the fixtures).",
+    "in_reply_to": 1982842029
+  },
+  {
+    "pr": 53444,
+    "repo": "rails",
+    "title": "Authenticate the action cable connection too",
+    "path": "railties/lib/rails/generators/rails/authentication/templates/app/channels/application_cable/connection.rb.tt",
+    "diff_hunk": "@@ -0,0 +1,17 @@\n+module ApplicationCable\n+  class Connection < ActionCable::Connection::Base\n+    identified_by :current_user\n+\n+    def connect\n+      set_current_user || reject_unauthorized_connection\n+    end\n+\n+    private\n+      def set_current_user\n+        if session = Session.find_by(id: cookies.signed[:session_id])\n+          self.current_user = session.user\n+        end",
+    "body": "I don't think that makes sense here given that this connection is assuming that everyone needs to be authenticated or be rejected. Therefore the rejection is essentially an exceptional state. You shouldn't be trying to establish a connection unless you believe it would succeed. So this complicates the code for a condition that isn't worth optimizing for.",
+    "in_reply_to": 1816691575
+  },
+  {
+    "pr": 53255,
+    "repo": "rails",
+    "title": "Add PasswordsController tests for the authentication generator",
+    "path": "railties/lib/rails/generators/test_unit/authentication/templates/test/controllers/passwords_controller_test.rb.tt",
+    "diff_hunk": "@@ -0,0 +1,66 @@\n+require \"test_helper\"\n+\n+class PasswordsControllerTest < ActionDispatch::IntegrationTest\n+  test \"new\" do\n+    get new_password_path\n+    \n+    assert_response :success\n+  end\n+\n+  test \"create\" do\n+    post passwords_path, params: { email_address: users(:one).email_address }",
+    "body": "Don't like hardcoding this to the stock fixtures, because they're so likely to change, and then it's a lot of busywork to update. What we could do instead is something like `User.take`, which will grab a random user to do this with.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 53165,
+    "repo": "rails",
+    "title": "Add user fixture to authentication generator",
+    "path": "railties/lib/rails/generators/test_unit/authentication/authentication_generator.rb",
+    "diff_hunk": "@@ -0,0 +1,23 @@\n+# frozen_string_literal: true\n+\n+require \"rails/generators/test_unit\"\n+\n+module TestUnit # :nodoc:\n+  module Generators # :nodoc:\n+    class AuthenticationGenerator < Rails::Generators::Base # :nodoc:\n+      class_option :fixture, type: :boolean\n+\n+      hook_for :fixture_replacement\n+\n+      def create_user_test_file\n+        template \"test/models/user_test.rb\"\n+      end\n+\n+      def create_user_fixture_file\n+        if options[:fixture] && options[:fixture_replacement].nil?\n+          template \"test/fixtures/users.yml\"\n+        end",
+    "body": "Let's drop all these options. We don't need you to be able to turn this off. You can just delete if you don't need it. Same with the fixture replacement.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 52999,
+    "repo": "rails",
+    "title": "Cleanup default environment files",
+    "path": "railties/lib/rails/generators/rails/app/templates/config/environments/test.rb.tt",
+    "diff_hunk": "@@ -35,10 +35,6 @@ Rails.application.configure do\n \n   <%- end -%>\n   <%- unless options.skip_action_mailer? -%>\n-  # Disable caching for Action Mailer templates even if Action Controller\n-  # caching is enabled.\n-  config.action_mailer.perform_caching = false",
+    "body": "I thought we only needed the action mailer config if it differed from action controller? But if not, then let's add it back up in the same block.",
+    "in_reply_to": 1769230293
+  },
+  {
+    "pr": 52999,
+    "repo": "rails",
+    "title": "Cleanup default environment files",
+    "path": "railties/lib/rails/generators/rails/app/templates/config/environments/production.rb.tt",
+    "diff_hunk": "@@ -6,10 +6,7 @@ Rails.application.configure do\n   # Code is not reloaded between requests.\n   config.enable_reloading = false\n \n-  # Eager load code on boot. This eager loads most of Rails and\n-  # your application in memory, allowing both threaded web servers\n-  # and those relying on copy on write to perform better.\n-  # Rake tasks automatically ignore this option for performance.\n+  # Eager load code on boot for copy-on-write memory savings (ignored by Rake tasks).",
+    "body": "Made it broader and no need to mention COW.",
+    "in_reply_to": 1769258794
+  },
+  {
+    "pr": 52999,
+    "repo": "rails",
+    "title": "Cleanup default environment files",
+    "path": "railties/lib/rails/generators/rails/app/templates/config/environments/test.rb.tt",
+    "diff_hunk": "@@ -35,10 +35,6 @@ Rails.application.configure do\n \n   <%- end -%>\n   <%- unless options.skip_action_mailer? -%>\n-  # Disable caching for Action Mailer templates even if Action Controller\n-  # caching is enabled.\n-  config.action_mailer.perform_caching = false",
+    "body": "Turns out we actually are fine with caching in test. Feature not bug.",
+    "in_reply_to": 1769230293
+  },
+  {
+    "pr": 52883,
+    "repo": "rails",
+    "title": "Kamal 2 compatible configuration",
+    "path": "railties/lib/rails/generators/app_base.rb",
+    "diff_hunk": "@@ -748,8 +748,7 @@ def run_kamal\n         bundle_command \"binstubs kamal\"\n         bundle_command \"exec kamal init\"\n \n-        remove_file \".env\"\n-        template \"env.erb\", \".env.erb\"\n+        template \"kamal-secrets.tt\", \".kamal/secrets\", force: true",
+    "body": "No, .kamal/secrets is like .env.erb rather than .env. So it won't (or shouldn't!) hold actual credentials.",
+    "in_reply_to": 1757345596
+  },
+  {
+    "pr": 52804,
+    "repo": "rails",
+    "title": "Add Solid Queue alongside Solid Cache",
+    "path": "railties/lib/rails/generators/rails/app/templates/config/databases/mysql.yml.tt",
+    "diff_hunk": "",
+    "body": "It's not. We continued to use the same in-process queue as we always did. No need to complicate things there with a production-class queue.",
+    "in_reply_to": 1746134804
+  },
+  {
+    "pr": 52802,
+    "repo": "rails",
+    "title": "Use implication for skip_active_record/skip_solid",
+    "path": "railties/lib/rails/generators/app_base.rb",
+    "diff_hunk": "@@ -111,16 +111,16 @@ def self.add_shared_options_for(name)\n         class_option :skip_ci,             type: :boolean, default: nil,\n                                            desc: \"Skip GitHub CI files\"\n \n-        class_option :skip_kamal,          type: :boolean, default: false,\n+        class_option :skip_kamal,          type: :boolean, default: nil,\n                                            desc: \"Skip Kamal setup\"\n \n-        class_option :skip_solid,          type: :boolean, default: false,\n+        class_option :skip_solid,          type: :boolean, default: nil,\n                                            desc: \"Skip Solid Cache & Queue setup\"\n \n         class_option :dev,                 type: :boolean, default: nil,\n                                            desc: \"Set up the #{name} with Gemfile pointing to your Rails checkout\"\n \n-        class_option :devcontainer,        type: :boolean, default: false,\n+        class_option :devcontainer,        type: :boolean, default: nil,",
+    "body": "What are these false -> nil changes for?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 52802,
+    "repo": "rails",
+    "title": "Use implication for skip_active_record/skip_solid",
+    "path": "railties/lib/rails/generators/app_base.rb",
+    "diff_hunk": "@@ -432,7 +432,7 @@ def skip_kamal?\n       end\n \n       def skip_solid?\n-        options[:skip_active_record] || options[:skip_solid]\n+        options[:skip_solid]",
+    "body": "I got this one in already, but the rest of it looks good 👍",
+    "in_reply_to": null
+  },
+  {
+    "pr": 52789,
+    "repo": "rails",
+    "title": "Silence healthcheck requests from the log",
+    "path": "railties/lib/rails/rack/silence_request.rb",
+    "diff_hunk": "@@ -0,0 +1,37 @@\n+# frozen_string_literal: true\n+\n+# :markup: markdown\n+\n+require \"active_support/logger_silence\"\n+\n+module Rails\n+  module Rack\n+    # Allows you to silence requests made to a specific path.\n+    # This is useful for preventing recurring requests like healthchecks from clogging the logging.\n+    # This middleware is used to do just that against the path /up in production by default.\n+    #\n+    # Example:\n+    #\n+    #   config.middleware.insert_before \\\n+    #     Rails::Rack::Logger, Rails::Rack::SilenceRequest, path: \"/up\"\n+    #\n+    # This middleware can also be configured using `config.silence_healthcheck = \"/up\"` in Rails.\n+    class SilenceRequest\n+      def initialize(app, path:)\n+        @app, @path = app, path\n+      end\n+\n+      def call(env)\n+        request = ActionDispatch::Request.new(env)\n+\n+        if request.path == @path",
+    "body": "I had that at first, but I then arrested myself with a charge of YAGNI. I couldn't come up with any other use cases except for the healthcheck, so decided to focus on that. The API is a lot more straight forward than something generic.",
+    "in_reply_to": 1742779475
+  },
+  {
+    "pr": 52789,
+    "repo": "rails",
+    "title": "Silence healthcheck requests from the log",
+    "path": "railties/lib/rails/rack/silence_request.rb",
+    "diff_hunk": "@@ -0,0 +1,37 @@\n+# frozen_string_literal: true\n+\n+# :markup: markdown\n+\n+require \"active_support/logger_silence\"\n+\n+module Rails\n+  module Rack\n+    # Allows you to silence requests made to a specific path.\n+    # This is useful for preventing recurring requests like healthchecks from clogging the logging.\n+    # This middleware is used to do just that against the path /up in production by default.\n+    #\n+    # Example:\n+    #\n+    #   config.middleware.insert_before \\\n+    #     Rails::Rack::Logger, Rails::Rack::SilenceRequest, path: \"/up\"\n+    #\n+    # This middleware can also be configured using `config.silence_healthcheck = \"/up\"` in Rails.\n+    class SilenceRequest\n+      def initialize(app, path:)\n+        @app, @path = app, path\n+      end\n+\n+      def call(env)\n+        request = ActionDispatch::Request.new(env)\n+\n+        if request.path == @path",
+    "body": "But I still think we could reuse this. We could inherit the QuietAssets middleware in Propshaft from this and just hardset the path:. But not sure it's even worth it. The implementation is so small here.",
+    "in_reply_to": 1742779475
+  },
+  {
+    "pr": 52789,
+    "repo": "rails",
+    "title": "Silence healthcheck requests from the log",
+    "path": "railties/lib/rails/rack/silence_request.rb",
+    "diff_hunk": "@@ -0,0 +1,37 @@\n+# frozen_string_literal: true\n+\n+# :markup: markdown\n+\n+require \"active_support/logger_silence\"\n+\n+module Rails\n+  module Rack\n+    # Allows you to silence requests made to a specific path.\n+    # This is useful for preventing recurring requests like healthchecks from clogging the logging.\n+    # This middleware is used to do just that against the path /up in production by default.\n+    #\n+    # Example:\n+    #\n+    #   config.middleware.insert_before \\\n+    #     Rails::Rack::Logger, Rails::Rack::SilenceRequest, path: \"/up\"\n+    #\n+    # This middleware can also be configured using `config.silence_healthcheck = \"/up\"` in Rails.\n+    class SilenceRequest\n+      def initialize(app, path:)\n+        @app, @path = app, path\n+      end\n+\n+      def call(env)\n+        request = ActionDispatch::Request.new(env)\n+\n+        if request.path == @path",
+    "body": "In fact, I just made the implementation even slimmer by borrowing from Propshaft's quiet asset middleware. So thanks for the reminder of that one!",
+    "in_reply_to": 1742779475
+  },
+  {
+    "pr": 52789,
+    "repo": "rails",
+    "title": "Silence healthcheck requests from the log",
+    "path": "railties/test/commands/middleware_test.rb",
+    "diff_hunk": "@@ -196,10 +196,10 @@ def app\n     assert_includes middleware, \"ActionDispatch::AssumeSSL\"\n   end\n \n-  test \"ActionDispatch::SSL is present when force_ssl is set\" do",
+    "body": "I did not. Not sure what happened there. Please do PR to restore!",
+    "in_reply_to": 1746377061
+  },
+  {
+    "pr": 52772,
+    "repo": "rails",
+    "title": "Allow to skip the server in `bin/setup`",
+    "path": "railties/lib/rails/generators/rails/app/templates/bin/setup.tt",
+    "diff_hunk": "@@ -38,6 +38,8 @@ FileUtils.chdir APP_ROOT do\n   puts \"\\n== Removing old logs and tempfiles ==\"\n   system! \"bin/rails log:clear tmp:clear\"\n \n-  puts \"\\n== Starting development server ==\"\n-  exec \"bin/dev\"\n+  command = ARGV.empty? ? [\"bin/dev\"] : ARGV\n+  puts \"\\n== Starting #{command.join(\" \")} ==\"\n+  STDOUT.flush # flush the output before exec(2) so that it displays\n+  exec(*command)",
+    "body": "I'd prefer something more explicit here and less generic. Maybe check for `--skip-server` in ARGV and then just don't execute this block. Don't like the idea of setup executing a generic command passed in.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 52533,
+    "repo": "rails",
+    "title": "Make automatic detection of processor count in default puma config optional and non-default",
+    "path": "railties/lib/rails/generators/rails/app/templates/config/puma.rb.tt",
+    "diff_hunk": "@@ -32,9 +32,14 @@ when \"production\"\n   # If you are running more than 1 thread per process, the workers count\n   # should be equal to the number of processors (CPU cores) in production.\n   #\n-  # Automatically detect the number of available processors in production.\n+  # Automatically detect the number of available processors in production\n+  # when WEB_CONCURRENCY is set to \"auto\".\n   require \"concurrent-ruby\"\n-  workers_count = Integer(ENV.fetch(\"WEB_CONCURRENCY\") { Concurrent.available_processor_count })\n+  workers_count = if ENV[\"WEB_CONCURRENCY\"] == \"auto\"",
+    "body": "This doesn't actually work since puma itself attempts to parse WEB_CONCURRENCY from ENV. And finding auto, it errors out.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 52483,
+    "repo": "rails",
+    "title": "Add a default password reset token to has_secure_password",
+    "path": "activemodel/lib/active_model/secure_password.rb",
+    "diff_hunk": "@@ -142,11 +157,30 @@ def has_secure_password(attribute = :password, validations: true)\n \n           validates_confirmation_of attribute, allow_blank: true\n         end\n+\n+        # Only generate tokens for records that are capable of doing so (Active Records, not vanilla Active Models)\n+        if reset_token && respond_to?(:generates_token_for)\n+          generates_token_for :\"#{attribute}_reset\", expires_in: 15.minutes do\n+            public_send(:\"#{attribute}_salt\")&.last(10)",
+    "body": "password_digest is already generated in the migration and salt is virtual. ",
+    "in_reply_to": 1701817002
+  },
+  {
+    "pr": 52472,
+    "repo": "rails",
+    "title": "Add password reset to authentication generator",
+    "path": "railties/lib/rails/generators/rails/authentication/templates/mailers/passwords_mailer.rb",
+    "diff_hunk": "@@ -0,0 +1,6 @@\n+class PasswordsMailer < ApplicationMailer\n+  def reset(user)\n+    @token = user.signed_id(purpose: \"password\", expires_in: 15.minutes)",
+    "body": "Hmm, I wonder if we should simply bake this into has_secure_password. That it automatically sets this up with the token. Because I'm finding that adding this into the model seems overly heavy. Especially since it only barely encapsulates one line from the mailer. Not sure the abstraction carries its own weight with that alone.",
+    "in_reply_to": 1700369214
+  },
+  {
+    "pr": 52472,
+    "repo": "rails",
+    "title": "Add password reset to authentication generator",
+    "path": "railties/lib/rails/generators/rails/authentication/templates/mailers/passwords_mailer.rb",
+    "diff_hunk": "@@ -0,0 +1,6 @@\n+class PasswordsMailer < ApplicationMailer\n+  def reset(user)\n+    @token = user.signed_id(purpose: \"password\", expires_in: 15.minutes)",
+    "body": "Actually I'm going to do that. Opening another PR for that shortly.",
+    "in_reply_to": 1700369214
+  },
+  {
+    "pr": 52472,
+    "repo": "rails",
+    "title": "Add password reset to authentication generator",
+    "path": "railties/lib/rails/generators/rails/authentication/templates/mailers/passwords_mailer.rb",
+    "diff_hunk": "@@ -0,0 +1,6 @@\n+class PasswordsMailer < ApplicationMailer\n+  def reset(user)\n+    @token = user.signed_id(purpose: \"password\", expires_in: 15.minutes)",
+    "body": "Added https://github.com/rails/rails/pull/52483",
+    "in_reply_to": 1700369214
+  },
+  {
+    "pr": 52472,
+    "repo": "rails",
+    "title": "Add password reset to authentication generator",
+    "path": "railties/lib/rails/generators/rails/authentication/templates/views/passwords_mailer/reset.text.erb",
+    "diff_hunk": "@@ -0,0 +1,2 @@\n+You can reset your password within the next 15 minutes on this password reset page:\n+<%%= edit_password_url(@user.password_reset_token) %>",
+    "body": "It is generated by has_secure_password now, yes. See https://github.com/rails/rails/blob/main/activemodel/lib/active_model/secure_password.rb#L224",
+    "in_reply_to": 1776620173
+  },
+  {
+    "pr": 52433,
+    "repo": "rails",
+    "title": "Add bin/dev by default",
+    "path": "railties/test/generators/api_app_generator_test.rb",
+    "diff_hunk": "@@ -141,6 +141,7 @@ def default_files\n         app/views/layouts\n         app/views/layouts/mailer.html.erb\n         app/views/layouts/mailer.text.erb\n+        bin/dev",
+    "body": "No, bin/ is for binstubs like this that start a command like server. script/* is for app specific scripts like recurring crons or one-off migrations or the like. We need to be clear about this in the documentation.",
+    "in_reply_to": 1694360197
+  },
+  {
+    "pr": 52328,
+    "repo": "rails",
+    "title": "Add basic sessions generator",
+    "path": "railties/lib/rails/generators/rails/sessions/templates/controllers/sessions_controller.rb",
+    "diff_hunk": "@@ -0,0 +1,22 @@\n+class SessionsController < ApplicationController\n+  allow_unauthenticated_access\n+  rate_limit to: 10, within: 3.minutes, only: :create, with: -> { redirect_to new_session_url, alert: \"Try again later.\" }\n+\n+  def new\n+    redirect_to root_url if authenticated?",
+    "body": "Fixed in https://github.com/rails/rails/commit/1dd37e01937f6711cd15267481df8c0446961472",
+    "in_reply_to": 1684921811
+  },
+  {
+    "pr": 52327,
+    "repo": "rails",
+    "title": "Add not-null modifier to migrations",
+    "path": "railties/CHANGELOG.md",
+    "diff_hunk": "@@ -1,3 +1,25 @@\n+*   Add not-null type modifier to migration attributes.\n+",
+    "body": "Yes, see other CHANGELOG files.",
+    "in_reply_to": 1677112237
+  },
+  {
+    "pr": 51799,
+    "repo": "rails",
+    "title": "Change asset pipeline default to Propshaft in Rails 8",
+    "path": "railties/lib/rails/generators/rails/app/templates/app/views/layouts/application.html.erb.tt",
+    "diff_hunk": "@@ -13,10 +13,11 @@\n     <link rel=\"icon\" href=\"/icon.png\" type=\"image/png\">\n     <link rel=\"icon\" href=\"/icon.svg\" type=\"image/svg+xml\">\n     <link rel=\"apple-touch-icon\" href=\"/icon.png\">\n+    <% style_link_target = options[:asset_pipeline] == \"propshaft\" ? \":all\" : \"application\" %>",
+    "body": "I'd say it'd usually be a feature to include css from the gem in the app, but yes, might not work for all cases. I think this is the better default, though, when we're promoting a #nobuild approach to CSS that relies on vanilla.",
+    "in_reply_to": 1600547396
+  },
+  {
+    "pr": 51799,
+    "repo": "rails",
+    "title": "Change asset pipeline default to Propshaft in Rails 8",
+    "path": "railties/lib/rails/generators/rails/app/templates/app/views/layouts/application.html.erb.tt",
+    "diff_hunk": "@@ -13,10 +13,11 @@\n     <link rel=\"icon\" href=\"/icon.png\" type=\"image/png\">\n     <link rel=\"icon\" href=\"/icon.svg\" type=\"image/svg+xml\">\n     <link rel=\"apple-touch-icon\" href=\"/icon.png\">\n+    <% style_link_target = options[:asset_pipeline] == \"propshaft\" ? \":all\" : \"application\" %>",
+    "body": "I think mission-control's css should be properly scoped that this won't be a problem. But also open to looking for other solutions that do not require manually maintaining a list of CSS files to be included. Maybe mission control gets a way to opt out of :all through a configuration.\r\n\r\nThe @import issue will be fixed before Rails 8 in Propshaft. That's definitely an issue.",
+    "in_reply_to": 1600547396
+  },
+  {
+    "pr": 51798,
+    "repo": "rails",
+    "title": "Add Kamal by default to Rails 8",
+    "path": "railties/lib/rails/generators/rails/app/templates/env.erb.tt",
+    "diff_hunk": "@@ -0,0 +1,5 @@\n+<%%# This env template should lookup values from a password store or from ENV -%>\n+# Generated by kamal envify from .env.erb\n+KAMAL_REGISTRY_PASSWORD=<%%= \"YOUR-KEY-FROM-PASSWORD-STORE\" %>\n+RAILS_MASTER_KEY=<%%= File.read(\"config/master.key\") %>\n+# GITHUB_TOKEN=<%%#= `gh config get -h github.com oauth_token`.strip %>",
+    "body": "No, which is why it's commented out by default. So it's just a suggestion for how to do this.",
+    "in_reply_to": 1597850194
+  },
+  {
+    "pr": 51798,
+    "repo": "rails",
+    "title": "Add Kamal by default to Rails 8",
+    "path": "railties/lib/rails/generators/rails/app/templates/bin/kamal.tt",
+    "diff_hunk": "",
+    "body": "Move this to have bundler generate the binstub. We should do this for the others as well.",
+    "in_reply_to": 1598770460
+  },
+  {
+    "pr": 51793,
+    "repo": "rails",
+    "title": "Use Thruster by default to Rails 8",
+    "path": "railties/lib/rails/generators/rails/app/templates/bin/thrust.tt",
+    "diff_hunk": "",
+    "body": "I was thinking about that, but we already have this setup of just including the stubs directly. So we'd have to do a binstub <gem> call somewhere instead. Happy to explore that, though.",
+    "in_reply_to": 1598773354
+  },
+  {
+    "pr": 51793,
+    "repo": "rails",
+    "title": "Use Thruster by default to Rails 8",
+    "path": "railties/lib/rails/generators/rails/app/templates/Gemfile.tt",
+    "diff_hunk": "@@ -24,6 +24,11 @@ gem \"bootsnap\", require: false\n # Deploy this application anywhere as a Docker container [https://kamal-deploy.org]\n gem \"kamal\", require: false\n <% end -%>\n+<% unless options.skip_thruster? -%>\n+\n+# Add HTTP/2, HTTP asset caching/compression, Let's Encrypt auto-certificates to Puma [https://github.com/basecamp/thruster/]\n+gem \"thruster\", require: false",
+    "body": "Ah good catch. Will add.",
+    "in_reply_to": 1600504783
+  },
+  {
+    "pr": 51674,
+    "repo": "rails",
+    "title": "Add `Parameters#expect` to safely filter and require params",
+    "path": "actionpack/CHANGELOG.md",
+    "diff_hunk": "@@ -1,3 +1,50 @@\n+*   Introduce safer and more explicit params handling methods.\n+    - `params.expect` replaces `params.require(:table).permit(:attr)`",
+    "body": "Would expand to `params.expect(table: [ :attr ])` for this headline example.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 51341,
+    "repo": "rails",
+    "title": "Guides visual redesign",
+    "path": "guides/source/layout.html.erb",
+    "diff_hunk": "@@ -39,59 +45,83 @@\n         <li class=\"more-info\"><a href=\"https://github.com/rails/rails\">Contribute on GitHub</a></li>\n       </ul>\n     </div>\n-  </div>\n-  <div id=\"header\">\n+  </nav>\n+  <header id=\"page_header\">\n     <div class=\"wrapper clearfix\">\n-      <div class=\"header-logo\"><a href=\"index.html\" title=\"Return to home page\">Guides.rubyonrails.org</a></div>\n-      <ul class=\"nav\">\n-        <li><a class=\"nav-item\" href=\"index.html\">Home</a></li>\n-        <li class=\"guides-index guides-index-large\">\n-          <a href=\"index.html\" id=\"guidesMenu\" class=\"guides-index-item nav-item\">Guides Index</a>\n-          <div id=\"guides\" class=\"clearfix\" style=\"display: none;\">\n-            <hr />\n-            <dl class=\"guides-section-container\">\n-              <% documents_by_section.each do |section| %>\n-                <div class=\"guides-section\">\n-                  <dt><%= section['name'] %></dt>\n+      <nav id=\"feature_nav\"> <%# we use nav as an element to also provide the aria role and improve semantic meaning. %>\n+        <div class=\"header-logo\">\n+          <a href=\"index.html\" title=\"Return to home page\">Guides</a>\n+          <span id=\"version_switcher\">",
+    "body": "Don't think we need to show anything there if there are no versions to select between. If you're looking at it locally, you know what you built from.",
+    "in_reply_to": 1529675534
+  },
+  {
+    "pr": 50625,
+    "repo": "rails",
+    "title": "Use Ruby 3.3 for github workflows",
+    "path": ".github/workflows/rails-new-docker.yml",
+    "diff_hunk": "@@ -15,9 +15,10 @@ jobs:\n     runs-on: ubuntu-latest\n     steps:\n     - uses: actions/checkout@v4\n-    - uses: ruby/setup-ruby@v1\n+    - name: Set up Ruby 3.3",
+    "body": "Why add this new named step?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 50515,
+    "repo": "rails",
+    "title": "bundle update rubocop --conservative",
+    "path": "actionpack/test/controller/routing_test.rb",
+    "diff_hunk": "@@ -1694,7 +1694,7 @@ def test_route_with_subdomain_and_constraints_must_receive_params\n     set.draw do\n       get \"page/:name\" => \"pages#show\", :constraints => lambda { |request|\n         name_param = request.params[:name]\n-        return true\n+        true",
+    "body": "Don't like this rule.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 50515,
+    "repo": "rails",
+    "title": "bundle update rubocop --conservative",
+    "path": "actionview/lib/action_view/helpers/url_helper.rb",
+    "diff_hunk": "@@ -784,7 +784,7 @@ def link_to_remote_options?(options)\n         end\n \n         def add_method_to_attributes!(html_options, method)\n-          if method_not_get_method?(method) && !html_options[\"rel\"]&.match?(/nofollow/)\n+          if method_not_get_method?(method) && !html_options[\"rel\"]&.include?(\"nofollow\")",
+    "body": "This also seems like an odd choice. Maybe fine but it's in the wrong PR.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 50515,
+    "repo": "rails",
+    "title": "bundle update rubocop --conservative",
+    "path": "actionpack/test/controller/routing_test.rb",
+    "diff_hunk": "@@ -1694,7 +1694,7 @@ def test_route_with_subdomain_and_constraints_must_receive_params\n     set.draw do\n       get \"page/:name\" => \"pages#show\", :constraints => lambda { |request|\n         name_param = request.params[:name]\n-        return true\n+        true",
+    "body": "Guess that's why I'd be keen to get Rails under omakase style too.",
+    "in_reply_to": 1439068440
+  },
+  {
+    "pr": 50515,
+    "repo": "rails",
+    "title": "bundle update rubocop --conservative",
+    "path": "actionview/lib/action_view/helpers/url_helper.rb",
+    "diff_hunk": "@@ -784,7 +784,7 @@ def link_to_remote_options?(options)\n         end\n \n         def add_method_to_attributes!(html_options, method)\n-          if method_not_get_method?(method) && !html_options[\"rel\"]&.match?(/nofollow/)\n+          if method_not_get_method?(method) && !html_options[\"rel\"]&.include?(\"nofollow\")",
+    "body": "Gotcha. Not sure about this one either! But yes, should be in compliance with the rules as they currently are. Just think that needs to happen in a clear PR separate from a dependency bump.",
+    "in_reply_to": 1439068483
+  },
+  {
+    "pr": 50460,
+    "repo": "rails",
+    "title": "Allow overriding SQLite defaults from `database.yml`",
+    "path": "activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb",
+    "diff_hunk": "@@ -759,29 +759,40 @@ def configure_connection\n \n           super\n \n+          pragmas = @config.fetch(:pragmas, {}).stringify_keys\n+\n           # Enforce foreign key constraints\n           # https://www.sqlite.org/pragma.html#pragma_foreign_keys\n           # https://www.sqlite.org/foreignkeys.html\n-          raw_execute(\"PRAGMA foreign_keys = ON\", \"SCHEMA\")\n+          @raw_connection.foreign_keys = pragmas.fetch(\"foreign_keys\", true)\n           unless @memory_database\n             # Journal mode WAL allows for greater concurrency (many readers + one writer)\n             # https://www.sqlite.org/pragma.html#pragma_journal_mode\n-            raw_execute(\"PRAGMA journal_mode = WAL\", \"SCHEMA\")\n+            @raw_connection.journal_mode = pragmas.fetch(\"journal_mode\", :wal)",
+    "body": "Fair discussion, but I concur that WAL should be the default. We intend for sqlite to be a full option for use as the main application database, and this is a better option for this.",
+    "in_reply_to": 1437112781
+  },
+  {
+    "pr": 50371,
+    "repo": "rails",
+    "title": "Ensure SQLite transaction default to IMMEDIATE mode",
+    "path": "activerecord/lib/active_record/transactions.rb",
+    "diff_hunk": "@@ -358,7 +358,7 @@ def with_transaction_returning_status\n       connection = self.class.connection\n       ensure_finalize = !connection.transaction_open?\n \n-      connection.transaction do\n+      connection.transaction(mode: :immediate) do",
+    "body": "Don't want to have a SQLite3 specific mode concern leak all the way into the other adapters and the root transaction setup. There's gotta be a better way with less collateral damage.",
+    "in_reply_to": null
+  }
+]
