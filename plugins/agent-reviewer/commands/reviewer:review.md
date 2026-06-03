@@ -17,7 +17,7 @@ Review a diff or PR with your extracted reviewer personas, run as a panel — ea
 
 ## Behaviour
 
-1. **Resolve what to review.** An explicit argument wins. Otherwise: an open PR for the branch, else the current `git diff`, else uncommitted changes. If nothing's there, ask.
+1. **Resolve what to review — with the repo, not just the diff.** An explicit argument wins. Otherwise: an open PR for the branch, else the current `git diff`, else uncommitted changes. If nothing's there, ask. Review **with the repository checked out** and hand each persona the whole change as context, not isolated hunks — the largest recall lever we measured was repo access (the persona grepping for the existing helper, the sibling test, the convention) plus whole-change context, far more than any prompt wording. For a large PR, walk it hunk-by-hunk *with the rest of the PR and the repo available*, rather than one shallow pass.
 2. **Find the panel.** List `personas/*.md`. With `--only <login>`, use just that one.
 3. **Pick a mode — integrate or standalone.** Check whether the `ce-code-review` skill (compound-engineering plugin) is installed.
    - **Integrated (preferred when present).** The extracted personas are *additional reviewers* on ce-code-review's panel, not a separate pass. Invoke ce-code-review for the same scope and add one `persona-reviewer` agent per persona to its dispatched set. Because `persona-reviewer` emits the shared finding schema (`references/finding-schema.md`), ce-code-review's existing merge/dedup/severity pipeline consumes our findings unchanged — the user gets **one** report combining its generic reviewers (correctness, security, …) with your team's specific voices. Don't run a second, parallel review.
