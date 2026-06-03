@@ -1,0 +1,3 @@
+{"id":0,"body":"```suggestion\n*   Fix Active Record Pool Reaper thread leak after `Parallelization#shutdown`.\n```"}
+{"id":1,"body":"```suggestion\n    After parallelized test runs, the parent process leaked the Active Record Pool Reaper\n```"}
+{"id":2,"body":"```suggestion\n    Active Record registers a cleanup hook that discards all connection pools; and\n```"}

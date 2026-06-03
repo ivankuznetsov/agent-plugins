@@ -1,0 +1,56 @@
+{
+  "reviewer": "rafaelfranca",
+  "repo": "rails/rails",
+  "ecosystem": "Ruby",
+  "voice": "Rails-core thoroughness; backwards compatibility, public API surface, framework consistency, test coverage.",
+  "source": "GitHub public PR inline review comments",
+  "collected": "2026-06-02",
+  "context_file": "context-rafaelfranca.json",
+  "context_comments": 30,
+  "eval_prs": 6,
+  "eval_comments": 20,
+  "prs": [
+    {
+      "pr": 57335,
+      "title": "Handle invalid SendGrid envelope input in Action Mailbox",
+      "comments": 3,
+      "blind": "blind/rails-57335.hunks.jsonl",
+      "truth": "truth/rails-57335.jsonl"
+    },
+    {
+      "pr": 57345,
+      "title": "Introduce `ActiveSupport::TimeFormats` and `ActiveSupport::DateFormats` for registering custom date formats",
+      "comments": 3,
+      "blind": "blind/rails-57345.hunks.jsonl",
+      "truth": "truth/rails-57345.jsonl"
+    },
+    {
+      "pr": 57406,
+      "title": "[#57402] Fix Active Record Pool Reaper thread leak after `Parallelization#shutdown`",
+      "comments": 3,
+      "blind": "blind/rails-57406.hunks.jsonl",
+      "truth": "truth/rails-57406.jsonl"
+    },
+    {
+      "pr": 57431,
+      "title": "fix: validate subcommand in `rails plugin` command",
+      "comments": 2,
+      "blind": "blind/rails-57431.hunks.jsonl",
+      "truth": "truth/rails-57431.jsonl"
+    },
+    {
+      "pr": 57467,
+      "title": "Add shims for Ractor shareability methods",
+      "comments": 5,
+      "blind": "blind/rails-57467.hunks.jsonl",
+      "truth": "truth/rails-57467.jsonl"
+    },
+    {
+      "pr": 57477,
+      "title": "Refactor ActiveJob::TestHelper to no longer walk descendants",
+      "comments": 4,
+      "blind": "blind/rails-57477.hunks.jsonl",
+      "truth": "truth/rails-57477.jsonl"
+    }
+  ]
+}

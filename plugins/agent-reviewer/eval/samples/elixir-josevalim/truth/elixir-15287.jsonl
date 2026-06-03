@@ -1,0 +1,4 @@
+{"id":0,"body":"Do we need a test?"}
+{"id":1,"body":"Ok, a test was already failing without these changes."}
+{"id":2,"body":"```suggestion\n  # We avoid unions because they are lazy and we prune\n  # intersections more actively.\n  defp bdd_negation_union(u1, u2) do\n    bdd_intersection(bdd_negation(u1), bdd_negation(u2))\n  end\n```"}
+{"id":3,"body":"```suggestion\n    case bdd_intersection(inner, bdd_negation(u)) do\n```"}

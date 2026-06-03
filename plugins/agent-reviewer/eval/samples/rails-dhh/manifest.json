@@ -1,0 +1,56 @@
+{
+  "reviewer": "dhh",
+  "repo": "rails/rails",
+  "ecosystem": "Ruby",
+  "voice": "Terse and opinionated; clarity over cleverness, REST purity, conceptual compression, naming.",
+  "source": "GitHub public PR inline review comments",
+  "collected": "2026-06-02",
+  "context_file": "context-dhh.json",
+  "context_comments": 72,
+  "eval_prs": 6,
+  "eval_comments": 35,
+  "prs": [
+    {
+      "pr": 52472,
+      "title": "Add password reset to authentication generator",
+      "comments": 4,
+      "blind": "blind/rails-52472.hunks.jsonl",
+      "truth": "truth/rails-52472.jsonl"
+    },
+    {
+      "pr": 52789,
+      "title": "Silence healthcheck requests from the log",
+      "comments": 4,
+      "blind": "blind/rails-52789.hunks.jsonl",
+      "truth": "truth/rails-52789.jsonl"
+    },
+    {
+      "pr": 53726,
+      "title": "Generate session controller tests for auth generator",
+      "comments": 4,
+      "blind": "blind/rails-53726.hunks.jsonl",
+      "truth": "truth/rails-53726.jsonl"
+    },
+    {
+      "pr": 54693,
+      "title": "Structured CI with bin/ci",
+      "comments": 4,
+      "blind": "blind/rails-54693.hunks.jsonl",
+      "truth": "truth/rails-54693.jsonl"
+    },
+    {
+      "pr": 56404,
+      "title": "Add Rails.app.creds to provide combined credentials lookup in ENV and encrypted file",
+      "comments": 12,
+      "blind": "blind/rails-56404.hunks.jsonl",
+      "truth": "truth/rails-56404.jsonl"
+    },
+    {
+      "pr": 56471,
+      "title": "Override inspect in Combined, Env & Encrypted Configurations",
+      "comments": 7,
+      "blind": "blind/rails-56471.hunks.jsonl",
+      "truth": "truth/rails-56471.jsonl"
+    }
+  ]
+}

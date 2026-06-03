@@ -1,8 +1,8 @@
 # agent-plugins
 
-This is the toolkit I use when working with coding agents. Four plugins, vendored here so both Claude Code and Codex can install them from a single Git clone. I package it as a marketplace because that's what the agents read.
+This is the toolkit I use when working with coding agents. Five plugins, vendored here so both Claude Code and Codex can install them from a single Git clone. I package it as a marketplace because that's what the agents read.
 
-Four tools, four jobs. I picked or built each one to do a thing the others don't.
+Five tools, five jobs. I picked or built each one to do a thing the others don't.
 
 ## What I use each for
 
@@ -14,6 +14,8 @@ Four tools, four jobs. I picked or built each one to do a thing the others don't
 
 **Project documentation.** [`llm-wiki`](plugins/llm-wiki/) bootstraps and maintains an LLM-readable wiki for the project, indexed by [QMD](https://github.com/tobilu/qmd). I use it to keep what one agent learned available to the next one, across sessions and across machines. The pattern is Karpathy's — the wiki is the agent's memory, not mine.
 
+**Code review.** [`agent-reviewer`](plugins/agent-reviewer/) clones my team's best reviewers from their PR history and runs them as a review panel. It reads a reviewer's past comments *in the context of the code they were reviewing* and extracts a persona — what they care about, what they let slide, how they sound — not a rule list. Point it at several repos and it calibrates: separating the person's standards from what one codebase happened to drag out of them. It ships a cheat-proof, model-agnostic eval harness ([`plugins/agent-reviewer/eval/`](plugins/agent-reviewer/eval/)) so you can measure a persona against the real reviewer with any model and no way to game it.
+
 ## Install
 
 ### Claude Code
@@ -24,6 +26,7 @@ Four tools, four jobs. I picked or built each one to do a thing the others don't
 /plugin install agent-seo@aikuznetsov-marketplace
 /plugin install screenote@aikuznetsov-marketplace
 /plugin install llm-wiki@aikuznetsov-marketplace
+/plugin install agent-reviewer@aikuznetsov-marketplace
 ```
 
 ### Codex
@@ -43,9 +46,10 @@ plugins/agent-writing               # vendored plugin files
 plugins/agent-seo                   # vendored plugin files
 plugins/screenote                   # vendored plugin files
 plugins/llm-wiki                    # vendored plugin files
+plugins/agent-reviewer              # vendored plugin files
 ```
 
-Plugins are vendored as plain directories, not submodules. Codex reads marketplace-local plugin paths from a normal clone and doesn't initialize submodules first, so vendoring is what makes a single repo work for both agents. `llm-wiki`, `screenote`, and `agent-seo` have upstream source repositories; `agent-writing` is born here.
+Plugins are vendored as plain directories, not submodules. Codex reads marketplace-local plugin paths from a normal clone and doesn't initialize submodules first, so vendoring is what makes a single repo work for both agents. `llm-wiki`, `screenote`, and `agent-seo` have upstream source repositories; `agent-writing` and `agent-reviewer` are born here.
 
 ## Development
 

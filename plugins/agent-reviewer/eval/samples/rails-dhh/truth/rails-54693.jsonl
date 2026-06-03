@@ -1,0 +1,4 @@
+{"id":0,"body":"Added the option for multi-arg system calls, but find the syntax cumbersome when it's not adding an escaping benefit, so think we'll just leave the default ci DSL as-is. But now people can at least take advantage of the escaping if they need it. Good suggestion!"}
+{"id":1,"body":"I don't think that carries the weight for how ugly that method is. To fix what's wrong, you still have to look at the line, and when you do, you'll see what the predicate is. Appreciate that the output is marginally better, but to me that doesn't outweigh the aesthetic regression."}
+{"id":2,"body":"Good catch. Removed in f98c0188ae2e."}
+{"id":3,"body":"No, I think test:all mixes all tests together. We want to run all the regular tests first, then the system tests. But we can also just split it into two separate steps?"}

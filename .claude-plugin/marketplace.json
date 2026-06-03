@@ -127,6 +127,35 @@
         "team-of-rivals",
         "prose-craft"
       ]
+    },
+    {
+      "name": "agent-reviewer",
+      "source": "./plugins/agent-reviewer",
+      "description": "Clone your team's best code reviewers from their PR history (across one or more repos) and run them as a review panel. Extracts a persona per reviewer — what they care about, what they catch, how they sound — not a rule list.",
+      "version": "0.2.0",
+      "author": {
+        "name": "ivankuznetsov",
+        "url": "https://github.com/ivankuznetsov"
+      },
+      "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+      "repository": "https://github.com/ivankuznetsov/agent-plugins",
+      "license": "MIT",
+      "keywords": [
+        "agent-reviewer",
+        "claude-code",
+        "codex",
+        "code-review",
+        "reviewer-persona",
+        "pull-request",
+        "team-of-rivals"
+      ],
+      "category": "workflow",
+      "tags": [
+        "code-review",
+        "reviewer-persona",
+        "pull-request",
+        "team-of-rivals"
+      ]
     }
   ]
 }
