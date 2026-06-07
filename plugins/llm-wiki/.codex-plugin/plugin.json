@@ -1,6 +1,6 @@
 {
   "name": "llm-wiki",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
   "author": {
     "name": "ivankuznetsov",
@@ -16,13 +16,15 @@
     "planning",
     "agent-workflow",
     "claude-code",
-    "codex"
+    "codex",
+    "pi",
+    "pi-package"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "LLM Wiki",
     "shortDescription": "Bootstrap and query LLM-maintained project wikis.",
-    "longDescription": "LLM Wiki packages workflows for creating a project-local wiki, installing Claude Code and Codex wiki context, researching project and main cross-project wiki knowledge, planning with wiki context before implementation, and checking plugin update status. QMD is used when available, with CLI and ripgrep fallbacks.",
+    "longDescription": "LLM Wiki packages workflows for creating a project-local wiki, installing Claude Code, Codex, and Pi wiki context, researching project and main cross-project wiki knowledge, planning with wiki context before implementation, and checking plugin/package update status. QMD is used when available, with CLI and ripgrep fallbacks.",
     "developerName": "ivankuznetsov",
     "category": "Coding",
     "capabilities": [

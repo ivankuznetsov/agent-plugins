@@ -31,5 +31,5 @@
   <text x="648" y="504" fill="#d1d5db" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">4. Carry gotchas forward</text>
   <text x="648" y="548" fill="#fde68a" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Then hand off to planning.</text>
 
-  <text x="82" y="650" fill="#9ca3af" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Supports Claude Code + Codex (GPT-5.5) · QMD optional · rg fallback</text>
+  <text x="82" y="650" fill="#9ca3af" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Supports Claude Code + Codex (GPT-5.5) + Pi · QMD optional · rg fallback</text>
 </svg>
