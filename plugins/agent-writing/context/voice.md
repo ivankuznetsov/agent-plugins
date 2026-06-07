@@ -25,3 +25,5 @@ First person singular ("I") — this is one engineer showing their own work and 
 - Generic transitions: "Furthermore", "Moreover", "Additionally".
 - Fake modesty or fake grandeur — the calibration is honest, never performed.
 - Padding. A sentence that exists only to fill space is already cut.
+- Antithesis-by-negation: "X is not Y, it's Z" / "this isn't a W, it's a V" ("Your eval is a sandbox, not a prompt"). It performs insight by negation and reads as a manufactured hook. State what it *is*. Keep the "not Y" only when the contrast is genuinely load-bearing, and at most once in a piece — never in the title by reflex.
+- The reflexive scenario opener: "You're staring at X…", "Imagine you have to Y…", "You built X, then Y happened." A fine way in once; a tell when every piece opens this way. It is one option, not the default.
