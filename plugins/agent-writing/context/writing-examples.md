@@ -1,43 +1,41 @@
 # Writing Examples
 
-This file holds two or three real examples of writing you want the writer to emulate. The writer learns more from concrete examples than from abstract rules — when the voice file says "confident, direct" and this file shows three openings that *are* confident and direct, the writer has something to anchor against.
-
-Paste real openings, transitions, and closings from your project's existing writing. Don't write examples specifically for this file; use writing you've already published and you're already happy with.
-
-Sections still reading as placeholder prose are treated as unfilled.
+Real openings, transitions, and closings from published pieces. The writer anchors to these concretely — more useful than abstract rules. Sources: the agent-reviewer / eval piece, the Hive launch, the Code with Claude London notes.
 
 ## Good openings
 
-How your best pieces start. The writer leans on these when drafting the first paragraph.
+Put the reader inside the problem with stacked, concrete situations:
 
-> *Placeholder — replace with 2-3 real openings from your project's writing.*
->
-> Example shape:
->
-> *"The migration was scheduled for Tuesday. Mike came in Monday night anyway, because the only person who'd ever run this script before was on PTO and the rollback plan was three Slack messages from 2024."*
->
-> *Why this works for us: it opens on a moment, names a person, and lands the stakes in one sentence.*
+> "You're staring at a pull request that rewrites half the codebase. The lead engineer who'd normally catch the subtle stuff is on vacation. Or your team adopted AI so well that the number of PRs grew 2× over three months. Or you just closed a Series A and have to double the team without dropping quality."
+
+A flat, surprising confession as the first line:
+
+> "Yesterday I merged 25,000 lines of code. I haven't read a single one of them."
+
+A question from the room, no setup:
+
+> "\"Hands up — who shipped a PR from Claude this past week without reading the diff?\" Most of the room raised their hands."
+
+*Why these work: they open on a moment or a stake, never a definition. The first sentence is doing real work before the reader has decided whether to stay.*
 
 ## Good transitions
 
-How your best pieces move between sections. The writer leans on these to avoid generic transitional language.
+Short, declarative, name the turn:
 
-> *Placeholder — replace with 2-3 real transitions.*
->
-> Example shape:
->
-> *"That's how we ended up with two databases. Here's how we got to one."*
->
-> *Why this works: short, declarative, names what's coming.*
+> "Wrong the second time: surely a hybrid would win. It came dead last."
+
+> "But the result I keep coming back to is bigger than persona-vs-rules: the biggest lever wasn't the prompt at all. It was repository access."
+
+*Why these work: they signpost the argument's next move without a generic connective ("Furthermore", "In addition"). The transition carries information.*
 
 ## Good closings
 
-How your best pieces end. The writer leans on these to avoid summary-only conclusions.
+Land on the principle as an imperative — then stop:
 
-> *Placeholder — replace with 2-3 real closings.*
->
-> Example shape:
->
-> *"We're three months in and the new system has held. The thing we got right wasn't the rewrite — it was waiting until we understood what we were rewriting. The next migration starts Monday."*
->
-> *Why this works: lands the stake, doesn't recap, leaves something forward-looking without being a CTA.*
+> "Build the eval before you trust the agent."
+
+Invite the reader to fight you with your own tools:
+
+> "The plugin and the benchmark are open. Point it at your own team — and since the numbers are directional, go argue with them."
+
+*Why these work: no summary, no "in conclusion". One quotable line, or a hand-off that trusts the reader to go do something.*

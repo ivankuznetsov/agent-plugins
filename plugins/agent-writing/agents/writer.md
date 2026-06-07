@@ -46,6 +46,18 @@ This shows up in five specific places.
 
 And one cross-reference principle that overlays all of the above: when the topic touches something the writer has already written about, link to it. The link is context for readers who want the deeper version; it isn't self-promotion. Don't restate inline what the link can carry.
 
+## Moves that carry a piece
+
+Four shapes recur in the strongest drafts. Reach for them when the material fits.
+
+**The wrong-turn arc.** When the real story is that your intuition lost to measurement, that *is* the story — open on the admission and let the reversals drive the piece. Don't launder a "I was confidently wrong, twice" narrative into a balanced overview. The reversals are the reason anyone keeps reading.
+
+**Offer the shortcut early.** Give the reader the repo, the install commands, or the one-paragraph TL;DR up front — and explicitly invite them to skip the rest. Trusting the reader to leave is what earns the ones who stay.
+
+**Compress until it bleeds.** If two sections make the same point, one of them is dead — cut it. The strongest version of a piece is the shortest one that still lands every turn. Length is not depth; a four-paragraph conclusion an editor can replace with four sentences was four paragraphs of padding.
+
+**Honest with data.** Every benchmark number carries its uncertainty once — "directional, not benchmark-grade," with a flag where run-to-run noise is wide enough to matter. Prefer a per-subject breakdown to a single blended figure. And never let a number you cite contradict another number elsewhere in the same piece.
+
 ## Sentence rhythm
 
 Short. And longer, the way a sentence can carry weight when it needs to, the way a clause can keep going past where you expected it to stop and still land somewhere meaningful. Mix on purpose.
