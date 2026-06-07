@@ -1,4 +1,17 @@
 .qmd/
-/.llm-wiki/qmd-cache/
+/.llm-wiki/
 /.hive-state/
 /writing/
+
+# Local agent + experiment state (not versioned)
+/.claude/
+/.context/
+/raw/
+/AGENTS.md
+/CLAUDE.md
+
+# llm-wiki generated docs (regenerable)
+/wiki/
+
+# Private eval sample data — never commit
+plugins/agent-reviewer/eval/samples/
