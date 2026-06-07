@@ -1,43 +1,34 @@
 # Style Guide
 
-This file holds your project's structural conventions. The writer loads it before drafting and the editor uses it when assessing structure. Fill it in once at install time.
-
-Sections still reading as placeholder prose are treated as unfilled.
+Structural conventions for the project, filled from Ivan's published pieces. The writer loads it before drafting; the editor checks structure against it.
 
 ## Sentence rhythm
 
-> *Placeholder.* How long should sentences be on average? Where should they vary?
->
-> - *Average 15-20 words. Mix short (under 10) and long (over 30) deliberately.*
-> - *Never let three sentences in a row land the same way.*
-> - *Cut every adverb you can. Cut every "very" without exception.*
+Average 15–20 words, deliberately varied. Never let three sentences in a row land the same way. Cut every adverb that isn't carrying weight; cut every "very".
 
 ## Paragraph length
 
-> *Placeholder.* Target paragraph shape.
->
-> - *2-4 sentences. Long enough to develop a thought, short enough to be skimmed.*
-> - *One idea per paragraph. If you have two ideas, you have two paragraphs.*
+2–4 sentences. One idea per paragraph. If you have two ideas, you have two paragraphs.
 
 ## Headings and structure
 
-> *Placeholder.* How you use headings.
->
-> - *H1 for the title only. H2 for sections. H3 sparingly, only when an H2 has internal structure that earns a sub-heading.*
-> - *Title case for H1, sentence case for H2 and below.*
-> - *No section under 100 words. If it's shorter than that, it doesn't earn a heading — fold it into the adjacent section.*
+H1 for the title only; H2 for sections; H3 only when an H2 has real internal structure. Sentence case below H1. Section headers can be questions or positions, not just labels: "How do I know it actually works?", "What if you combine the two approaches?" — these earn more attention than "Methodology" or "Hybrid approach".
 
-## Quotations
+## The default article arc
 
-> *Placeholder.* How to quote sources.
->
-> - *Use block quotes for anything over one sentence. Inline quotes for short phrases.*
-> - *Always attribute. Always cite. "Said so-and-so" never floats without a source pointer.*
+1. Open on the reader's situation — often a stacked "or… or…" of concrete scenarios that put them in the problem.
+2. Offer the shortcut early: the repo, the install commands, the TL;DR — and explicitly invite the reader to skip the rest. Trust buys attention.
+3. Body as narrative. When the real story is "my intuition lost to measurement," lead with the admission and let the reversals drive the piece. Don't launder a wrong-turn story into a neutral overview.
+4. Charts and tables carry the data, each with an honest caption. Break results out per subject; never quote one blended number when a per-subject split is more honest.
+5. Close on a short, skimmable takeaways list and one aphoristic imperative ("Build the eval before you trust the agent"). No author bio in the English version.
 
-## Numbers and dates
+## Numbers and data
 
-> *Placeholder.* Conventions for numbers, dates, units.
->
-> - *Spell out one through nine. Use digits for 10 and above.*
-> - *ISO dates in metadata (YYYY-MM-DD). Long-form dates in prose ("March 14, 2026").*
-> - *Always units. Always commas in long numbers (10,000 not 10000).*
+- Spell out one through nine in prose; digits for data and all benchmark figures.
+- Every benchmark number carries its uncertainty once — say "directional, not benchmark-grade" and flag where run-to-run noise is wide enough to matter.
+- A number must never contradict another number in the same piece. Cross-check prose against tables against chart captions before shipping.
+- One quotable one-liner per piece. Don't manufacture a second.
+
+## Quotations and links
+
+Block-quote anything over a sentence; attribute and cite. When the piece touches something already published, link to it rather than restating it inline.

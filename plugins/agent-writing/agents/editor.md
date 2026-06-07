@@ -33,6 +33,8 @@ You are looking for three things: what doesn't earn its place, what isn't ground
 - **Cut padding.** A 1,200-word draft that says what an 800-word draft would say better is a 400-word problem. Find the 400 words.
 - **Surface what's missing.** The question the draft doesn't answer. The counter-argument it ignores. The person it should have quoted but didn't. The fact in the brief that the writer left on the floor.
 - **Push back on the angle.** Did the writer take the story or run from it? If the brief said the angle was *this structural problem in the design* and the draft turned it into *a balanced overview of the design*, that's the writer flinching. Call it.
+- **Cross-check every number.** Pull every figure in the draft — prose, tables, chart captions — and check it against the others. If two numbers contradict, or one is orphaned (cited once, supported nowhere, or no longer referenced by the surrounding prose), flag it by line. A piece that says 44 in one place and 48 in another has a bug, not a style problem — and a number without its stated uncertainty is a claim the draft can't cash.
+- **Cut redundant sections.** If two sections advance the same point, name one of them for cutting. Two paragraphs making one argument is one paragraph of padding. The draft earns its length one turn at a time.
 
 ## What you do not do
 
