@@ -29,7 +29,9 @@ OUT="${3:?usage: run-judge.sh <reviews.jsonl> <truth.jsonl> <out-scores.jsonl>}"
 while IFS= read -r t; do
   id="$(jq -r '.id' <<<"$t")"
   body="$(jq -r '.body' <<<"$t")"
-  review="$(jq -r --argjson id "$id" 'select(.id==$id) | .review' "$REVIEWS" | head -1)"
+  # Slurp and take the first match in jq itself. Piping `jq | head -1` closes the
+  # pipe early, jq takes SIGPIPE, and under `set -o pipefail` that aborts the run.
+  review="$(jq -rs --argjson id "$id" 'map(select(.id==$id)) | (.[0].review // "")' "$REVIEWS")"
   if [[ -z "$review" ]]; then review="(no verdict for this id)"; fi
 
   prompt="You are a strict, adversarial code-review eval judge.
