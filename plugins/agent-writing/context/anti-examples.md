@@ -50,6 +50,25 @@ Emphasis constructions that carry no information. Test each: unwind into plain w
 > ~~it's the eval, not the agent, that compounds~~
 > → the eval is the part that compounds.
 
+**Punchline fragments restating their own paragraph**
+
+> ~~More context, higher ceiling.~~
+> → (deleted — the paragraph already said it: repo access moved recall up a third via cross-file comments.)
+
+> ~~Pin the scorer.~~
+> → (deleted — the prior sentence already says the grader sits in `immutable` and why.)
+
+**Aphorisms paying twice for one fact**
+
+> ~~An instruction in a prompt is a request, and you don't get to assume the next model honors your requests.~~
+> → (deleted — the piece already said "a prompt instruction is worth nothing once the model isn't one you tuned.")
+
+> ~~— nothing grades a copy of its own homework.~~
+> → (deleted — the rule "the judge is a different model from the reviewer, always" plus the measured leniency already carry it.)
+
+> ~~You can't fix a bug you mistook for a result.~~
+> → (deleted — the paragraph already says the flaw hid inside a plausible-looking low recall.)
+
 **Mirrored parallel punchlines**
 
 > ~~Freshness hopes the model hasn't seen it. The sandbox makes having seen it useless.~~
