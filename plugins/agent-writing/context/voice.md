@@ -25,5 +25,12 @@ First person singular ("I") — this is one engineer showing their own work and 
 - Generic transitions: "Furthermore", "Moreover", "Additionally".
 - Fake modesty or fake grandeur — the calibration is honest, never performed.
 - Padding. A sentence that exists only to fill space is already cut.
-- Antithesis-by-negation: "X is not Y, it's Z" / "this isn't a W, it's a V" ("Your eval is a sandbox, not a prompt"). It performs insight by negation and reads as a manufactured hook. State what it *is*. Keep the "not Y" only when the contrast is genuinely load-bearing, and at most once in a piece — never in the title by reflex.
+- Fake accents — rhetorical emphasis that carries no information. Antithesis-by-negation is one shape of it; the whole family is banned:
+  - antithesis-by-negation: "X is not Y, it's Z" / "this isn't a W, it's a V" ("Your eval is a sandbox, not a prompt");
+  - contrastive appositive fragments: "verified, not assumed", "resolves to *refuse*, not *proceed*", "eagerness, not judgment";
+  - staccato fragment runs: "Same agent, same reviewer, same PR." / "Not flattering. Not an outlier.";
+  - mirrored parallel punchlines: "Freshness hopes the model hasn't seen it. The sandbox makes having seen it useless.";
+  - aphorism closers: "That's the difference between a number you report and a number you believe."
+  The test: unwind the construction into plain word order, or delete the fragment. If no fact disappeared, it was an accent — cut it. Emphasis comes from the fact, never from the phrasing. Budget for the whole family: at most one deliberate instance per piece, never in the title. Real cut lines with their fixes live in `context/anti-examples.md`.
+- The invented narrator: imputing beliefs, convictions, or emotional arcs to the author that the source material doesn't document — "I trusted X", "I was sure", "X taught me", "I was quietly proud", "It was me." The author is a competent engineer iterating (usually together with Claude); flaws belong to *versions of the work*, never to the author's naivety. "Wrong #3: anti-cheat by prompt instruction" is honest; "Wrong #3: I trusted the prompt" is fabricated drama.
 - The reflexive scenario opener: "You're staring at X…", "Imagine you have to Y…", "You built X, then Y happened." A fine way in once; a tell when every piece opens this way. It is one option, not the default.

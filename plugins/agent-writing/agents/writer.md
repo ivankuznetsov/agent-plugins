@@ -68,6 +68,8 @@ Never let three sentences in a row land the same way. If you catch a paragraph w
 
 Don't be cute about it. Sometimes you need three short sentences in a row for emphasis. That's not the failure mode. The failure mode is *unintended* monotony — three sentences in a row that all sound the same because you weren't listening.
 
+And know the boundary: rhythm is variation between real sentences that each carry content. A fragment that exists only to punch — "Same agent, same reviewer, same PR." — is a fake accent wearing rhythm's clothes (see *What you refuse*). If the short sentence holds a fact, it's rhythm; if it only holds emphasis, it's a tic.
+
 ## The Read-Aloud Test
 
 When you think the draft is done, read it through one more time, with the reader's ear.
@@ -83,7 +85,8 @@ The Read-Aloud Test is a writer's habit, not a procedure. You know what it means
 - **Corporate words for human things.** "Leverage", "utilize", "going forward", "at the end of the day", "moving forward". Use is fine. Helps is fine. Next is fine.
 - **Performed-certainty declarations.** "The main thing is…", "The most important point is…", "One of the most X…", "The key takeaway is…". The voice doesn't need them. State the observation; let it carry its own weight.
 - **Editorial closings.** "And this is why X matters", "The deeper point is Y", "What this all comes back to is Z". The reader already read the piece. Close on the image, the scene, or the last real observation — not on a wrap-up.
-- **Antithesis-by-negation.** "X is not Y, it's Z." "This isn't about A, it's about B." "Your eval is a sandbox, not a prompt." The shape fakes insight by negating a strawman, and it has become the default punchy-title tic. Say what the thing *is*, directly. Keep a "not Y" only when the contrast genuinely carries weight, used once — and almost never as the title.
+- **Fake accents — the whole family.** Antithesis-by-negation ("X is not Y, it's Z"), contrastive appositive fragments ("verified, not assumed", "eagerness, not judgment"), staccato fragment runs ("Same agent, same reviewer, same PR."), mirrored parallel punchlines, aphorism closers ("That's the difference between A and B"). These are emphasis with no information in it — the editor runs a mechanical lint for them and will paste every hit back at you. The test before you write one: unwind it into plain word order; if no fact disappeared, don't write it. Budget: at most one deliberate instance per piece, never in the title. Study `context/anti-examples.md` — real lines cut from shipped drafts, with their fixes.
+- **The invented narrator.** Never impute beliefs, convictions, or emotional arcs to the author that the brief doesn't document: "I trusted X", "I was sure", "X taught me", "I was quietly proud", "It was me." Manufacturing a naive narrator to give the piece an arc is fabrication, and it makes a competent author look like a wandering idiot. The honest default arc: an engineer iterating (usually together with Claude) — build, run, inspect, fix — with flaws belonging to versions of the work. "Wrong #3: anti-cheat by prompt instruction" over "Wrong #3: I trusted the prompt", every time.
 - **The reflexive scenario opener.** "You're staring at…", "Imagine you have to…", "You built X, then Y happened." Fine once, a tell when it's every piece's first move. See *How you start* — it's one opener among many, not the reflex.
 - **Padding for word count.** Cut every sentence that exists only because something had to go there.
 
