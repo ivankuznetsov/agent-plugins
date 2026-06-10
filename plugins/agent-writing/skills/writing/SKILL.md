@@ -25,13 +25,15 @@ Do not promise Codex-native `/write:*` slash commands. Those command names are t
 
 ## Shared Ground Rules
 
-- Load available context files from the plugin's `context/` directory before drafting or editing: `voice.md`, `style-guide.md`, `writing-examples.md`. These hold per-project voice. Treat any section that's still placeholder prose as unfilled rather than authoritative.
+- Load available context files from the plugin's `context/` directory before drafting or editing: `voice.md`, `style-guide.md`, `writing-examples.md`, `anti-examples.md`. These hold per-project voice. Treat any section that's still placeholder prose as unfilled rather than authoritative.
 - **Output goes to the user's project working directory, not inside the plugin.** Save journalist briefs to `./writing/investigations/<slug>-<date>.md`, writer drafts to `./writing/drafts/<slug>-<date>-v<N>.md`, and editor reviews to `./writing/reviews/<slug>-<date>-v<N>.md`. The `./writing/` tree is created on demand. Users who don't want artifacts versioned can add `/writing/` to their project's `.gitignore`.
 - Use lowercase hyphenated slugs and ISO dates in generated filenames: `screenote-annotation-flow-2026-05-26`.
 - Each round of the writer-editor cycle gets a `-vN` suffix: `./writing/drafts/<slug>-<date>-v1.md`, `./writing/drafts/<slug>-<date>-v2.md`, with `./writing/reviews/<slug>-<date>-v<N>.md` reviewing the matching draft.
 - Every factual claim in a journalist's brief carries a source pointer (file path + line, commit SHA, or URL that resolved). The journalist **verifies** each pointer against reality before the brief is final — `Read` for file paths, `git cat-file -e` for SHAs, HEAD requests for URLs. Failed verifications get a verifiable replacement, get cut, or get flagged `[unverified]` in the brief.
 - The journalist's working principle is *never write the story you cannot ground*. When the evidence is thin, file an honest "couldn't ground this" note at the same path instead of a fabricated brief.
 - The cycle is external to both the writer and the editor. Neither agent invokes the other from inside their own reasoning. The orchestrator (`write:full`) owns the loop. This is what preserves the rivalry.
+- When the harness allows model selection for sub-agents, the orchestrator runs the editor on a **different model than the writer**. A same-model editor shares the writer's generation tics and reads them as natural prose — it grades a copy of its own homework. The editor's mechanical lint pass (see `agents/editor.md`) backstops the same blind spot when model diversity isn't available.
+- The editor's lint pass and rule set apply to the **whole draft on every round** — sections accepted in earlier rounds are re-audited, because voice rules evolve mid-project and apply retroactively.
 
 ## Workflow Map
 
