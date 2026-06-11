@@ -25,6 +25,7 @@ grep -nE ', not |; not |— not ' "$draft"                      # contrastive ap
 grep -nE "(is|are|was|were)(n't| not)[^.]*[.,—] ?(It|They|That|it|they|that)'s" "$draft"  # antithesis-by-negation, incl. sentence-split ("…is not a boundary. It's a comment.")
 grep -nE "That's the difference between" "$draft"             # aphorism closers
 grep -nE '^[A-Z][^.!?]{0,25}\. [A-Z][^.!?]{0,25}\. [A-Z][^.!?]{0,25}\.' "$draft"  # staccato runs
+grep -nE '[Nn]o [a-z-]+, no [a-z-]+' "$draft"                  # negation-list runs ("No code, no repo link, no architecture")
 grep -nE 'taught me|I trusted|I realized|I was (sure|certain|proud|convinced)|It was me' "$draft"  # invented narrator
 ```
 

@@ -36,6 +36,14 @@ Emphasis constructions that carry no information. Test each: unwind into plain w
 > ~~Recall. Clean, simple, one number.~~
 > → Recall: one clean number.
 
+**Negation-list runs**
+
+> ~~No code, no repo link, no architecture beyond that.~~
+> → Beyond that one sentence it contains nothing you could build from.
+
+> ~~What I didn't have was anything buildable: no code, no queue format, no handoff protocol, no answer to where the state should live.~~
+> → What I didn't have was anything buildable — the queue format, the handoff protocol, and where the state should live were all left unspecified.
+
 **Antithesis-by-negation**
 
 > ~~"Please don't peek" is not a security boundary. It's a comment.~~
