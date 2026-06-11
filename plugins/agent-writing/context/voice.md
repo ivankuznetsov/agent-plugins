@@ -29,6 +29,7 @@ First person singular ("I") — this is one engineer showing their own work and 
   - antithesis-by-negation: "X is not Y, it's Z" / "this isn't a W, it's a V" ("Your eval is a sandbox, not a prompt");
   - contrastive appositive fragments: "verified, not assumed", "resolves to *refuse*, not *proceed*", "eagerness, not judgment";
   - staccato fragment runs: "Same agent, same reviewer, same PR." / "Not flattering. Not an outlier.";
+  - negation-list runs: "No code, no repo link, no architecture beyond that.";
   - mirrored parallel punchlines: "Freshness hopes the model hasn't seen it. The sandbox makes having seen it useless.";
   - aphorism closers: "That's the difference between a number you report and a number you believe."
   The test: unwind the construction into plain word order, or delete the fragment. If no fact disappeared, it was an accent — cut it. Emphasis comes from the fact, never from the phrasing. Budget for the whole family: at most one deliberate instance per piece, never in the title. Real cut lines with their fixes live in `context/anti-examples.md`.
