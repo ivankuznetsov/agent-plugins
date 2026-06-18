@@ -6,9 +6,11 @@ set -euo pipefail
 # A commit in ANY git worktree triggers a wiki refresh, but the wiki is global
 # state that lives on the MAIN checkout. So this script reads the just-committed
 # code in the committing tree, but reads/writes/commits the wiki ONLY on the main
-# checkout — a linked worktree's own wiki/ is never touched, leaving it clean.
-# All wiki commits are serialized (one writer) via a lock in the shared git dir,
-# scoped to wiki/, guarded against re-triggering this hook, and never pushed.
+# checkout. The refresh agent is INSTRUCTED (via the WORKTREE REDIRECT directive
+# below) to write the wiki only on the main checkout, so a compliant agent leaves
+# the committing worktree's wiki/ untouched and its `git status` clean. All wiki
+# commits are serialized (one writer) via a lock in the shared git dir, scoped to
+# wiki/, guarded against re-triggering the hook, and never pushed.
 
 committing_tree="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$committing_tree"
@@ -65,16 +67,49 @@ fi
 log_file="$wiki_root/.llm-wiki/post-commit-refresh.log"
 mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
 
+log_line() {
+  printf '[llm-wiki][%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >>"$log_file" 2>/dev/null || true
+}
+
 # --- Serialize ALL refreshes/commits across every worktree on one lock in the
 #     shared git dir, so N concurrent worktree commits never race the main index.
+#     The lock records its owner PID + start time so a crash/SIGKILL/reboot that
+#     skips the EXIT trap can be reclaimed instead of wedging refreshes forever.
 lock_dir="$common_dir/llm-wiki/refresh.lock"
 mkdir -p "$(dirname "$lock_dir")" 2>/dev/null || true
-if ! mkdir "$lock_dir" 2>/dev/null; then
-  # Another refresh holds the lock; it will pick up the latest state. Exit
-  # cleanly rather than queue a second writer.
+
+acquire_lock() {
+  if mkdir "$lock_dir" 2>/dev/null; then
+    printf '%s %s\n' "$$" "$(date +%s 2>/dev/null || echo 0)" >"$lock_dir/owner" 2>/dev/null || true
+    return 0
+  fi
+
+  # Lock held — reclaim only if the owner is gone or the lock outlived its TTL
+  # (default 2x the agent timeout). Otherwise a peer refresh is genuinely active.
+  local owner pid started now ttl
+  owner="$(cat "$lock_dir/owner" 2>/dev/null || true)"
+  pid="${owner%% *}"
+  started="${owner##* }"
+  now="$(date +%s 2>/dev/null || echo 0)"
+  ttl="${LLM_WIKI_LOCK_TTL:-3600}"
+
+  if { [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; } ||
+     { [ "$now" -gt 0 ] && [ -n "$started" ] && [ "$started" -gt 0 ] && [ "$((now - started))" -gt "$ttl" ]; }; then
+    log_line "reclaiming stale refresh lock (owner pid=${pid:-?}, age=$((now - ${started:-now}))s)"
+    rm -rf "$lock_dir" 2>/dev/null || true
+    if mkdir "$lock_dir" 2>/dev/null; then
+      printf '%s %s\n' "$$" "$now" >"$lock_dir/owner" 2>/dev/null || true
+      return 0
+    fi
+  fi
+  return 1
+}
+
+if ! acquire_lock; then
+  # A peer refresh holds the lock; it reads HEAD fresh, so our update is covered.
   exit 0
 fi
-trap 'rmdir "$lock_dir" 2>/dev/null || true' EXIT
+trap 'rm -rf "$lock_dir" 2>/dev/null || true' EXIT
 
 changed_files="$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)"
 [ -n "$changed_files" ] || exit 0
@@ -115,7 +150,7 @@ run_refresh() {
   # (wiki_root, prompt) instead of the real agent. Lets tests exercise the
   # worktree-redirect/lock/commit plumbing without a live model run.
   if [ -n "${LLM_WIKI_REFRESH_CMD:-}" ]; then
-    run_without_git_env ${LLM_WIKI_REFRESH_CMD} "$wiki_root" "$full_prompt" >>"$log_file" 2>&1 || true
+    run_without_git_env "$LLM_WIKI_REFRESH_CMD" "$wiki_root" "$full_prompt" >>"$log_file" 2>&1 || true
     return 0
   fi
 
@@ -123,10 +158,11 @@ run_refresh() {
   [ "$linked" -eq 1 ] && add_dir_args+=( --add-dir "$wiki_root" )
 
   if command -v timeout >/dev/null 2>&1; then
-    run_without_git_env timeout "${LLM_WIKI_CODEX_TIMEOUT:-1800}" \
-      codex exec "${add_dir_args[@]}" -C "$committing_tree" "$full_prompt" >>"$log_file" 2>&1 || true
+    run_without_git_env timeout "${LLM_WIKI_CODEX_TIMEOUT:-1800}" codex exec "${add_dir_args[@]}" -C "$committing_tree" "$full_prompt" >>"$log_file" 2>&1 \
+      || log_line "WARN: refresh agent exited non-zero (code $?)"
   else
-    run_without_git_env codex exec "${add_dir_args[@]}" -C "$committing_tree" "$full_prompt" >>"$log_file" 2>&1 || true
+    run_without_git_env codex exec "${add_dir_args[@]}" -C "$committing_tree" "$full_prompt" >>"$log_file" 2>&1 \
+      || log_line "WARN: refresh agent exited non-zero (code $?)"
   fi
 }
 
@@ -195,7 +231,10 @@ if [ "$ran_refresh" -eq 1 ]; then
   # across worktrees; the compiled log.md is a derived artifact regenerated here
   # on the main checkout so it never has to be hand-edited or merged.
   if [ -x "$wiki_root/.llm-wiki/compile-log.sh" ]; then
-    bash "$wiki_root/.llm-wiki/compile-log.sh" "$wiki_root" >>"$log_file" 2>&1 || true
+    bash "$wiki_root/.llm-wiki/compile-log.sh" "$wiki_root" >>"$log_file" 2>&1 \
+      || log_line "ERROR: compile-log.sh failed for $wiki_root; wiki/log.md may be stale"
+  else
+    log_line "WARN: $wiki_root/.llm-wiki/compile-log.sh missing or not executable; skipped log.md compile"
   fi
 
   if command -v qmd >/dev/null 2>&1; then
@@ -207,13 +246,19 @@ if [ "$ran_refresh" -eq 1 ]; then
   # post-commit hook disabled so this commit can't re-trigger us (the hook also
   # honors HIVE_SKIP_LLM_WIKI_POST_COMMIT), and never pushed (so an in-progress
   # branch is never diverged from its remote). Leaving the worktree untouched
-  # keeps its `git status` clean.
+  # keeps its `git status` clean. A failed commit is logged loudly because it
+  # would otherwise strand the agent's edits as uncommitted dirt on the main
+  # checkout with no signal.
   if [ -n "$(git -C "$wiki_root" status --porcelain -- wiki 2>/dev/null)" ]; then
-    git -C "$wiki_root" add -- wiki >>"$log_file" 2>&1 || true
-    HIVE_SKIP_LLM_WIKI_POST_COMMIT=1 \
-      git -C "$wiki_root" -c core.hooksPath=/dev/null \
-      commit --only -m "docs(wiki): post-commit refresh for ${branch}@${short_sha}" \
-      -- wiki >>"$log_file" 2>&1 || true
+    if ! git -C "$wiki_root" add -- wiki >>"$log_file" 2>&1; then
+      log_line "ERROR: git add -- wiki failed on $wiki_root; wiki edits left UNCOMMITTED"
+    fi
+    if ! HIVE_SKIP_LLM_WIKI_POST_COMMIT=1 \
+         git -C "$wiki_root" -c core.hooksPath=/dev/null \
+         commit --only -m "docs(wiki): post-commit refresh for ${branch}@${short_sha}" \
+         -- wiki >>"$log_file" 2>&1; then
+      log_line "ERROR: wiki refresh commit FAILED on $wiki_root (${branch}@${short_sha}); edits remain staged/dirty on the main checkout"
+    fi
   fi
 
   for sync_dir in "$HOME/wikis/.sync-needed" "$(dirname "$wiki_root")/wikis/.sync-needed"; do

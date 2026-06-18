@@ -5,7 +5,10 @@ set -euo pipefail
 #
 # Single source of truth for the LLM-wiki changelog format, shared verbatim by
 # the llm-wiki plugin and by hive (Hive::WikiLog delegates here). Output is
-# byte-identical to the prior Ruby implementation:
+# byte-identical to the prior Ruby implementation for all well-formed logs (a
+# header plus exactly one generated block); a malformed log with multiple
+# generated blocks is normalized (every BEGIN/END pair is excised), which the
+# prior Ruby — a single non-greedy sub — did not do. Layout:
 #
 #   <HEADER, rstripped>
 #
@@ -34,11 +37,13 @@ Append-only log of all wiki operations.'
 BEGIN_MARKER='<!-- BEGIN GENERATED WIKI LOG FRAGMENTS -->'
 END_MARKER='<!-- END GENERATED WIKI LOG FRAGMENTS -->'
 
-# Trim leading+trailing whitespace of an entire file like Ruby String#strip
-# ([[:space:]] == space \t \n \r \v \f). Emits the stripped body with no
-# trailing newline.
+# Trim leading+trailing whitespace of an entire file like Ruby String#strip.
+# Pinned to LC_ALL=C so [[:space:]] is the ASCII set (space \t \n \r \v \f),
+# matching Ruby across locales/awk implementations. (Ruby additionally strips a
+# NUL byte; ignored here since changelog fragments are text.) Emits the stripped
+# body with no trailing newline.
 strip_file() {
-  awk '{ buf = (NR == 1 ? $0 : buf "\n" $0) }
+  LC_ALL=C awk '{ buf = (NR == 1 ? $0 : buf "\n" $0) }
        END {
          gsub(/^[[:space:]]+/, "", buf)
          gsub(/[[:space:]]+$/, "", buf)
@@ -69,23 +74,25 @@ else
 fi
 
 # legacy_body: hand-written "## " entries that predate the generated block —
-# which can sit BOTH before the BEGIN marker and after the END marker. Faithful
-# port of the Ruby legacy_body: excise the generated block (BEGIN..END inclusive,
-# plus the blank lines immediately after END, matching the Ruby `END\n*`), then
-# keep everything from the first "## " heading onward, String#strip'd. The blank
-# line that naturally precedes BEGIN stays, so pre-block and post-block entries
-# join with exactly one blank line.
+# which can sit BOTH before the BEGIN marker and after the END marker. Matches
+# the Ruby legacy_body for well-formed logs: excise the generated block
+# (BEGIN..END inclusive, plus the blank lines immediately after END, matching the
+# Ruby `END\n*`), then keep everything from the first "## " heading onward,
+# String#strip'd. The blank line that naturally precedes BEGIN stays, so pre-block
+# and post-block entries join with exactly one blank line. (Unlike the Ruby single
+# non-greedy sub, this excises EVERY BEGIN/END pair — relevant only for a
+# malformed multi-block log, which it normalizes to one block.)
 legacy=""
 if [ -f "$log_path" ]; then
   legacy="$(
-    awk -v b="$BEGIN_MARKER" -v e="$END_MARKER" '
+    LC_ALL=C awk -v b="$BEGIN_MARKER" -v e="$END_MARKER" '
       in_block { if (index($0, e)) { in_block = 0; after_end = 1 } ; next }
       index($0, b) { in_block = 1; next }
       after_end && /^[[:space:]]*$/ { next }
       { after_end = 0; print }
     ' "$log_path" \
     | awk 'f || /^## / { f = 1; print }' \
-    | awk '{ buf = (NR == 1 ? $0 : buf "\n" $0) }
+    | LC_ALL=C awk '{ buf = (NR == 1 ? $0 : buf "\n" $0) }
            END { gsub(/^[[:space:]]+/,"",buf); gsub(/[[:space:]]+$/,"",buf); printf "%s", buf }'
   )"
 fi
