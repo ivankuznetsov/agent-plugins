@@ -46,7 +46,19 @@ mkdir -p wiki raw/notes
 Create or update:
 
 - `wiki/index.md`: catalog of wiki pages.
-- `wiki/log.md`: append-only log of wiki operations.
+- `wiki/log.d/`: directory of append-only `<timestamp>-<slug>.md` changelog fragments (one file per change — conflict-free across branches/worktrees).
+- `wiki/log.md`: the COMPILED changelog, regenerated from `wiki/log.d/*.md` by `.llm-wiki/compile-log.sh`. Seed it with the header plus an empty generated block so the compiler is idempotent:
+
+  ```
+  # Wiki Changelog
+
+  Append-only log of all wiki operations.
+
+  <!-- BEGIN GENERATED WIKI LOG FRAGMENTS -->
+  <!-- END GENERATED WIKI LOG FRAGMENTS -->
+  ```
+
+  Never hand-edit the content between the markers. On an EXISTING project whose `log.md` predates fragments, leave the old hand-written `## ` entries in place below the markers — `compile-log.sh` preserves them as legacy and prepends compiled fragments above, so migration is lossless.
 - `wiki/gaps.md`: open questions, missing coverage, and uncertainty.
 
 Create stack-appropriate subdirectories only when useful, such as `models/`, `controllers/`, `services/`, `components/`, `packages/`, `modules/`, `commands/`, or `apis/`.
@@ -101,7 +113,7 @@ Update `wiki/index.md` with:
 - Pages grouped by category.
 - One-line summaries.
 
-Append to `wiki/log.md`:
+Write the bootstrap changelog entry as a fragment `wiki/log.d/<timestamp>-bootstrap.md` (then run `.llm-wiki/compile-log.sh .` to regenerate `wiki/log.md`):
 
 ```markdown
 ## [TIMESTAMP] bootstrap
@@ -167,7 +179,7 @@ This project has an LLM-maintained knowledge base in `wiki/`.
 
 - `wiki/` — project knowledge pages maintained by the agent
 - `wiki/index.md` — catalog of all pages
-- `wiki/log.md` — append-only changelog
+- `wiki/log.md` — compiled changelog (regenerated from `wiki/log.d/*.md` fragments; never hand-edited)
 - `wiki/gaps.md` — known gaps and open questions
 - `raw/notes/` — manually added reference material
 
@@ -176,7 +188,7 @@ Always check `wiki/` before answering questions about this project's architectur
 When you learn something new about the project or make a decision:
 1. Create or update the relevant page in `wiki/`
 2. Update `wiki/index.md` if a new page was created
-3. Append an entry to `wiki/log.md`
+3. Add a `wiki/log.d/<timestamp>-<slug>.md` fragment (never hand-edit the compiled `wiki/log.md`; it is regenerated from fragments by `.llm-wiki/compile-log.sh`)
 
 Never hallucinate. Ground everything in code or existing wiki pages. If unsure, note it in `wiki/gaps.md`.
 
@@ -278,15 +290,23 @@ Use a stable `<project-slug>` from the repository basename plus a short hash of 
 
 Also install post-commit wiki maintenance automation. Preserve existing hooks; do not overwrite unrelated hook logic. Prefer creating `.llm-wiki/post-commit-refresh.sh` and wiring `.git/hooks/post-commit` to call it.
 
+Install `.llm-wiki/post-commit-refresh.sh` AND `.llm-wiki/compile-log.sh` by copying the reference scripts bundled with this skill at `templates/post-commit-refresh.sh` and `templates/compile-log.sh` (resolve them relative to this SKILL.md), then `chmod +x` both. Copy them verbatim rather than re-deriving them from prose so every project — and every checkout of the same project — runs identical, tested logic. `compile-log.sh` is the single source of truth for the changelog format: it regenerates `wiki/log.md` from the append-only `wiki/log.d/*.md` fragments, and the refresh runs it before committing. (Hive's `Hive::WikiLog` delegates to this same script, so Ruby and shell callers share one implementation.) The bundled script targets `headless_agent: "codex"`; for `headless_agent: "claude"`, copy it and replace the `codex exec` invocation in `run_refresh` with `claude -p "$full_prompt" --allowedTools "Bash,Read,Edit,Write" --add-dir "$wiki_root" --max-budget-usd 0.50` (run from `$committing_tree`), preserving every other behavior below.
+
+Worktree-safe contract (the bundled script implements all of these; any hand-edit must keep them):
+
+- **The wiki is global state that lives on the MAIN checkout.** Resolve it as the first entry of `git worktree list --porcelain`. A commit in a *linked* worktree (`git rev-parse --git-dir` differs from `--git-common-dir`) reads the just-committed code in that worktree but reads/writes/commits the wiki ONLY on the main checkout — the linked worktree's own `wiki/` is never touched, so its `git status` stays clean.
+- **Serialize all refreshes on one lock in the shared git dir** (`$(git rev-parse --git-common-dir)/llm-wiki/refresh.lock`), not a per-worktree lock, so N concurrent worktree commits never race the main checkout's index. If the lock is held, exit cleanly. Always release on exit.
+- **Commit the wiki, scoped and guarded.** After refreshing, commit only `wiki/` on the main checkout with the post-commit hook disabled (`HIVE_SKIP_LLM_WIKI_POST_COMMIT=1` and `git -c core.hooksPath=/dev/null`) so the wiki commit cannot re-trigger this hook. **Never `git push`** — an in-progress branch must not be diverged from its remote. Reference the change by its branch/slug, not the raw commit SHA (it may be rebased or squashed).
+- Single-checkout projects behave identically with the main checkout as both the committing tree and the wiki home: the refresh now self-commits instead of leaving residue.
+
 Post-commit hook idempotency:
 
-- Add or replace only a managed `.git/hooks/post-commit` block marked `# BEGIN LLM WIKI POST-COMMIT` and `# END LLM WIKI POST-COMMIT`.
+- Add or replace only a managed `.git/hooks/post-commit` block marked `# BEGIN LLM WIKI POST-COMMIT` and `# END LLM WIKI POST-COMMIT`. The block honors `HIVE_SKIP_LLM_WIKI_POST_COMMIT` so the script's own wiki commit cannot recurse.
 - Remove or replace older direct calls to `.llm-wiki/post-commit-refresh.sh` only when they are clearly attributable to `llm-wiki`.
 - Never add a second managed post-commit block.
-- `.llm-wiki/post-commit-refresh.sh` must acquire a project-local lock, such as `.llm-wiki/post-commit.lock`, before refreshing. If the lock already exists, exit without starting another refresh. Always release the lock on exit.
 - `.llm-wiki/post-commit-refresh.sh` must sanitize Git hook-local environment variables before launching nested tools. Collect unset arguments from `git rev-parse --local-env-vars` and run `codex exec`, `claude -p`, `pi`, `qmd update`, and `qmd embed` through `env -u ...` so variables such as `GIT_INDEX_FILE`, `GIT_DIR`, and `GIT_WORK_TREE` cannot leak into agent startup, plugin marketplace checkouts, or QMD indexing. Keep local Git commands that inspect the triggering commit, such as `git diff-tree`, in the hook context.
 
-The post-commit script must detect changed files and run focused headless refreshes:
+The post-commit script detects changed files and runs focused headless refreshes:
 
 - Data model changes: schema, migrations, models, entities, Prisma schema.
 - API surface changes: routes, controllers, handlers, endpoints, resolvers.
