@@ -1,0 +1,7 @@
+{"id":0,"body":"Don't think we need to expose this as a public method. Can just do it in the inspect."}
+{"id":1,"body":"What are we rescuing?"}
+{"id":2,"body":"We should be converting all these keys to symbols, since that's how you're going to access them."}
+{"id":3,"body":"Hmm, this is indeed rather messy. Probably fine to add #keys back just to provide this in a cleaner manner, so you can do `@configurations.flat_map(&:keys).uniq`."}
+{"id":4,"body":"Since this is an unreleased feature, we don't need a CHANGELOG entry. But we can amend the other entries to note that these new configuration objects are inspect safe."}
+{"id":5,"body":"`:database__port` is not a valid key, actually. The keys are nested, so it would need to be presented as `database: [ :port ]` or the like. Not entirely trivial, but we can't present keys that aren't correct either."}
+{"id":6,"body":"Misindented."}

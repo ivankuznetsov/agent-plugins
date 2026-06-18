@@ -1,0 +1,5 @@
+{"id":0,"body":"Agree. And that has less change of clashing with existing method names in other people classes."}
+{"id":1,"body":"In that case we just undefined ours. This isn't different from all other core extensions we have here and sometimes downstream to Ruby "}
+{"id":2,"body":"Why not use a regular private as directive in the top of the module?"}
+{"id":3,"body":"I think we should document all methods "}
+{"id":4,"body":"This new extension should be documented in the guides as well "}

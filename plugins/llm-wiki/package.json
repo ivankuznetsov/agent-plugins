@@ -1,0 +1,24 @@
+{
+  "name": "llm-wiki",
+  "version": "0.1.7",
+  "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
+  "homepage": "https://github.com/ivankuznetsov/llm-wiki",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivankuznetsov/llm-wiki.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "pi-package",
+    "agent-skills",
+    "llm-wiki",
+    "qmd",
+    "knowledge-management",
+    "planning"
+  ],
+  "pi": {
+    "skills": [
+      "./pi/skills"
+    ]
+  }
+}

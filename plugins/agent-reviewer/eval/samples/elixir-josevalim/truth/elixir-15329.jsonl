@@ -1,0 +1,4 @@
+{"id":0,"body":":erlang.float is being deprecated and they are probably not needed here.\n\n```suggestion\n        result = rounded_int / power\n```"}
+{"id":1,"body":"```suggestion\n  defp tiny_round(0, precision, :ceil), do: 1.0 / power_of_10(precision)\n  defp tiny_round(1, precision, :floor), do: -1.0 / power_of_10(precision)\n  defp tiny_round(sign, _precision, _mode), do: signed_zero(sign)\n```"}
+{"id":2,"body":"This is not checking precision, it seems the comment is incorrect."}
+{"id":3,"body":"```suggestion\n    case :erlang.round(float) * 1.0 do\n```"}

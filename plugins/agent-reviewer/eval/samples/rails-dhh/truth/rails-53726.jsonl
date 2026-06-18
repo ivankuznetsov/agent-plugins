@@ -1,0 +1,4 @@
+{"id":0,"body":"This doesn't feel like it belongs here."}
+{"id":1,"body":"Why can't this just use the same assertion as in destroy?"}
+{"id":2,"body":"Yes, think we should do the same `setup { @user = User.take }` as we do in the PasswordsControllerTest 👍"}
+{"id":3,"body":"(And then do as you suggest here, so the tests don't break when you start adding/changing the fixtures)."}

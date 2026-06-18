@@ -1,0 +1,56 @@
+{
+  "reviewer": "josevalim",
+  "repo": "elixir-lang/elixir",
+  "ecosystem": "Elixir",
+  "voice": "Pedagogical, language-design framing; clarity, performance, idiomatic functional style.",
+  "source": "GitHub public PR inline review comments",
+  "collected": "2026-06-02",
+  "context_file": "context-josevalim.json",
+  "context_comments": 53,
+  "eval_prs": 6,
+  "eval_comments": 23,
+  "prs": [
+    {
+      "pr": 15216,
+      "title": "Improve function argument naming, specs and guards in Mix",
+      "comments": 5,
+      "blind": "blind/elixir-15216.hunks.jsonl",
+      "truth": "truth/elixir-15216.jsonl"
+    },
+    {
+      "pr": 15280,
+      "title": "Fix compiler crash on invalid nested bitstring",
+      "comments": 3,
+      "blind": "blind/elixir-15280.hunks.jsonl",
+      "truth": "truth/elixir-15280.jsonl"
+    },
+    {
+      "pr": 15287,
+      "title": "Bdd negation and difference optimizations",
+      "comments": 4,
+      "blind": "blind/elixir-15287.hunks.jsonl",
+      "truth": "truth/elixir-15287.jsonl"
+    },
+    {
+      "pr": 15329,
+      "title": "Refactor `Float.round/2` algorithm for better performance",
+      "comments": 4,
+      "blind": "blind/elixir-15329.hunks.jsonl",
+      "truth": "truth/elixir-15329.jsonl"
+    },
+    {
+      "pr": 15332,
+      "title": "Hash-cons BDD descriptors",
+      "comments": 3,
+      "blind": "blind/elixir-15332.hunks.jsonl",
+      "truth": "truth/elixir-15332.jsonl"
+    },
+    {
+      "pr": 15413,
+      "title": "Inline in empty list in erlang pass",
+      "comments": 4,
+      "blind": "blind/elixir-15413.hunks.jsonl",
+      "truth": "truth/elixir-15413.jsonl"
+    }
+  ]
+}

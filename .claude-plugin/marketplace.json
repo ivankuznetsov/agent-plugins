@@ -26,7 +26,9 @@
         "qmd",
         "knowledge-management",
         "planning",
-        "agent-workflow"
+        "agent-workflow",
+        "pi",
+        "pi-package"
       ],
       "category": "workflow",
       "tags": [
@@ -101,7 +103,7 @@
       "name": "agent-writing",
       "source": "./plugins/agent-writing",
       "description": "A team of three writing voices — journalist, writer, editor — that work together as a continuous write-edit cycle. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals.",
-      "version": "0.1.0",
+      "version": "0.4.0",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
@@ -126,6 +128,35 @@
         "editor",
         "team-of-rivals",
         "prose-craft"
+      ]
+    },
+    {
+      "name": "agent-reviewer",
+      "source": "./plugins/agent-reviewer",
+      "description": "Clone your team's best code reviewers from their PR history (across one or more repos) and run them as a review panel. Extracts a persona per reviewer — what they care about, what they catch, how they sound — not a rule list.",
+      "version": "0.2.0",
+      "author": {
+        "name": "ivankuznetsov",
+        "url": "https://github.com/ivankuznetsov"
+      },
+      "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+      "repository": "https://github.com/ivankuznetsov/agent-plugins",
+      "license": "MIT",
+      "keywords": [
+        "agent-reviewer",
+        "claude-code",
+        "codex",
+        "code-review",
+        "reviewer-persona",
+        "pull-request",
+        "team-of-rivals"
+      ],
+      "category": "workflow",
+      "tags": [
+        "code-review",
+        "reviewer-persona",
+        "pull-request",
+        "team-of-rivals"
       ]
     }
   ]

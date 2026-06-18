@@ -16,6 +16,8 @@
     "planning",
     "agent-workflow",
     "claude-code",
-    "codex"
+    "codex",
+    "pi",
+    "pi-package"
   ]
 }

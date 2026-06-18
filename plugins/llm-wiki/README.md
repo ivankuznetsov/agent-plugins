@@ -2,7 +2,7 @@
 
 Bootstrap and query LLM-maintained project wikis before planning or implementation.
 
-**Supports Claude Code + Codex (GPT-5.5).**
+**Supports Claude Code + Codex (GPT-5.5) + Pi.**
 
 ![LLM Wiki in action](assets/wiki-in-action.svg)
 
@@ -61,6 +61,29 @@ $llm-wiki:status
 
 If Codex displays a fully qualified marketplace namespace, use that displayed name.
 
+## Install: Pi
+
+Install the Pi package from GitHub:
+
+```bash
+pi install git:github.com/ivankuznetsov/llm-wiki
+```
+
+Then invoke the Pi skills with prefixed names to avoid collisions with other Pi packages:
+
+```text
+/skill:wiki-bootstrap
+/skill:wiki-research
+/skill:wiki-plan
+/skill:wiki-status
+```
+
+For local development from this checkout, run this from the target project:
+
+```bash
+pi install /path/to/llm-wiki -l
+```
+
 ## Usage Examples
 
 Bootstrap a wiki in the current project:
@@ -81,10 +104,19 @@ Plan with wiki context first:
 $llm-wiki:wiki-plan add billing reminders
 ```
 
-Check whether the plugin has an update:
+Check whether `llm-wiki` has an update:
 
 ```text
 $llm-wiki:status
+```
+
+Pi uses the same workflows through `/skill:wiki-*` commands:
+
+```text
+/skill:wiki-bootstrap
+/skill:wiki-research auth flow refactor
+/skill:wiki-plan add billing reminders
+/skill:wiki-status
 ```
 
 ## Main Cross-Project Wiki
@@ -100,10 +132,11 @@ When present, `llm-wiki` searches a main cross-project wiki before creating or u
 
 ## Automation
 
-`bootstrap` installs wiki context for both Claude Code and Codex, regardless of which agent runs setup.
+`bootstrap` installs wiki context for Claude Code, Codex, and Pi, regardless of which agent runs setup.
 
 - Claude Code receives wiki context through `CLAUDE.md` and a Claude `SessionStart` context hook when available.
 - Codex receives wiki context through `AGENTS.md`.
+- Pi receives wiki context through `AGENTS.md`.
 - Agent instruction updates are bounded by `<!-- BEGIN LLM WIKI -->` and `<!-- END LLM WIKI -->` markers so existing project instructions are preserved.
 - Re-running `bootstrap` from another agent updates that agent's context without changing the headless maintenance owner.
 - Existing projects from older `llm-wiki` versions keep their inferred headless owner when upgraded, even before `.llm-wiki/config.json` exists.
@@ -112,12 +145,13 @@ Only one agent owns scheduled refresh automation and post-commit wiki maintenanc
 
 - Claude Code headless automation uses `claude -p ...`
 - Codex headless automation uses `codex exec -C <project-root> ...`
-- Both automation paths search the project wiki and any detected main cross-project wiki.
+- Pi headless automation uses `pi -p --no-session --tools read,bash,edit,write,grep,find,ls ...`
+- All automation paths search the project wiki and any detected main cross-project wiki.
 - Scheduler and post-commit entries use managed markers and stable project slugs so repeated bootstraps do not create duplicate refresh jobs.
 
 ## Update Status
 
-Check whether `llm-wiki` has a newer marketplace release:
+Check whether `llm-wiki` has a newer marketplace or Pi package release:
 
 Claude Code:
 
@@ -131,7 +165,13 @@ Codex:
 $llm-wiki:status
 ```
 
-`status` reports the current cached or installed version, latest marketplace version, whether an update is available, the update command, and whether a restart is required. When run inside a bootstrapped project, it also reports the configured headless agent and whether Claude/Codex wiki context is present.
+Pi:
+
+```text
+/skill:wiki-status
+```
+
+`status` reports the current cached or installed version, latest marketplace or Pi package version, whether an update is available, the update command, and whether a restart is required. When run inside a bootstrapped project, it also reports the configured headless agent and whether Claude/Codex/Pi wiki context is present.
 
 ## What It Creates
 
@@ -175,5 +215,5 @@ QMD is preferred for semantic and lexical search, but it is optional. During boo
 
 - `llm-wiki` does not invent documentation. It reads source files and records uncertainty in `wiki/gaps.md`.
 - QMD is optional, but semantic search is better when QMD is installed and indexed.
-- Agent hooks differ between Claude Code and Codex. `bootstrap` installs context for both agents, but only the configured `headless_agent` runs scheduled and post-commit maintenance.
+- Agent hooks differ between Claude Code, Codex, and Pi. `bootstrap` installs context for all supported agents, but only the configured `headless_agent` runs scheduled and post-commit maintenance.
 - The first bootstrap pass is intentionally broad. Review `wiki/gaps.md` afterward to decide what deserves deeper documentation.

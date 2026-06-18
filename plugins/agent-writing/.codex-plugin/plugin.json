@@ -1,6 +1,6 @@
 {
   "name": "agent-writing",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "A team of three writing voices — a tech-journalism investigator, a story-first writer, and an adversarial editor — that work together as a continuous write-edit cycle. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals.",
   "author": {
     "name": "Ivan Kuznetsov",

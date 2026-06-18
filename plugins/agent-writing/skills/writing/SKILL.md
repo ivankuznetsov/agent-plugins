@@ -25,29 +25,37 @@ Do not promise Codex-native `/write:*` slash commands. Those command names are t
 
 ## Shared Ground Rules
 
-- Load available context files from the plugin's `context/` directory before drafting or editing: `voice.md`, `style-guide.md`, `writing-examples.md`. These hold per-project voice. Treat any section that's still placeholder prose as unfilled rather than authoritative.
+- Load available context files from the plugin's `context/` directory before drafting or editing: `voice.md`, `style-guide.md`, `writing-examples.md`, `anti-examples.md`. These hold per-project voice. Treat any section that's still placeholder prose as unfilled rather than authoritative.
 - **Output goes to the user's project working directory, not inside the plugin.** Save journalist briefs to `./writing/investigations/<slug>-<date>.md`, writer drafts to `./writing/drafts/<slug>-<date>-v<N>.md`, and editor reviews to `./writing/reviews/<slug>-<date>-v<N>.md`. The `./writing/` tree is created on demand. Users who don't want artifacts versioned can add `/writing/` to their project's `.gitignore`.
 - Use lowercase hyphenated slugs and ISO dates in generated filenames: `screenote-annotation-flow-2026-05-26`.
 - Each round of the writer-editor cycle gets a `-vN` suffix: `./writing/drafts/<slug>-<date>-v1.md`, `./writing/drafts/<slug>-<date>-v2.md`, with `./writing/reviews/<slug>-<date>-v<N>.md` reviewing the matching draft.
 - Every factual claim in a journalist's brief carries a source pointer (file path + line, commit SHA, or URL that resolved). The journalist **verifies** each pointer against reality before the brief is final — `Read` for file paths, `git cat-file -e` for SHAs, HEAD requests for URLs. Failed verifications get a verifiable replacement, get cut, or get flagged `[unverified]` in the brief.
 - The journalist's working principle is *never write the story you cannot ground*. When the evidence is thin, file an honest "couldn't ground this" note at the same path instead of a fabricated brief.
 - The cycle is external to both the writer and the editor. Neither agent invokes the other from inside their own reasoning. The orchestrator (`write:full`) owns the loop. This is what preserves the rivalry.
+- When the harness allows model selection for sub-agents, the orchestrator runs the editor on a **different model than the writer**. A same-model editor shares the writer's generation tics and reads them as natural prose — it grades a copy of its own homework. The editor's mechanical lint pass (see `agents/editor.md`) backstops the same blind spot when model diversity isn't available.
+- The editor's lint pass and rule set apply to the **whole draft on every round** — sections accepted in earlier rounds are re-audited, because voice rules evolve mid-project and apply retroactively.
 
 ## Workflow Map
 
 | User intent | Claude command equivalent | Output |
 | --- | --- | --- |
 | Investigate a topic | `/write:journalist [topic]` | `./writing/investigations/<slug>-<date>.md` (brief with Verification section or honest "couldn't ground this" note) |
-| Draft from a brief | `/write:writer [brief]` | `./writing/drafts/<slug>-<date>-v1.md` |
-| Rewrite against an editor's review | `/write:writer [brief] --review [review-path]` | `./writing/drafts/<slug>-<date>-v<N+1>.md` |
-| Review a draft as an adversary | `/write:editor [draft-path]` | `./writing/reviews/<slug>-<date>-v<N>.md` (verdict: `ready` / `needs another pass` / `start over`) |
+| Draft from a brief (default voice) | `/write:writer [brief]` | `./writing/drafts/<slug>-<date>-v1.md` |
+| Draft from a brief (Russian voice) | `/write:writer-ru [brief]` | `./writing/drafts/<slug>-<date>-v1.md` (with `lang: ru`) |
+| Draft from a brief (Ivan's identity) | `/write:writer-ivan [brief] [--lang ru\|en]` | `./writing/drafts/<slug>-<date>-v1.md` (with `lang:` and `author: ivan`) |
+| Rewrite against an editor's review | `/write:writer [brief] --review [review-path]` (or `/write:writer-ru` / `/write:writer-ivan` for the variants) | `./writing/drafts/<slug>-<date>-v<N+1>.md` |
+| Review a draft as an adversary (default) | `/write:editor [draft-path]` | `./writing/reviews/<slug>-<date>-v<N>.md` (verdict: `ready` / `needs another pass` / `start over`) |
+| Review a draft as an adversary (Russian voice) | `/write:editor-ru [draft-path]` | `./writing/reviews/<slug>-<date>-v<N>.md` with `lang: ru` (same verdicts; voice drift counts as a cut) |
 | Run the full pipeline | `/write:full [topic]` | Brief, versioned drafts, versioned reviews; loop ends on `ready` or `--max-rounds` (default 5) |
 
 ## Role Summaries
 
 - **Journalist** — `agents/journalist.md`. Reads the project's data the way a working tech journalist would. Files a grounded brief or an honest "I couldn't ground this" note. Verifies every citation against reality before finalizing. The source of truth the writer and editor will fight over.
 - **Writer** *(Generator)* — `agents/writer.md`. Opens with the user's verbatim framing. Thinks in stories. Varies sentence length deliberately. Reads the draft aloud before returning it. Defends the draft against the editor on the merits, takes the cuts they cannot defend.
+- **Writer — Russian** *(Generator, RU voice)* — `agents/writer-ru.md`. Same Generator role as the default writer; same rivalry with the editor. Replaces only the voice: a working engineer's notebook in Russian. Bilingual at the word level (loanwords and native idioms share the same paragraph), monolingual at the syntactic level (no English-rhythm constructions imported into Russian). Use when the brief, sources, or audience is Russian-speaking.
+- **Writer — Ivan** *(Generator, identity layer)* — `agents/writer-ivan.md`. Personal identity layer for Ivan Kuznetsov's writing. Composes with `writer.md` or `writer-ru.md` (selected via `--lang`); declares who is writing (portfolio, recurring themes, authority calibration) on top of the base voice. Universal voice principles live in the base files; this file adds only what is genuinely personal. Also serves as a template — other contributors can fork to `writer-<theirname>.md` for their own identity layer.
 - **Editor** *(Adversary)* — `agents/editor.md`. Reads the draft as a skeptic. Cuts what doesn't earn its place. Questions claims. Pushes back on the angle. Does not praise. Does not rewrite for the writer. Returns one of three verdicts: `ready`, `needs another pass`, or `start over`.
+- **Editor — Russian** *(Adversary, RU voice)* — `agents/editor-ru.md`. Same adversarial role as the default editor; same verdict semantics. Adds a second test: does the draft sound like a working engineer's notebook in Russian, or has it drifted into translated journalism? Voice drift counts as a cut. Use to review drafts produced by `/write:writer-ru`, or as a focused follow-up pass when a default-editor review came back `ready` but the Russian still sounds translated.
 
 ## Investigate Workflow
 
