@@ -255,14 +255,22 @@ Use a stable `<project-slug>` from the repository basename plus a short hash of 
 
 Also install post-commit wiki maintenance automation. Preserve existing hooks; do not overwrite unrelated hook logic. Prefer creating `.llm-wiki/post-commit-refresh.sh` and wiring `.git/hooks/post-commit` to call it.
 
+Install `.llm-wiki/post-commit-refresh.sh` by copying the worktree-safe reference script bundled with this skill at `templates/post-commit-refresh.sh` (resolve it relative to this SKILL.md), then `chmod +x` it. Copy it verbatim rather than re-deriving it from prose so every project — and every checkout of the same project — runs identical, tested logic. The bundled script targets `headless_agent: "codex"`; for `headless_agent: "claude"`, copy it and replace the `codex exec` invocation in `run_refresh` with `claude -p "$full_prompt" --allowedTools "Bash,Read,Edit,Write" --add-dir "$wiki_root" --max-budget-usd 0.50` (run from `$committing_tree`), preserving every other behavior below.
+
+Worktree-safe contract (the bundled script implements all of these; any hand-edit must keep them):
+
+- **The wiki is global state that lives on the MAIN checkout.** Resolve it as the first entry of `git worktree list --porcelain`. A commit in a *linked* worktree (`git rev-parse --git-dir` differs from `--git-common-dir`) reads the just-committed code in that worktree but reads/writes/commits the wiki ONLY on the main checkout — the linked worktree's own `wiki/` is never touched, so its `git status` stays clean.
+- **Serialize all refreshes on one lock in the shared git dir** (`$(git rev-parse --git-common-dir)/llm-wiki/refresh.lock`), not a per-worktree lock, so N concurrent worktree commits never race the main checkout's index. If the lock is held, exit cleanly. Always release on exit.
+- **Commit the wiki, scoped and guarded.** After refreshing, commit only `wiki/` on the main checkout with the post-commit hook disabled (`HIVE_SKIP_LLM_WIKI_POST_COMMIT=1` and `git -c core.hooksPath=/dev/null`) so the wiki commit cannot re-trigger this hook. **Never `git push`** — an in-progress branch must not be diverged from its remote. Reference the change by its branch/slug, not the raw commit SHA (it may be rebased or squashed).
+- Single-checkout projects behave identically with the main checkout as both the committing tree and the wiki home: the refresh now self-commits instead of leaving residue.
+
 Post-commit hook idempotency:
 
-- Add or replace only a managed `.git/hooks/post-commit` block marked `# BEGIN LLM WIKI POST-COMMIT` and `# END LLM WIKI POST-COMMIT`.
+- Add or replace only a managed `.git/hooks/post-commit` block marked `# BEGIN LLM WIKI POST-COMMIT` and `# END LLM WIKI POST-COMMIT`. The block honors `HIVE_SKIP_LLM_WIKI_POST_COMMIT` so the script's own wiki commit cannot recurse.
 - Remove or replace older direct calls to `.llm-wiki/post-commit-refresh.sh` only when they are clearly attributable to `llm-wiki`.
 - Never add a second managed post-commit block.
-- `.llm-wiki/post-commit-refresh.sh` must acquire a project-local lock, such as `.llm-wiki/post-commit.lock`, before refreshing. If the lock already exists, exit without starting another refresh. Always release the lock on exit.
 
-The post-commit script must detect changed files and run focused headless refreshes:
+The post-commit script detects changed files and runs focused headless refreshes:
 
 - Data model changes: schema, migrations, models, entities, Prisma schema.
 - API surface changes: routes, controllers, handlers, endpoints, resolvers.
