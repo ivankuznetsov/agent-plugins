@@ -12,3 +12,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Lint SKILL.md structure
         run: bash evals/lint-skills.sh
+      - name: Verify capture and transport drift fail lint
+        run: bash evals/lint-skills-test.sh

@@ -36,3 +36,11 @@ jobs:
         run: python3 plugins/screenote/evals/validate-plugin.py
       - name: Validate Screenote CLI skill contract
         run: bash plugins/screenote/evals/lint-skills.sh
+      - name: Verify capture and transport drift fail lint
+        run: bash plugins/screenote/evals/lint-skills-test.sh
+      - name: Validate Browser Use adapter and shell scripts
+        run: |
+          python3 -c "import ast, pathlib; ast.parse(pathlib.Path('plugins/screenote/mcp/screenote_browser_use_mcp.py').read_text())"
+          bash -n plugins/screenote/evals/lint-skills.sh
+          bash -n plugins/screenote/evals/lint-skills-test.sh
+          bash -n plugins/screenote/evals/browser-use-mcp-smoke.sh

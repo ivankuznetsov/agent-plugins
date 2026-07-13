@@ -1,49 +1,68 @@
 # Evaluations
 
-## Structural Linting
+## Structural linting
 
-Deterministic checks on the shared Claude and Codex skill surface — no network
-calls, runs instantly. Requires Bash, grep, jq, and Python 3.
+Deterministic checks on the single shared Claude Code and Codex skill surface:
 
-    ./evals/lint-skills.sh
+```bash
+./evals/lint-skills.sh
+./evals/lint-skills-test.sh
+```
 
-Validates:
-- The shared agent surface contains all three skills with valid frontmatter
-- Every skill loads the shared CLI/OAuth contract
-- Canonical desktop, tablet, and mobile dimensions are consistent
-- Required CLI commands and headless OAuth login are documented
-- Commands do not rely on shell state surviving between agent tool calls
-- A missing annotation crop degrades gracefully without hiding other feedback
-- Viewport variants are required to share one logical page/title
-- Legacy server configuration, tool names, and manual credential flags stay absent
-- Claude/Codex manifests, marketplace entries, paths, and the trigger dataset
-  satisfy the repository-owned portable schema checks
+These checks require Bash, grep, jq, and Python 3. They validate:
 
-Run on every PR that touches the Screenote plugin.
+- all three skills and shared CLI/OAuth/capture contract;
+- canonical desktop, tablet, and mobile dimensions;
+- complete CLI commands, pagination, logical viewport grouping, and safe crop
+  fallback;
+- exact Browser Use dependency pins, adapter files, tool names, limits, ledger,
+  cleanup, and untrusted-page rules;
+- a browser-only `.mcp.json`, with no Screenote HTTP MCP transport;
+- shared skill discovery for Claude Code and Codex, with no mirror directory;
+- plugin/marketplace schemas and trigger fixtures.
 
-## Portable Schema Validation
+The negative fixture test proves that capture-tool drift or reintroducing a
+Screenote HTTP MCP server makes lint fail.
 
-Run the standard-library-only validator independently when changing manifests,
-marketplaces, skill frontmatter, or trigger fixtures:
+## Portable schema validation
 
-    ./evals/validate-plugin.py
+```bash
+./evals/validate-plugin.py
+```
 
-It resolves local component paths from the same roots each marketplace uses and
-does not depend on machine-local Codex or Claude validator installations.
+This standard-library-only validator checks manifests, marketplace paths,
+frontmatter, the exact capture-only MCP configuration, adapter assets, and the
+trigger dataset without relying on machine-local Codex or Claude validators.
 
-## Trigger Eval Dataset
+## Browser Use MCP smoke
 
-`trigger-eval-set.json` contains 21 test queries mapping to expected skill triggers. This dataset is ready for use when Claude Code provides proper skill trigger testing support (e.g., a `--dry-run` flag, skill match metadata in output, or `cc-plugin-eval` maturity).
+Live smoke test for the bundled capture-only Browser Use server:
 
-### Why trigger evals are deferred
+```bash
+bash evals/browser-use-mcp-smoke.sh
+```
 
-Tested `claude -p --output-format json` on 2025-03-10. Findings:
-- Output is a flat result object — no message-level tool_use events exposed
-- `--allowedTools "Skill"` does not restrict tool usage as expected
-- Single query cost ~$0.38 (Opus), not viable for a 14-query eval suite
-- Skills don't trigger as discrete `Skill` tool calls in headless mode
+It launches the exact command and environment from `.mcp.json`, may resolve
+pinned packages through `uv`, starts a local fixture, and verifies:
 
-## CI Notes
+- Browser Use `0.13.4` and MCP `1.26.0` start;
+- exact schemas for sizing, numeric metrics, scrolling, and bounded file
+  capture;
+- desktop, tablet, and mobile dimensions apply exactly;
+- a 390×5000 PNG is written and reports the cap;
+- browser sessions close after the smoke.
 
-- Schema and lint evals: run on every PR (free, instant)
-- Trigger evals: revisit when tooling improves
+Run it manually before changing capture behavior. It requires Python 3.11+,
+`uv`, and Chromium/Chrome.
+
+## Trigger eval dataset
+
+`trigger-eval-set.json` contains test queries mapped to expected skills plus
+non-triggering controls. Live language-model trigger evaluation remains
+deferred until the host exposes stable, low-cost skill match metadata.
+
+## CI notes
+
+- Portable schema, structural lint, and negative lint fixtures run on every
+  Screenote plugin change.
+- The live browser smoke remains manual because it installs a browser runtime.

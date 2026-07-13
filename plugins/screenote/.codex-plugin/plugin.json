@@ -1,7 +1,7 @@
 {
   "name": "screenote",
   "version": "2.0.0",
-  "description": "Capture pages, publish OAuth-authenticated snapshots with the Screenote CLI, and retrieve visual feedback from Claude Code or Codex.",
+  "description": "Capture full-page browser snapshots and manage Screenote feedback through the OAuth CLI from Claude Code or Codex.",
   "author": {
     "name": "ivankuznetsov",
     "url": "https://github.com/ivankuznetsov"
@@ -21,6 +21,7 @@
     "design-review"
   ],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Screenote",
     "shortDescription": "Screenshot, annotate, and fix visual feedback.",

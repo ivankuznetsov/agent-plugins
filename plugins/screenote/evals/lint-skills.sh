@@ -1,62 +1,59 @@
 #!/bin/bash
-# Deterministic Screenote plugin contract checks.
+# Deterministic Screenote CLI and capture-adapter contract checks.
 # Requires: bash, grep, jq, python3
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$ROOT_DIR"
+
 PASS=0
 FAIL=0
 
 fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
 pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
 
+require_text() {
+  local file=$1
+  local text=$2
+  local label=$3
+  if grep -Fq -- "$text" "$file"; then pass "$label"; else fail "$label"; fi
+}
+
+reject_text() {
+  local text=$1
+  local label=$2
+  shift 2
+  if grep -R -n -i -F -- "$text" "$@" >/dev/null 2>&1; then
+    fail "$label"
+  else
+    pass "$label"
+  fi
+}
+
 for skill in screenote snapshot feedback; do
   file="skills/$skill/SKILL.md"
-  if [ -f "$file" ]; then
-    pass "$file exists"
-  else
-    fail "$file missing"
-  fi
-
-  for field in name description; do
-    if grep -q "^${field}:" "$file"; then
-      pass "$file has $field"
-    else
-      fail "$file missing $field"
-    fi
-  done
-
-  if grep -q '^metadata:' "$file" && grep -q '^  argument:' "$file"; then
-    pass "$skill frontmatter has metadata argument"
-  else
-    fail "$skill frontmatter is incomplete"
-  fi
+  if [ -f "$file" ]; then pass "$file exists"; else fail "$file missing"; continue; fi
+  require_text "$file" "name: $skill" "$skill name frontmatter is correct"
+  require_text "$file" "description:" "$skill has description frontmatter"
+  require_text "$file" "metadata:" "$skill has shared metadata frontmatter"
+  require_text "$file" "  argument:" "$skill has metadata.argument"
+  require_text "$file" "../../references/cli.md" "$skill loads the shared contract"
 done
 
-if [ -f references/cli.md ]; then
-  pass "shared CLI contract exists"
+if [ -e codex-skills ]; then
+  fail "obsolete Codex skill mirrors still exist"
 else
-  fail "shared CLI contract missing"
+  pass "Claude Code and Codex share one skill surface"
 fi
 
-for skill_file in skills/*/SKILL.md; do
-  if grep -q '../../references/cli.md' "$skill_file"; then
-    pass "$skill_file loads shared CLI contract"
-  else
-    fail "$skill_file does not load shared CLI contract"
-  fi
-done
+CLI_CONTRACT=references/cli.md
+if [ -f "$CLI_CONTRACT" ]; then pass "shared CLI contract exists"; else fail "shared CLI contract missing"; fi
 
 for value in 1280 800 768 1024 390 844; do
-  if grep -q "$value" skills/screenote/SKILL.md; then
-    pass "capture skill contains viewport value $value"
-  else
-    fail "viewport value $value is missing from the capture skill"
-  fi
+  require_text skills/screenote/SKILL.md "$value" "canonical capture skill contains $value"
 done
 
-CLI_CONTRACT=references/cli.md
 for command in \
   'project list' \
   'project create --name' \
@@ -68,84 +65,79 @@ for command in \
   'annotation get --annotation' \
   'comment add --annotation' \
   'annotation resolve --annotation'; do
-  if grep -q -- "$command" "$CLI_CONTRACT"; then
-    pass "CLI contract includes '$command'"
-  else
-    fail "CLI contract missing '$command'"
-  fi
+  require_text "$CLI_CONTRACT" "$command" "CLI contract includes '$command'"
 done
 
-if grep -q -- '--limit 100' "$CLI_CONTRACT" &&
-   grep -q -- '--offset 0' "$CLI_CONTRACT" &&
-   grep -q 'pagination.total' "$CLI_CONTRACT"; then
-  pass "CLI contract exhausts paginated feedback lists"
-else
-  fail "CLI contract does not exhaust paginated feedback lists"
-fi
+require_text "$CLI_CONTRACT" '--limit 100' "feedback lists use a bounded page size"
+require_text "$CLI_CONTRACT" '--offset 0' "feedback pagination starts explicitly"
+require_text "$CLI_CONTRACT" 'pagination.total' "feedback pagination exhausts the server total"
+require_text "$CLI_CONTRACT" 'must use exactly the same `page` and exactly the same `title`' "viewport variants share one logical screenshot"
+require_text "$CLI_CONTRACT" 'append `desktop`, `tablet`, `mobile`' "device labels stay out of logical titles"
+require_text "$CLI_CONTRACT" 'do not share shell state' "agent commands are independent across tool calls"
+require_text "$CLI_CONTRACT" 'screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}"' "CLI commands honor the explicit base URL"
+require_text skills/feedback/SKILL.md '`crop_unavailable`' "feedback handles unavailable crops"
+require_text skills/feedback/SKILL.md 'Continue with the remaining annotations' "one missing crop does not hide other feedback"
 
-if grep -q 'must use exactly the same `page` and exactly the same `title`' "$CLI_CONTRACT" &&
-   grep -q 'append `desktop`, `tablet`, `mobile`' "$CLI_CONTRACT"; then
-  pass "CLI contract protects logical viewport grouping"
-else
-  fail "CLI contract does not protect logical viewport grouping"
-fi
-
-if grep -R -n -E '\$(SCREENOTE_BASE_URL|PROJECT_ID|PAGE_ID|SCREENSHOT_ID|ANNOTATION_ID|VIEWPORT|SCREENOTE_DIR|BODY|RESOLUTION)([^A-Z0-9_]|$)' \
-  references skills >/dev/null 2>&1; then
-  fail "agent-facing commands assume shell variables persist between tool calls"
-else
-  pass "agent-facing commands do not assume persistent shell variables"
-fi
-
-if grep -q 'do not share shell state' "$CLI_CONTRACT" &&
-   grep -q 'screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}"' "$CLI_CONTRACT"; then
-  pass "CLI contract makes the production base URL self-contained"
-else
-  fail "CLI contract does not make the production base URL self-contained"
-fi
-
-if grep -q '`crop_unavailable`' skills/feedback/SKILL.md &&
-   grep -q -i 'continue with the remaining annotations' skills/feedback/SKILL.md; then
-  pass "feedback degrades gracefully when one crop is unavailable"
-else
-  fail "feedback aborts when one crop is unavailable"
-fi
-
-if [ -e .mcp.json ]; then
-  fail "legacy server config still exists"
-else
-  pass "legacy server config removed"
-fi
-
-ACTIVE_FILES=(
-  README.md references skills .claude-plugin .codex-plugin
-  ../../README.md ../../.claude-plugin/marketplace.json
-  ../../plugins/agent-writing/agents/journalist.md
-)
-for forbidden in \
-  'mcpServers' \
-  '/mcp/messages' \
-  'create_multi_viewport_screenshot' \
-  'list_projects' \
-  'screenote-skills' \
-  'date --iso-8601' \
-  'SCREENOTE_TOKEN' \
-  '--token'; do
-  if grep -R -n -i -- "$forbidden" "${ACTIVE_FILES[@]}" >/dev/null 2>&1; then
-    fail "active plugin surface contains forbidden legacy contract '$forbidden'"
-  else
-    pass "active plugin surface excludes '$forbidden'"
-  fi
+for tool in browser_navigate browser_set_viewport browser_page_metrics browser_scroll_to browser_screenshot_to_file browser_close_all; do
+  require_text "$CLI_CONTRACT" "$tool" "capture contract requires $tool"
 done
+for tool in browser_get_state browser_get_html browser_type browser_click; do
+  require_text skills/snapshot/SKILL.md "$tool" "snapshot documents $tool"
+done
+for text in \
+  '15 polls' \
+  '10 downward scrolls' \
+  'max_height=5000' \
+  'numeric values returned by `browser_page_metrics`' \
+  'untrusted data' \
+  'exactly one terminal JSON object' \
+  'Close the browser after all files are captured'; do
+  require_text "$CLI_CONTRACT" "$text" "capture contract includes '$text'"
+done
+for field in route viewport output cap_fired unsettled_poll unverified_scroll_top captured failed failure_reason; do
+  require_text "$CLI_CONTRACT" "$field" "capture ledger includes $field"
+done
+
+for file in .mcp.json mcp/screenote_browser_use_mcp.py evals/browser-use-mcp-smoke.sh evals/browser-use-mcp-surface.md; do
+  if [ -f "$file" ]; then pass "$file exists"; else fail "$file missing"; fi
+done
+
+if jq -e '
+  (keys == ["mcpServers"]) and
+  ((.mcpServers | keys) == ["browser-use"]) and
+  (.mcpServers["browser-use"].type == "stdio") and
+  (.mcpServers["browser-use"].command == "uv") and
+  (.mcpServers["browser-use"].cwd == ".") and
+  (.mcpServers["browser-use"].env.BROWSER_USE_HEADLESS == "false") and
+  (.mcpServers["browser-use"] | has("url") | not) and
+  (.mcpServers["browser-use"].args | index("browser-use[cli]==0.13.4") != null) and
+  (.mcpServers["browser-use"].args | index("mcp==1.26.0") != null) and
+  (.mcpServers["browser-use"].args | any(contains("screenote_browser_use_mcp.py")))
+' .mcp.json >/dev/null; then
+  pass ".mcp.json exposes only the pinned local Browser Use adapter"
+else
+  fail ".mcp.json is not the exact capture-only Browser Use configuration"
+fi
+
+for pin in 'browser-use[cli]==0.13.4' 'mcp==1.26.0'; do
+  require_text .mcp.json "$pin" ".mcp.json contains $pin"
+  require_text evals/browser-use-mcp-smoke.sh "$pin" "browser smoke expects $pin"
+done
+for method in browser_set_viewport browser_page_metrics browser_scroll_to browser_screenshot_to_file; do
+  require_text mcp/screenote_browser_use_mcp.py "$method" "adapter implements $method"
+done
+require_text mcp/screenote_browser_use_mcp.py '_close_all_sessions' "adapter cleans its ephemeral profile when sessions close"
+require_text evals/browser-use-mcp-smoke.sh 'browser_close_all' "browser smoke verifies close-all cleanup"
+
+if jq -e '.version == "2.0.0" and .skills == "./skills/" and .mcpServers == "./.mcp.json" and (has("apps") | not)' .codex-plugin/plugin.json >/dev/null; then
+  pass "Codex manifest loads shared skills and capture-only MCP config"
+else
+  fail "Codex manifest component paths are incorrect"
+fi
 
 for manifest in .claude-plugin/plugin.json .codex-plugin/plugin.json; do
-  if jq -e '.version == "2.0.0"' "$manifest" >/dev/null; then
-    pass "$manifest version is 2.0.0"
-  else
-    fail "$manifest version is not 2.0.0"
-  fi
+  if jq -e '.version == "2.0.0"' "$manifest" >/dev/null; then pass "$manifest version is 2.0.0"; else fail "$manifest version is not 2.0.0"; fi
 done
-
 for marketplace in .claude-plugin/marketplace.json ../../.claude-plugin/marketplace.json; do
   if jq -e 'any(.plugins[]; .name == "screenote" and .version == "2.0.0")' "$marketplace" >/dev/null; then
     pass "$marketplace Screenote version is 2.0.0"
@@ -154,10 +146,25 @@ for marketplace in .claude-plugin/marketplace.json ../../.claude-plugin/marketpl
   fi
 done
 
+ACTIVE_FILES=(README.md references skills .claude-plugin .codex-plugin ../../.claude-plugin/marketplace.json)
+for forbidden in \
+  '/mcp/messages' \
+  'create_multi_viewport_screenshot' \
+  'list_projects' \
+  'upload_url' \
+  'SCREENOTE_URL' \
+  'SCREENOTE_TOKEN' \
+  '--token' \
+  'screenote-skills' \
+  'date --iso-8601' \
+  'curl'; do
+  reject_text "$forbidden" "active plugin surface excludes legacy Screenote transport '$forbidden'" "${ACTIVE_FILES[@]}"
+done
+
 if python3 evals/validate-plugin.py; then
-  pass "portable plugin schema and frontmatter validation passed"
+  pass "portable plugin validation passed"
 else
-  fail "portable plugin schema or frontmatter validation failed"
+  fail "portable plugin validation failed"
 fi
 
 echo ""

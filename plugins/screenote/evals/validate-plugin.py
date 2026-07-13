@@ -21,6 +21,20 @@ SEMVER_RE = re.compile(
 )
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 EXPECTED_SKILLS = {"screenote", "snapshot", "feedback"}
+EXPECTED_BROWSER_ARGS = [
+    "run",
+    "--with",
+    "browser-use[cli]==0.13.4",
+    "--with",
+    "mcp==1.26.0",
+    "python",
+    "-c",
+    (
+        "import os, runpy; runpy.run_path(os.path.join("
+        "os.environ.get('CLAUDE_PLUGIN_ROOT', '.'), 'mcp', "
+        "'screenote_browser_use_mcp.py'), run_name='__main__')"
+    ),
+]
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 VENDORED_REPO_ROOT = PLUGIN_ROOT.parents[1]
@@ -178,9 +192,17 @@ def validate_codex_manifest() -> tuple[str | None, str | None]:
         fail(label, "skills must be ./skills/")
     else:
         resolve_local_path(PLUGIN_ROOT, payload["skills"], f"{label}.skills", directory=True)
-    for legacy_field in ("apps", "mcpServers"):
-        if legacy_field in payload:
-            fail(label, f"{legacy_field} must be absent from the CLI-only plugin")
+    if "apps" in payload:
+        fail(label, "apps must be absent")
+    if payload.get("mcpServers") != "./.mcp.json":
+        fail(label, "mcpServers must point to ./.mcp.json")
+    else:
+        resolve_local_path(
+            PLUGIN_ROOT,
+            payload["mcpServers"],
+            f"{label}.mcpServers",
+            directory=False,
+        )
 
     interface = require_object(payload.get("interface"), f"{label}.interface")
     if interface is None:
@@ -263,7 +285,56 @@ def validate_claude_manifest(expected_name: str | None, expected_version: str | 
         fail(label, "version must match the Codex manifest")
     for legacy_field in ("mcpServers", "apps"):
         if legacy_field in payload:
-            fail(label, f"{legacy_field} must be absent from the CLI-only plugin")
+            fail(label, f"{legacy_field} must be absent; Claude discovers the root capture config")
+
+
+def validate_mcp_config() -> None:
+    path = PLUGIN_ROOT / ".mcp.json"
+    label = path.relative_to(REPO_ROOT).as_posix()
+    payload = require_object(load_json(path), label)
+    if payload is None:
+        return
+    reject_unknown(payload, {"mcpServers"}, label)
+    servers = require_object(payload.get("mcpServers"), f"{label}.mcpServers")
+    if servers is None:
+        return
+    if set(servers) != {"browser-use"}:
+        fail(f"{label}.mcpServers", "must contain exactly the browser-use capture server")
+        return
+
+    browser = require_object(servers.get("browser-use"), f"{label}.mcpServers.browser-use")
+    if browser is None:
+        return
+    reject_unknown(
+        browser,
+        {"type", "command", "args", "cwd", "env"},
+        f"{label}.mcpServers.browser-use",
+    )
+    if browser.get("type") != "stdio":
+        fail(f"{label}.mcpServers.browser-use", "type must be stdio")
+    if browser.get("command") != "uv":
+        fail(f"{label}.mcpServers.browser-use", "command must be uv")
+    if browser.get("cwd") != ".":
+        fail(f"{label}.mcpServers.browser-use", "cwd must be the plugin root")
+    if browser.get("args") != EXPECTED_BROWSER_ARGS:
+        fail(
+            f"{label}.mcpServers.browser-use",
+            "args must use the exact pinned Browser Use adapter launch",
+        )
+    if browser.get("env") != {"BROWSER_USE_HEADLESS": "false"}:
+        fail(
+            f"{label}.mcpServers.browser-use",
+            "env must default Browser Use to a visible ephemeral browser",
+        )
+
+    for relative in (
+        "mcp/screenote_browser_use_mcp.py",
+        "evals/browser-use-mcp-smoke.sh",
+        "evals/browser-use-mcp-surface.md",
+    ):
+        asset = PLUGIN_ROOT / relative
+        if not asset.is_file():
+            fail(label, f"required Browser Use asset is missing: {relative}")
 
 
 def validate_codex_marketplace() -> None:
@@ -426,6 +497,8 @@ def parse_frontmatter(path: Path) -> dict[str, Any] | None:
 
 def validate_skills() -> None:
     skills_root = PLUGIN_ROOT / "skills"
+    if (PLUGIN_ROOT / "codex-skills").exists():
+        fail("plugins/screenote/codex-skills", "obsolete skill mirrors must be removed")
     actual_skills = {path.name for path in skills_root.iterdir() if path.is_dir()}
     if actual_skills != EXPECTED_SKILLS:
         fail("plugins/screenote/skills", f"expected exactly {sorted(EXPECTED_SKILLS)}, found {sorted(actual_skills)}")
@@ -481,6 +554,7 @@ def validate_trigger_dataset() -> None:
 def main() -> int:
     name, version = validate_codex_manifest()
     validate_claude_manifest(name, version)
+    validate_mcp_config()
     if VENDORED_REPO_ROOT is not None:
         validate_codex_marketplace()
         validate_claude_marketplace(
