@@ -1,99 +1,165 @@
 #!/bin/bash
-# Lint SKILL.md files for structural correctness
-# Requires: bash, grep
-# Usage: ./evals/lint-skills.sh
+# Deterministic Screenote plugin contract checks.
+# Requires: bash, grep, jq, python3
 
 set -euo pipefail
+
+cd "$(dirname "$0")/.."
 PASS=0
 FAIL=0
 
 fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
 pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
 
-SKILLS_DIR="skills"
-
-# Check all skill directories exist and contain SKILL.md
 for skill in screenote snapshot feedback; do
-  if [ -f "$SKILLS_DIR/$skill/SKILL.md" ]; then
-    pass "$skill/SKILL.md exists"
+  file="skills/$skill/SKILL.md"
+  if [ -f "$file" ]; then
+    pass "$file exists"
   else
-    fail "$skill/SKILL.md missing"
+    fail "$file missing"
+  fi
+
+  for field in name description; do
+    if grep -q "^${field}:" "$file"; then
+      pass "$file has $field"
+    else
+      fail "$file missing $field"
+    fi
+  done
+
+  if grep -q '^metadata:' "$file" && grep -q '^  argument:' "$file"; then
+    pass "$skill frontmatter has metadata argument"
+  else
+    fail "$skill frontmatter is incomplete"
   fi
 done
 
-# Validate frontmatter fields in each SKILL.md
-for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
-  skill_name=$(basename "$(dirname "$skill_file")")
-  for field in name description user_invocable argument; do
-    if grep -q "^${field}:" "$skill_file"; then
-      pass "$skill_name has frontmatter field '$field'"
-    else
-      fail "$skill_name missing frontmatter field '$field'"
-    fi
-  done
-done
+if [ -f references/cli.md ]; then
+  pass "shared CLI contract exists"
+else
+  fail "shared CLI contract missing"
+fi
 
-# Validate cross-references point to existing files
-for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
-  skill_name=$(basename "$(dirname "$skill_file")")
-  refs=$(grep -oP '\(`skills/[^`]+`\)' "$skill_file" | grep -oP 'skills/[^`]+' || true)
-  for ref in $refs; do
-    if [ -f "$ref" ]; then
-      pass "$skill_name cross-reference to $ref is valid"
-    else
-      fail "$skill_name cross-reference to $ref is broken"
-    fi
-  done
-done
-
-# Validate the canonical viewport table lives in screenote and contains every
-# expected dimension. snapshot cross-references screenote for the table (see
-# cross-reference check above), so we don't duplicate the assertion.
-CANONICAL="$SKILLS_DIR/screenote/SKILL.md"
-for val in "1280" "800" "768" "1024" "390" "844"; do
-  if grep -q "$val" "$CANONICAL"; then
-    pass "screenote contains viewport value $val"
+for skill_file in skills/*/SKILL.md; do
+  if grep -q '../../references/cli.md' "$skill_file"; then
+    pass "$skill_file loads shared CLI contract"
   else
-    fail "screenote missing viewport value $val"
+    fail "$skill_file does not load shared CLI contract"
   fi
 done
 
-# Validate MCP tool names are present in every skill that should reference them.
-# Shape mirrors the FEEDBACK_TOOLS loop below: missing tool is a hard fail.
-declare -A MCP_TOOL_SKILLS=(
-  [list_projects]="screenote snapshot feedback"
-  [create_project]="screenote"
-  [create_multi_viewport_screenshot]="screenote snapshot"
+for value in 1280 800 768 1024 390 844; do
+  if grep -q "$value" skills/screenote/SKILL.md; then
+    pass "capture skill contains viewport value $value"
+  else
+    fail "viewport value $value is missing from the capture skill"
+  fi
+done
+
+CLI_CONTRACT=references/cli.md
+for command in \
+  'project list' \
+  'project create --name' \
+  'login --device' \
+  'snapshot --manifest' \
+  'page list' \
+  'screenshot list --page' \
+  'annotation list --screenshot' \
+  'annotation get --annotation' \
+  'comment add --annotation' \
+  'annotation resolve --annotation'; do
+  if grep -q -- "$command" "$CLI_CONTRACT"; then
+    pass "CLI contract includes '$command'"
+  else
+    fail "CLI contract missing '$command'"
+  fi
+done
+
+if grep -q -- '--limit 100' "$CLI_CONTRACT" &&
+   grep -q -- '--offset 0' "$CLI_CONTRACT" &&
+   grep -q 'pagination.total' "$CLI_CONTRACT"; then
+  pass "CLI contract exhausts paginated feedback lists"
+else
+  fail "CLI contract does not exhaust paginated feedback lists"
+fi
+
+if grep -q 'must use exactly the same `page` and exactly the same `title`' "$CLI_CONTRACT" &&
+   grep -q 'append `desktop`, `tablet`, `mobile`' "$CLI_CONTRACT"; then
+  pass "CLI contract protects logical viewport grouping"
+else
+  fail "CLI contract does not protect logical viewport grouping"
+fi
+
+if grep -R -n -E '\$(SCREENOTE_BASE_URL|PROJECT_ID|PAGE_ID|SCREENSHOT_ID|ANNOTATION_ID|VIEWPORT|SCREENOTE_DIR|BODY|RESOLUTION)([^A-Z0-9_]|$)' \
+  references skills >/dev/null 2>&1; then
+  fail "agent-facing commands assume shell variables persist between tool calls"
+else
+  pass "agent-facing commands do not assume persistent shell variables"
+fi
+
+if grep -q 'do not share shell state' "$CLI_CONTRACT" &&
+   grep -q 'screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}"' "$CLI_CONTRACT"; then
+  pass "CLI contract makes the production base URL self-contained"
+else
+  fail "CLI contract does not make the production base URL self-contained"
+fi
+
+if grep -q '`crop_unavailable`' skills/feedback/SKILL.md &&
+   grep -q -i 'continue with the remaining annotations' skills/feedback/SKILL.md; then
+  pass "feedback degrades gracefully when one crop is unavailable"
+else
+  fail "feedback aborts when one crop is unavailable"
+fi
+
+if [ -e .mcp.json ]; then
+  fail "legacy server config still exists"
+else
+  pass "legacy server config removed"
+fi
+
+ACTIVE_FILES=(
+  README.md references skills .claude-plugin .codex-plugin
+  ../../README.md ../../.claude-plugin/marketplace.json
+  ../../plugins/agent-writing/agents/journalist.md
 )
-for tool in "${!MCP_TOOL_SKILLS[@]}"; do
-  for skill in ${MCP_TOOL_SKILLS[$tool]}; do
-    skill_file="$SKILLS_DIR/$skill/SKILL.md"
-    if grep -q "$tool" "$skill_file"; then
-      pass "$skill references MCP tool '$tool'"
-    else
-      fail "$skill missing expected MCP tool '$tool'"
-    fi
-  done
-done
-
-# Guard against references to the retired create_screenshot_upload tool.
-for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
-  skill_name=$(basename "$(dirname "$skill_file")")
-  if grep -q "create_screenshot_upload" "$skill_file"; then
-    fail "$skill_name still references retired tool 'create_screenshot_upload'"
-  fi
-done
-
-# Check feedback-specific MCP tools
-FEEDBACK_TOOLS="list_pages list_screenshots list_annotations get_annotation resolve_annotation"
-for tool in $FEEDBACK_TOOLS; do
-  if grep -q "$tool" "$SKILLS_DIR/feedback/SKILL.md"; then
-    pass "feedback references MCP tool '$tool'"
+for forbidden in \
+  'mcpServers' \
+  '/mcp/messages' \
+  'create_multi_viewport_screenshot' \
+  'list_projects' \
+  'screenote-skills' \
+  'date --iso-8601' \
+  'SCREENOTE_TOKEN' \
+  '--token'; do
+  if grep -R -n -i -- "$forbidden" "${ACTIVE_FILES[@]}" >/dev/null 2>&1; then
+    fail "active plugin surface contains forbidden legacy contract '$forbidden'"
   else
-    fail "feedback missing expected MCP tool '$tool'"
+    pass "active plugin surface excludes '$forbidden'"
   fi
 done
+
+for manifest in .claude-plugin/plugin.json .codex-plugin/plugin.json; do
+  if jq -e '.version == "2.0.0"' "$manifest" >/dev/null; then
+    pass "$manifest version is 2.0.0"
+  else
+    fail "$manifest version is not 2.0.0"
+  fi
+done
+
+for marketplace in .claude-plugin/marketplace.json ../../.claude-plugin/marketplace.json; do
+  if jq -e 'any(.plugins[]; .name == "screenote" and .version == "2.0.0")' "$marketplace" >/dev/null; then
+    pass "$marketplace Screenote version is 2.0.0"
+  else
+    fail "$marketplace Screenote version is not 2.0.0"
+  fi
+done
+
+if python3 evals/validate-plugin.py; then
+  pass "portable plugin schema and frontmatter validation passed"
+else
+  fail "portable plugin schema or frontmatter validation failed"
+fi
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
-[ $FAIL -eq 0 ] && exit 0 || exit 1
+[ "$FAIL" -eq 0 ]

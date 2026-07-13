@@ -12,13 +12,13 @@
     {
       "name": "screenote",
       "source": "./",
-      "description": "Screenshot pages, upload to Screenote for human annotation, and retrieve visual feedback from Claude Code or Codex.",
-      "version": "1.5.0",
+      "description": "Capture pages, publish OAuth-authenticated snapshots with the Screenote CLI, and retrieve visual feedback from Claude Code or Codex.",
+      "version": "2.0.0",
       "author": {
         "name": "ivankuznetsov"
       },
       "homepage": "https://screenote.ai",
-      "repository": "https://github.com/ivankuznetsov/screenote-skills",
+      "repository": "https://github.com/ivankuznetsov/agent-plugins/tree/main/plugins/screenote",
       "license": "MIT",
       "keywords": [
         "agent-skill",

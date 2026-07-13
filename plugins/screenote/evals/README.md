@@ -2,22 +2,38 @@
 
 ## Structural Linting
 
-Deterministic checks on SKILL.md files — no API calls, runs instantly.
+Deterministic checks on the shared Claude and Codex skill surface — no network
+calls, runs instantly. Requires Bash, grep, jq, and Python 3.
 
     ./evals/lint-skills.sh
 
 Validates:
-- All skill directories exist with SKILL.md files
-- Frontmatter fields (name, description, user_invocable, argument)
-- Cross-references between skills point to existing files
-- Viewport values (1440x900 desktop, 393x852 mobile) are consistent
-- MCP tool names are present where expected
+- The shared agent surface contains all three skills with valid frontmatter
+- Every skill loads the shared CLI/OAuth contract
+- Canonical desktop, tablet, and mobile dimensions are consistent
+- Required CLI commands and headless OAuth login are documented
+- Commands do not rely on shell state surviving between agent tool calls
+- A missing annotation crop degrades gracefully without hiding other feedback
+- Viewport variants are required to share one logical page/title
+- Legacy server configuration, tool names, and manual credential flags stay absent
+- Claude/Codex manifests, marketplace entries, paths, and the trigger dataset
+  satisfy the repository-owned portable schema checks
 
-Run on every PR that touches `skills/**/*.md`.
+Run on every PR that touches the Screenote plugin.
+
+## Portable Schema Validation
+
+Run the standard-library-only validator independently when changing manifests,
+marketplaces, skill frontmatter, or trigger fixtures:
+
+    ./evals/validate-plugin.py
+
+It resolves local component paths from the same roots each marketplace uses and
+does not depend on machine-local Codex or Claude validator installations.
 
 ## Trigger Eval Dataset
 
-`trigger-eval-set.json` contains 14 test queries mapping to expected skill triggers. This dataset is ready for use when Claude Code provides proper skill trigger testing support (e.g., a `--dry-run` flag, skill match metadata in output, or `cc-plugin-eval` maturity).
+`trigger-eval-set.json` contains 21 test queries mapping to expected skill triggers. This dataset is ready for use when Claude Code provides proper skill trigger testing support (e.g., a `--dry-run` flag, skill match metadata in output, or `cc-plugin-eval` maturity).
 
 ### Why trigger evals are deferred
 
@@ -29,5 +45,5 @@ Tested `claude -p --output-format json` on 2025-03-10. Findings:
 
 ## CI Notes
 
-- Lint evals: run on every PR (free, instant)
+- Schema and lint evals: run on every PR (free, instant)
 - Trigger evals: revisit when tooling improves

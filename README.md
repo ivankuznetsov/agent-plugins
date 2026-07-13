@@ -10,7 +10,7 @@ Five tools, five jobs. I picked or built each one to do a thing the others don't
 
 **SEO content.** [`agent-seo`](plugins/agent-seo/) is my long-form pipeline for search — keyword research, drafting, humanizing AI-shaped prose, fact-checking, and optimizing against my existing site. `/seo:fact-check` ships as a first-class command because I want fact-checking inside the workflow, not bolted on after the article's already convinced me.
 
-**UI work.** [`screenote`](plugins/screenote/) gives the agent eyes. It captures the rendered page, uploads it to [Screenote](https://screenote.ai) for human annotation, and pulls the comments back into the agent's context. I use it when the agent needs to see what it just built, instead of guessing from the DOM.
+**UI work.** [`screenote`](plugins/screenote/) gives the agent eyes. It captures the rendered page, publishes it through the OAuth-enabled [Screenote CLI](https://github.com/ivankuznetsov/screenote-cli) for human annotation, and pulls the comments back into the agent's context. I use it when the agent needs to see what it just built, instead of guessing from the DOM.
 
 **Project documentation.** [`llm-wiki`](plugins/llm-wiki/) bootstraps and maintains an LLM-readable wiki for the project, indexed by [QMD](https://github.com/tobilu/qmd). I use it to keep what one agent learned available to the next one, across sessions and across machines. The pattern is Karpathy's — the wiki is the agent's memory, not mine.
 
@@ -49,7 +49,7 @@ plugins/llm-wiki                    # vendored plugin files
 plugins/agent-reviewer              # vendored plugin files
 ```
 
-Plugins are vendored as plain directories, not submodules. Codex reads marketplace-local plugin paths from a normal clone and doesn't initialize submodules first, so vendoring is what makes a single repo work for both agents. `llm-wiki`, `screenote`, and `agent-seo` have upstream source repositories; `agent-writing` and `agent-reviewer` are born here.
+Plugins are vendored as plain directories, not submodules. Codex reads marketplace-local plugin paths from a normal clone and doesn't initialize submodules first, so vendoring is what makes a single repo work for both agents. `llm-wiki` and `agent-seo` have upstream plugin repositories; `screenote`, `agent-writing`, and `agent-reviewer` are maintained here. The Screenote CLI remains its own public repository.
 
 ## Development
 
@@ -64,7 +64,7 @@ jq . .agents/plugins/marketplace.json
 
 ## The through-line
 
-One principle shows up across all four plugins: **ground claims before producing them.** `llm-wiki` doesn't invent documentation — it reads source files and records uncertainty in `wiki/gaps.md`. `agent-writing`'s journalist never writes the story they cannot ground; every citation in a brief is verified against reality before the brief is final. `agent-seo` runs fact-check as a workflow step, not a final polish. `screenote` exists because pixels are easier to lie about than to look at.
+One principle shows up across all five plugins: **ground claims before producing them.** `llm-wiki` doesn't invent documentation — it reads source files and records uncertainty in `wiki/gaps.md`. `agent-writing`'s journalist never writes the story they cannot ground; every citation in a brief is verified against reality before the brief is final. `agent-seo` runs fact-check as a workflow step, not a final polish. `screenote` exists because pixels are easier to lie about than to look at.
 
 That's the style I want my agents to work in. The plugins are the implementation.
 

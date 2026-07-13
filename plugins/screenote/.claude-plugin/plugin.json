@@ -1,12 +1,12 @@
 {
   "name": "screenote",
-  "version": "1.5.0",
-  "description": "Screenshot pages, take full app snapshots, upload to Screenote for human annotation, and retrieve visual feedback from Claude Code or Codex.",
+  "version": "2.0.0",
+  "description": "Capture pages, publish OAuth-authenticated snapshots with the Screenote CLI, and retrieve visual feedback from Claude Code or Codex.",
   "author": {
     "name": "ivankuznetsov"
   },
   "license": "MIT",
-  "repository": "https://github.com/ivankuznetsov/screenote-skills",
+  "repository": "https://github.com/ivankuznetsov/agent-plugins/tree/main/plugins/screenote",
   "keywords": [
     "agent-skill",
     "claude-code",

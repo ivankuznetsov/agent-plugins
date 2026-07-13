@@ -21,18 +21,33 @@ codex plugin marketplace add ivankuznetsov/agent-plugins
 
 Then open Codex's plugin UI (`/plugins`) and install **Screenote** from **AI Kuznetsov**.
 
-Direct Claude Code install remains available for existing users:
+### 2. Install the Screenote CLI
+
+The plugin drives Screenote through its public command-line client:
 
 ```bash
-/plugin marketplace add ivankuznetsov/screenote-skills
-/plugin install screenote@screenote-marketplace
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@latest
 ```
 
-### 2. Connect to Screenote
+This requires Go 1.26 or newer and your Go bin directory on `PATH`. The skills check the required commands before capture and offer this install when the CLI is missing or outdated.
 
-On first use, the agent will authorize access to your Screenote account through the Screenote MCP server.
+### 3. Connect to Screenote with OAuth
 
-### 3. Use it
+The first skill invocation runs OAuth login. On a machine with a browser:
+
+```bash
+screenote --base-url https://screenote.ai login
+```
+
+For SSH, tmux, containers, and other headless sessions:
+
+```bash
+screenote --base-url https://screenote.ai login --device
+```
+
+Open the displayed authorization URL, approve the short code, and return to the terminal. The CLI stores and refreshes OAuth credentials; the plugin never asks you to copy a credential into chat or a project.
+
+### 4. Use it
 
 Tell the agent to screenshot a page:
 
@@ -48,7 +63,7 @@ You'll get a link to annotate the screenshot in Screenote. Draw on it, leave com
 
 The agent sees every annotation with its position and comment, and can start fixing things right away.
 
-### 4. Snapshot your entire app
+### 5. Snapshot your entire app
 
 Take a visual snapshot of every page in your app at once:
 
@@ -65,20 +80,21 @@ You                       Agent                        Screenote
  │                            │                            │
  │  "fix the login page"      │                            │
  │ ──────────────────────────►│                            │
- │                            │── /screenote /login ──────►│
+ │                            │── capture page              │
+ │                            │── screenote snapshot ─────►│
  │                            │                            │
  │            open link, draw annotations, leave comments  │
  │ ◄──────────────────────────────────────────────────────►│
  │                            │                            │
  │  "ok read my feedback"     │                            │
  │ ──────────────────────────►│                            │
- │                            │── /feedback ──────────────►│
+ │                            │── screenote annotation ───►│
  │                            │◄── annotations + regions ──│
  │                            │                            │
  │                            │  (fixes code based on      │
  │                            │   your visual feedback)     │
  │                            │                            │
- │                            │── /screenote /login ──────►│
+ │                            │── capture + CLI publish ──►│
  │                            │  (screenshot to verify)     │
 ```
 
@@ -154,14 +170,15 @@ The agent will figure out the URL from your project's routes.
 
 ### Project matching
 
-The plugin automatically matches your local working directory name to a Screenote project. If no match is found, it asks you to pick an existing project or create a new one.
+The plugin refreshes the project list through the CLI, validates a repo-local project cache, and automatically matches your working-directory name. If no match is found, it asks you to pick an existing project or creates one through the CLI.
 
 ## Requirements
 
 - A [Screenote](https://screenote.ai) account
 - Claude Code or Codex
+- The [Screenote CLI](https://github.com/ivankuznetsov/screenote-cli) (installed with Go 1.26+)
 - Browser automation available to the agent for screenshots
-- The Screenote MCP server configured by this plugin
+- OAuth authorization completed through `screenote login` or `screenote login --device`
 
 ## License
 

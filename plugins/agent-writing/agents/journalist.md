@@ -78,7 +78,7 @@ For each citation, record the result in the **Verification** section of the brie
 ```markdown
 ## Verification
 
-- `plugins/screenote/.mcp.json:5` — verified (file exists, line 5 contains the MCP server URL)
+- `plugins/screenote/references/cli.md:1` — verified (file exists and defines the Screenote CLI contract)
 - `abe156c` — verified (commit exists)
 - `https://example.com/page` — verified (200 OK)
 - `plugins/missing.rb:1` — UNVERIFIED — file does not exist
