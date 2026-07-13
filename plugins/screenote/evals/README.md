@@ -2,18 +2,37 @@
 
 ## Structural Linting
 
-Deterministic checks on SKILL.md files — no API calls, runs instantly.
+Deterministic checks on both Claude Code and Codex SKILL.md mirrors — no API calls, runs instantly.
 
     ./evals/lint-skills.sh
+    ./evals/lint-skills-test.sh
 
 Validates:
 - All skill directories exist with SKILL.md files
-- Frontmatter fields (name, description, user_invocable, argument)
+- Platform-appropriate frontmatter fields
 - Cross-references between skills point to existing files
-- Viewport values (1440x900 desktop, 393x852 mobile) are consistent
-- MCP tool names are present where expected
+- Viewport values (1280x800 desktop, 768x1024 tablet, 390x844 mobile) are consistent
+- Screenote and Browser Use tool names, ledger fields, caps, and trust-boundary wording are present on both surfaces
+- The Browser Use and MCP dependency pins match the shipped `.mcp.json`
+- Removing a required Browser Use tool from either mirror makes lint fail
 
-Run on every PR that touches `skills/**/*.md`.
+Run on every PR that touches `skills/**/*.md`, `codex-skills/**/*.md`, `.mcp.json`, or the adapter.
+
+## Browser Use MCP Smoke
+
+Live smoke test for the bundled Browser Use MCP server:
+
+    bash evals/browser-use-mcp-smoke.sh
+
+Validates the exact command, arguments, working directory, and environment from `.mcp.json`, then checks:
+
+- Browser Use `0.13.4` plus the expected direct-control tools start
+- The adapter exposes exact schemas for viewport sizing, numeric page metrics, exact scrolling, and 5000 px bounded file capture
+- Desktop, tablet, and mobile dimensions are applied and verified at runtime
+- A PNG is written through `browser_screenshot_to_file`
+- Browser sessions are closed after the smoke
+
+Run manually before changing browser-use capture behavior. It starts a local MCP subprocess and may install Python packages through `uv`.
 
 ## Trigger Eval Dataset
 
