@@ -1,0 +1,272 @@
+[
+  {
+    "pr": 57502,
+    "repo": "rails",
+    "title": "Handle malformed signed cache payloads gracefully",
+    "path": "activesupport/lib/active_support/cache/coder.rb",
+    "diff_hunk": "@@ -53,13 +53,18 @@ def load(dumped)\n           end\n         end\n \n-        type = dumped.unpack1(PACKED_TYPE_TEMPLATE)\n-        expires_at = dumped.unpack1(PACKED_EXPIRES_AT_TEMPLATE)\n-        version_length = dumped.unpack1(PACKED_VERSION_LENGTH_TEMPLATE)\n-\n-        expires_at = nil if expires_at < 0\n-        version = load_version(dumped.byteslice(PACKED_VERSION_INDEX, version_length)) if version_length >= 0\n-        payload = dumped.byteslice((PACKED_VERSION_INDEX + [version_length, 0].max)..)\n+        begin\n+          type = dumped.unpack1(PACKED_TYPE_TEMPLATE)\n+          expires_at = dumped.unpack1(PACKED_EXPIRES_AT_TEMPLATE)\n+          version_length = dumped.unpack1(PACKED_VERSION_LENGTH_TEMPLATE)\n+\n+          expires_at = nil if expires_at < 0\n+          version = load_version(dumped.byteslice(PACKED_VERSION_INDEX, version_length)) if version_length >= 0\n+          payload = dumped.byteslice((PACKED_VERSION_INDEX + [version_length, 0].max)..)\n+        rescue => error",
+    "body": "This is now rescuring too much exceptions even mistakes made by the developer of the framework. Can we scope this down to only the errors that are because of the malformated cache payload?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57483,
+    "repo": "rails",
+    "title": "Make exception wrapper ractor safe",
+    "path": "actionpack/lib/action_dispatch/middleware/exception_wrapper.rb",
+    "diff_hunk": "@@ -35,16 +35,16 @@ class ExceptionWrapper\n       \"ActiveRecord::StatementInvalid\"         => \"invalid_statement\",\n       \"ActionView::Template::Error\"            => \"template_error\",\n       \"ActionController::MissingExactTemplate\" => \"missing_exact_template\",\n-    )\n+    ).freeze\n \n     cattr_accessor :wrapper_exceptions, default: [\n       \"ActionView::Template::Error\"\n-    ]\n+    ].freeze\n \n     cattr_accessor :silent_exceptions, default: [",
+    "body": "This needs to be a config as well. It is here not for application, but for rails plugins to configure ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57477,
+    "repo": "rails",
+    "title": "Refactor ActiveJob::TestHelper to no longer walk descendants",
+    "path": "activejob/lib/active_job/test_helper.rb",
+    "diff_hunk": "@@ -13,41 +13,71 @@ module TestHelper\n     include ActiveSupport::Testing::Assertions\n \n     module TestQueueAdapter\n-      extend ActiveSupport::Concern\n+      @excluded_jobs = Set.new\n+      @cache = {}\n+      @adapters = {}\n \n-      included do\n-        class_attribute :_test_adapter, instance_accessor: false, instance_predicate: false\n-      end\n+      class << self\n+        attr_accessor :test_adapter",
+    "body": "Nodoc?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57477,
+    "repo": "rails",
+    "title": "Refactor ActiveJob::TestHelper to no longer walk descendants",
+    "path": "activejob/lib/active_job/test_helper.rb",
+    "diff_hunk": "@@ -13,41 +13,71 @@ module TestHelper\n     include ActiveSupport::Testing::Assertions\n \n     module TestQueueAdapter\n-      extend ActiveSupport::Concern\n+      @excluded_jobs = Set.new\n+      @cache = {}\n+      @adapters = {}\n \n-      included do\n-        class_attribute :_test_adapter, instance_accessor: false, instance_predicate: false\n-      end\n+      class << self\n+        attr_accessor :test_adapter\n+        attr_reader :excluded_jobs",
+    "body": "Nodoc ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57477,
+    "repo": "rails",
+    "title": "Refactor ActiveJob::TestHelper to no longer walk descendants",
+    "path": "activejob/lib/active_job/test_helper.rb",
+    "diff_hunk": "@@ -13,41 +13,71 @@ module TestHelper\n     include ActiveSupport::Testing::Assertions\n \n     module TestQueueAdapter\n-      extend ActiveSupport::Concern\n+      @excluded_jobs = Set.new\n+      @cache = {}\n+      @adapters = {}\n \n-      included do\n-        class_attribute :_test_adapter, instance_accessor: false, instance_predicate: false\n-      end\n+      class << self",
+    "body": "All the methods here should be Nodoc, no?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57477,
+    "repo": "rails",
+    "title": "Refactor ActiveJob::TestHelper to no longer walk descendants",
+    "path": "railties/test/application/active_storage/analyzers_integration_test.rb",
+    "diff_hunk": "@@ -10,6 +10,11 @@ class ActiveStorageEngineTest < ActiveSupport::TestCase\n \n     self.file_fixture_path = \"#{RAILS_FRAMEWORK_ROOT}/activestorage/test/fixtures/files\"\n \n+    def app(...)\n+      super\n+      ActiveJob::Base._queue_adapter = nil",
+    "body": "It isn't clear to me why we need this change.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57469,
+    "repo": "rails",
+    "title": "Fix `FormBuilder#to_partial_path` returning nil for non-Builder subclasses",
+    "path": "actionview/CHANGELOG.md",
+    "diff_hunk": "@@ -1,3 +1,17 @@\n+*   Fix `FormBuilder#to_partial_path` returning `nil` for subclasses whose\n+    name does not end in `Builder`.\n+\n+    `String#sub!` returns `nil` when the pattern does not match, so the cached\n+    `@_to_partial_path` was `nil` for classes like\n+    `LabelledFormBuilderSubclass` (or any user-defined `class AdminForm <\n+    ActionView::Helpers::FormBuilder`). Switching to the non-bang `sub`\n+    returns a copy of the underscored class name when there is no\n+    `_builder` suffix to strip, so `to_partial_path` is now always a\n+    usable string. The default `FormBuilder` and the conventional\n+    `*Builder` subclasses are unaffected.",
+    "body": "We should not add implementation details to the changelog entry. It is for users, not implementers.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57467,
+    "repo": "rails",
+    "title": "Add shims for Ractor shareability methods",
+    "path": "activesupport/lib/active_support/core_ext/kernel.rb",
+    "diff_hunk": "@@ -2,4 +2,5 @@\n \n require_relative \"kernel/concern\"\n require_relative \"kernel/reporting\"\n+require_relative \"kernel/shareability\"",
+    "body": "Agree. And that has less change of clashing with existing method names in other people classes.",
+    "in_reply_to": 3306363400
+  },
+  {
+    "pr": 57467,
+    "repo": "rails",
+    "title": "Add shims for Ractor shareability methods",
+    "path": "activesupport/lib/active_support/core_ext/kernel.rb",
+    "diff_hunk": "@@ -2,4 +2,5 @@\n \n require_relative \"kernel/concern\"\n require_relative \"kernel/reporting\"\n+require_relative \"kernel/shareability\"",
+    "body": "In that case we just undefined ours. This isn't different from all other core extensions we have here and sometimes downstream to Ruby ",
+    "in_reply_to": 3306363400
+  },
+  {
+    "pr": 57467,
+    "repo": "rails",
+    "title": "Add shims for Ractor shareability methods",
+    "path": "activesupport/lib/active_support/core_ext/kernel/ractor_shareability.rb",
+    "diff_hunk": "@@ -0,0 +1,56 @@\n+# frozen_string_literal: true\n+\n+# Shims for +Ractor+ shareability methods so framework code can call them\n+# unconditionally regardless of the Ruby version.\n+#\n+# When +Ractor+ is not defined, or the underlying method is not available, the\n+# shim is a no-op that simply returns its argument (or the given block).\n+# Otherwise the call is forwarded to the matching +Ractor+ class method.\n+#\n+#   ractor_make_shareable(obj)        # => Ractor.make_shareable(obj)        or obj\n+#   ractor_shareable?(obj)            # => Ractor.shareable?(obj)            or obj\n+#   ractor_shareable_proc   { ... }   # => Ractor.shareable_proc   { ... }   or the block\n+#   ractor_shareable_lambda { ... }   # => Ractor.shareable_lambda { ... }   or the block\n+module Kernel\n+  if defined?(Ractor) && Ractor.respond_to?(:make_shareable)\n+    def ractor_make_shareable(obj, copy: false)\n+      Ractor.make_shareable(obj, copy: copy)\n+    end\n+  else\n+    def ractor_make_shareable(obj, copy: false)\n+      obj\n+    end\n+  end\n+\n+  if defined?(Ractor) && Ractor.respond_to?(:shareable?)\n+    def ractor_shareable?(obj)\n+      Ractor.shareable?(obj)\n+    end\n+  else\n+    def ractor_shareable?(obj)\n+      obj\n+    end\n+  end\n+\n+  if defined?(Ractor) && Ractor.respond_to?(:shareable_proc)\n+    def ractor_shareable_proc(self: nil, &block)\n+      Ractor.shareable_proc(self: { self: }[:self], &block)\n+    end\n+  else\n+    def ractor_shareable_proc(self: nil, &block)\n+      block\n+    end\n+  end\n+\n+  if defined?(Ractor) && Ractor.respond_to?(:shareable_lambda)\n+    def ractor_shareable_lambda(self: nil, &block)\n+      Ractor.shareable_lambda(self: { self: }[:self], &block)\n+    end\n+  else\n+    def ractor_shareable_lambda(&block)\n+      block\n+    end\n+  end\n+\n+  private :ractor_make_shareable, :ractor_shareable?, :ractor_shareable_proc, :ractor_shareable_lambda",
+    "body": "Why not use a regular private as directive in the top of the module?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57467,
+    "repo": "rails",
+    "title": "Add shims for Ractor shareability methods",
+    "path": "activesupport/lib/active_support/core_ext/kernel/ractor_shareability.rb",
+    "diff_hunk": "@@ -0,0 +1,56 @@\n+# frozen_string_literal: true\n+\n+# Shims for +Ractor+ shareability methods so framework code can call them\n+# unconditionally regardless of the Ruby version.\n+#\n+# When +Ractor+ is not defined, or the underlying method is not available, the\n+# shim is a no-op that simply returns its argument (or the given block).\n+# Otherwise the call is forwarded to the matching +Ractor+ class method.\n+#\n+#   ractor_make_shareable(obj)        # => Ractor.make_shareable(obj)        or obj\n+#   ractor_shareable?(obj)            # => Ractor.shareable?(obj)            or obj\n+#   ractor_shareable_proc   { ... }   # => Ractor.shareable_proc   { ... }   or the block\n+#   ractor_shareable_lambda { ... }   # => Ractor.shareable_lambda { ... }   or the block\n+module Kernel\n+  if defined?(Ractor) && Ractor.respond_to?(:make_shareable)\n+    def ractor_make_shareable(obj, copy: false)",
+    "body": "I think we should document all methods ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57467,
+    "repo": "rails",
+    "title": "Add shims for Ractor shareability methods",
+    "path": "activesupport/lib/active_support/core_ext/kernel.rb",
+    "diff_hunk": "@@ -2,4 +2,5 @@\n \n require_relative \"kernel/concern\"\n require_relative \"kernel/reporting\"",
+    "body": "This new extension should be documented in the guides as well ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57431,
+    "repo": "rails",
+    "title": "fix: validate subcommand in `rails plugin` command",
+    "path": "railties/lib/rails/commands/plugin/plugin_command.rb",
+    "diff_hunk": "@@ -21,6 +21,12 @@ def self.banner(*) # :nodoc:\n       class_option :no_rc, desc: \"Skip evaluating .railsrc.\"\n \n       def perform(type = nil, *plugin_args)\n+        if type && type != \"new\"",
+    "body": "I'm pretty sure Thor is able to register only the command we want to exist. Did you try to use the features in Thor?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57431,
+    "repo": "rails",
+    "title": "fix: validate subcommand in `rails plugin` command",
+    "path": "railties/lib/rails/commands/plugin/plugin_command.rb",
+    "diff_hunk": "@@ -21,6 +21,12 @@ def self.banner(*) # :nodoc:\n       class_option :no_rc, desc: \"Skip evaluating .railsrc.\"\n \n       def perform(type = nil, *plugin_args)\n+        if type && type != \"new\"\n+          error \"'#{type}' is not a valid plugin subcommand. Valid subcommand: new.\"\n+          error \"Run '#{self.class.executable} -h' for help.\"\n+          exit 1\n+        end\n+\n         plugin_args << \"--help\" unless type == \"new\"",
+    "body": "Also, isn't the goal of this line to show help when the type isn't \"new\"?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57406,
+    "repo": "rails",
+    "title": "[#57402] Fix Active Record Pool Reaper thread leak after `Parallelization#shutdown`",
+    "path": "activerecord/CHANGELOG.md",
+    "diff_hunk": "@@ -1,3 +1,16 @@\n+*   Fix AR Pool Reaper thread leak after `Parallelization#shutdown`.",
+    "body": "```suggestion\n*   Fix Active Record Pool Reaper thread leak after `Parallelization#shutdown`.\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57406,
+    "repo": "rails",
+    "title": "[#57402] Fix Active Record Pool Reaper thread leak after `Parallelization#shutdown`",
+    "path": "activerecord/CHANGELOG.md",
+    "diff_hunk": "@@ -1,3 +1,16 @@\n+*   Fix AR Pool Reaper thread leak after `Parallelization#shutdown`.\n+\n+    After parallelized test runs, the parent process leaked the AR Pool Reaper",
+    "body": "```suggestion\n    After parallelized test runs, the parent process leaked the Active Record Pool Reaper\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57406,
+    "repo": "rails",
+    "title": "[#57402] Fix Active Record Pool Reaper thread leak after `Parallelization#shutdown`",
+    "path": "activerecord/CHANGELOG.md",
+    "diff_hunk": "@@ -1,3 +1,16 @@\n+*   Fix AR Pool Reaper thread leak after `Parallelization#shutdown`.\n+\n+    After parallelized test runs, the parent process leaked the AR Pool Reaper\n+    thread, holding open connection pools and file descriptors for up to\n+    `reaping_frequency` seconds (or indefinitely if never reaped).\n+\n+    Three fixes: `Parallelization#shutdown` now calls `run_cleanup_hooks`;\n+    AR registers a cleanup hook that discards all connection pools; and",
+    "body": "```suggestion\n    Active Record registers a cleanup hook that discards all connection pools; and\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57397,
+    "repo": "rails",
+    "title": "[ci skip] Clarify Active Job queue backends",
+    "path": "guides/source/active_job_basics.md",
+    "diff_hunk": "@@ -1091,8 +1091,25 @@ If you need help figuring out where jobs are coming from, you can enable\n Alternate Queuing Backends\n --------------------------\n \n-Active Job has other built-in adapters for multiple queuing backends (Resque, Delayed Job, and others). To get an up-to-date list of the adapters see\n-the API Documentation for [`ActiveJob::QueueAdapters`][].\n+Active Job can be used with multiple queuing backends.\n+\n+Here is a noncomprehensive list of queue backends supporting ActiveJob:",
+    "body": "```suggestion\nHere is a noncomprehensive list of queue backends supporting Active Job:\n```\n",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57397,
+    "repo": "rails",
+    "title": "[ci skip] Clarify Active Job queue backends",
+    "path": "guides/source/active_job_basics.md",
+    "diff_hunk": "@@ -1091,8 +1091,25 @@ If you need help figuring out where jobs are coming from, you can enable\n Alternate Queuing Backends\n --------------------------\n \n-Active Job has other built-in adapters for multiple queuing backends (Resque, Delayed Job, and others). To get an up-to-date list of the adapters see\n-the API Documentation for [`ActiveJob::QueueAdapters`][].\n+Active Job can be used with multiple queuing backends.\n+\n+Here is a noncomprehensive list of queue backends supporting ActiveJob:\n+\n+- [Sidekiq](https://github.com/mperham/sidekiq/wiki/Active-Job)\n+- [Resque](https://github.com/resque/resque#rails-example)\n+- [Delayed Job](https://github.com/collectiveidea/delayed_job#active-job)\n+- [Good Job](https://github.com/bensheldon/good_job)\n+- [Solid Queue](https://github.com/rails/solid_queue)\n+- [Que](https://github.com/que-rb/que#additional-rails-specific-setup)\n+- [Sneakers](https://github.com/jondot/sneakers/wiki/How-To:-Rails-Background-Jobs-with-ActiveJob)\n+- [Queue Classic](https://github.com/QueueClassic/queue_classic#active-job)\n+\n+The early releases of ActiveJob had adapter built-in, but a decision was later made to ",
+    "body": "```suggestion\nThe early releases of Active Job had adapters built-in, but a decision was later made to \n```\n",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57370,
+    "repo": "rails",
+    "title": "Prevent false leaked-connection reports during reaper maintenance",
+    "path": "activerecord/test/cases/test_case_test.rb",
+    "diff_hunk": "@@ -0,0 +1,50 @@\n+# frozen_string_literal: true\n+\n+require \"cases/helper\"\n+\n+module ActiveRecord\n+  class TestCaseLeakCheckTest < ActiveRecord::TestCase\n+    include WaitForTestHelper\n+\n+    self.use_transactional_tests = false\n+\n+    def test_check_connection_leaks_does_not_report_connections_held_for_reaper_maintenance\n+      pool = ActiveRecord::Base.connection_pool\n+\n+      conn = ActiveRecord::Base.lease_connection\n+      conn.select_value(\"SELECT 1\")\n+      ActiveRecord::Base.connection_handler.clear_active_connections!\n+\n+      assert_not_nil conn\n+\n+      maintenance_started = Concurrent::Event.new\n+\n+      maintenance_thread = Thread.new do\n+        Thread.current.name = \"AR Pool Reaper\"\n+\n+        pool.reaper_lock do\n+          pool.send(:checkout_for_maintenance, conn)\n+          maintenance_started.set\n+          sleep 0.2",
+    "body": "Do we need to sleep here? Can't we also use an event of countdown latch?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57352,
+    "repo": "rails",
+    "title": "Properly reset fixtures cache after non-transactional tests",
+    "path": "activerecord/lib/active_record/test_fixtures.rb",
+    "diff_hunk": "@@ -140,16 +140,14 @@ def setup_fixtures(config = ActiveRecord::Base)\n \n         if run_in_transaction?\n           # Load fixtures once and begin transaction.\n-          @loaded_fixtures = @@already_loaded_fixtures[@fixture_cache_key]\n-          unless @loaded_fixtures\n-            @@already_loaded_fixtures.clear\n+          unless (@loaded_fixtures = @@already_loaded_fixtures[@fixture_cache_key])",
+    "body": "Any reason for this change? Code is more confusing now. It seems like the instance variable is only set when the cache don't have an entry ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57345,
+    "repo": "rails",
+    "title": "Introduce `ActiveSupport::TimeFormats` and `ActiveSupport::DateFormats` for registering custom date formats",
+    "path": "activesupport/lib/active_support/date_formats.rb",
+    "diff_hunk": "@@ -0,0 +1,24 @@\n+# frozen_string_literal: true\n+\n+require \"active_support/core_ext/date/conversions\"\n+\n+module ActiveSupport\n+  module DateFormats\n+    @list = Date::DATE_FORMATS.dup.freeze\n+    @deprecated_list = Date::DATE_FORMATS\n+    Date.deprecate_constant :DATE_FORMATS\n+\n+    # :nodoc:\n+    def self.lookup(format)\n+      @list[format] || @deprecated_list[format]",
+    "body": "What is this logic here? Since `@deprecated_list` is the same as `@list` why do we need `deprecated_list`?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57345,
+    "repo": "rails",
+    "title": "Introduce `ActiveSupport::TimeFormats` and `ActiveSupport::DateFormats` for registering custom date formats",
+    "path": "activesupport/lib/active_support/date_formats.rb",
+    "diff_hunk": "@@ -0,0 +1,24 @@\n+# frozen_string_literal: true\n+\n+require \"active_support/core_ext/date/conversions\"\n+\n+module ActiveSupport\n+  module DateFormats\n+    @list = Date::DATE_FORMATS.dup.freeze\n+    @deprecated_list = Date::DATE_FORMATS\n+    Date.deprecate_constant :DATE_FORMATS\n+\n+    # :nodoc:",
+    "body": "This made all method nodoc, no? Even if not, `# :nodoc:` goes on the side of the method name.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57345,
+    "repo": "rails",
+    "title": "Introduce `ActiveSupport::TimeFormats` and `ActiveSupport::DateFormats` for registering custom date formats",
+    "path": "activesupport/lib/active_support/date_formats.rb",
+    "diff_hunk": "@@ -0,0 +1,24 @@\n+# frozen_string_literal: true\n+\n+require \"active_support/core_ext/date/conversions\"\n+\n+module ActiveSupport\n+  module DateFormats\n+    @list = Date::DATE_FORMATS.dup.freeze\n+    @deprecated_list = Date::DATE_FORMATS\n+    Date.deprecate_constant :DATE_FORMATS\n+\n+    # :nodoc:\n+    def self.lookup(format)\n+      @list[format] || @deprecated_list[format]",
+    "body": "Also, there is no test for this logic",
+    "in_reply_to": 3277108342
+  },
+  {
+    "pr": 57335,
+    "repo": "rails",
+    "title": "Handle invalid SendGrid envelope input in Action Mailbox",
+    "path": "actionmailbox/app/controllers/action_mailbox/ingresses/sendgrid/inbound_emails_controller.rb",
+    "diff_hunk": "@@ -50,20 +50,29 @@ class Ingresses::Sendgrid::InboundEmailsController < ActionMailbox::BaseControll\n \n     def create\n       ActionMailbox::InboundEmail.create_and_extract_message_id! mail\n-    rescue JSON::ParserError => error\n+    rescue JSON::ParserError, MalformedEnvelopeError => error\n       logger.error error.message\n       head ActionDispatch::Constants::UNPROCESSABLE_CONTENT\n     end\n \n     private\n+      class MalformedEnvelopeError < StandardError; end\n+\n       def mail\n         params.require(:email).tap do |raw_email|\n-          envelope[\"to\"].each { |to| raw_email.prepend(\"X-Original-To: \", to, \"\\n\") } if params.key?(:envelope)\n+          envelope_recipients.each { |to| raw_email.prepend(\"X-Original-To: \", to, \"\\n\") } if params.key?(:envelope)\n         end\n       end\n \n-      def envelope\n-        JSON.parse(params.require(:envelope))\n+      def envelope_recipients\n+        envelope = JSON.parse(params.require(:envelope))\n+        raise MalformedEnvelopeError, \"Malformed SendGrid envelope\" unless envelope.is_a?(Hash)\n+\n+        envelope.fetch(\"to\").tap do |recipients|\n+          raise MalformedEnvelopeError, \"Malformed SendGrid envelope\" unless recipients.is_a?(Array) && recipients.all?(String)\n+        end\n+      rescue KeyError",
+    "body": "This rescue is for the fetch correct? Let's just check if the key isn't present and raise early instead of using fetch and rescuing exceptions ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57335,
+    "repo": "rails",
+    "title": "Handle invalid SendGrid envelope input in Action Mailbox",
+    "path": "actionmailbox/test/controllers/ingresses/sendgrid/inbound_emails_controller_test.rb",
+    "diff_hunk": "@@ -47,6 +47,18 @@ class ActionMailbox::Ingresses::Sendgrid::InboundEmailsControllerTest < ActionDi\n     assert_equal \"replies@example.com\", mail.header[\"X-Original-To\"].decoded\n   end\n \n+  test \"rejecting an inbound email from Sendgrid with a malformed envelope\" do\n+    assert_no_difference -> { ActionMailbox::InboundEmail.count } do\n+      post rails_sendgrid_inbound_emails_url,\n+        headers: { authorization: credentials }, params: {\n+          email: file_fixture(\"../files/welcome.eml\").read,\n+          envelope: \"{\\\"from\\\":\\\"jason@37signals.com\\\"}\",",
+    "body": "The code is validating way more than missing \"to\". We need tests for those cases as well ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57335,
+    "repo": "rails",
+    "title": "Handle invalid SendGrid envelope input in Action Mailbox",
+    "path": "actionmailbox/app/controllers/action_mailbox/ingresses/sendgrid/inbound_emails_controller.rb",
+    "diff_hunk": "@@ -50,20 +50,29 @@ class Ingresses::Sendgrid::InboundEmailsController < ActionMailbox::BaseControll\n \n     def create\n       ActionMailbox::InboundEmail.create_and_extract_message_id! mail\n-    rescue JSON::ParserError => error\n+    rescue JSON::ParserError, MalformedEnvelopeError => error\n       logger.error error.message\n       head ActionDispatch::Constants::UNPROCESSABLE_CONTENT\n     end\n \n     private\n+      class MalformedEnvelopeError < StandardError; end\n+\n       def mail\n         params.require(:email).tap do |raw_email|\n-          envelope[\"to\"].each { |to| raw_email.prepend(\"X-Original-To: \", to, \"\\n\") } if params.key?(:envelope)\n+          envelope_recipients.each { |to| raw_email.prepend(\"X-Original-To: \", to, \"\\n\") } if params.key?(:envelope)\n         end\n       end\n \n-      def envelope\n-        JSON.parse(params.require(:envelope))\n+      def envelope_recipients\n+        envelope = JSON.parse(params.require(:envelope))\n+        raise MalformedEnvelopeError, \"Malformed SendGrid envelope\" unless envelope.is_a?(Hash)",
+    "body": "The message of this exception is always the same. Push to inside the exception definition. ",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57323,
+    "repo": "rails",
+    "title": "Enable `Style/MutableConstant` cop with `literals` style",
+    "path": "actiontext/lib/action_text/trix_attachment.rb",
+    "diff_hunk": "@@ -8,15 +8,15 @@ class TrixAttachment\n     TAG_NAME = \"figure\"\n     SELECTOR = \"[data-trix-attachment]\"\n \n-    COMPOSED_ATTRIBUTES = %w( caption presentation )\n+    COMPOSED_ATTRIBUTES = %w( caption presentation ).freeze\n     ATTRIBUTES = %w( sgid contentType url href filename filesize width height previewable content ) + COMPOSED_ATTRIBUTES",
+    "body": "Should this be frozen as well?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 57323,
+    "repo": "rails",
+    "title": "Enable `Style/MutableConstant` cop with `literals` style",
+    "path": "actiontext/lib/action_text/trix_attachment.rb",
+    "diff_hunk": "@@ -8,15 +8,15 @@ class TrixAttachment\n     TAG_NAME = \"figure\"\n     SELECTOR = \"[data-trix-attachment]\"\n \n-    COMPOSED_ATTRIBUTES = %w( caption presentation )\n+    COMPOSED_ATTRIBUTES = %w( caption presentation ).freeze\n     ATTRIBUTES = %w( sgid contentType url href filename filesize width height previewable content ) + COMPOSED_ATTRIBUTES",
+    "body": "👍🏽 ",
+    "in_reply_to": 3211744734
+  },
+  {
+    "pr": 57316,
+    "repo": "rails",
+    "title": "Reject malformed Mailgun ingress timestamps",
+    "path": "actionmailbox/app/controllers/action_mailbox/ingresses/mailgun/inbound_emails_controller.rb",
+    "diff_hunk": "@@ -99,7 +100,9 @@ def signed?\n \n           # Allow for 2 minutes of drift between Mailgun time and local server time.\n           def recent?\n-            Time.at(timestamp) >= 2.minutes.ago\n+            @parsed_timestamp && Time.at(@parsed_timestamp) >= 2.minutes.ago\n+          rescue ArgumentError, RangeError",
+    "body": "Why is this here? I don't see tests for those rescue. Can you add it please?",
+    "in_reply_to": null
+  }
+]

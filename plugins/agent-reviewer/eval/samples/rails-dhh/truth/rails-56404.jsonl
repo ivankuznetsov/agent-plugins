@@ -1,0 +1,12 @@
+{"id":0,"body":"I like that idea. Think it's totally fine to cache upfront too with a #reload. This is almost always about having these values set at boot time anyway."}
+{"id":1,"body":"Doh. Yeah, we don't need grab at all."}
+{"id":2,"body":"Yes, we should. I was thinking it was either dig for multiple or [] for single, but of course you can just use dig for both."}
+{"id":3,"body":"Implemented that in [116e36b](https://github.com/rails/rails/pull/56404/commits/116e36b159e7a95fa27411dba00b58f93005459a)."}
+{"id":4,"body":"I considered this, as it would match fetch, but never liked the unexplained block. And since we're doing a totally new API here with require/option, I prefer to be explicit about the default. Like we do in other places, like attributes."}
+{"id":5,"body":"Good point."}
+{"id":6,"body":"Fixed in 82b6e09c556b83f835e9fc69cbcc4155eb1e66d8."}
+{"id":7,"body":"That's a good idea, but I think in most cases, you'd want this inserted after the ENVs lookups. So you can still overwrite through that. So I've added `Rails.app.creds=`, which can take a custom `ActiveSupport::CombinedConfiguration` instance. I've also split out `Rails.app.envs`, so you could do:\r\n\r\n```ruby\r\nRails.app.creds = ActiveSupport::CombinedConfiguration.new \\\r\n  Rails.app.envs, EjsonConfiguration.new\r\n```"}
+{"id":8,"body":"Ah yes. What an awkward implementation that gives, though. Wish Ruby had an || like operator for this purpose. |? or whatever."}
+{"id":9,"body":"I've wanted this for a long time. Just like we have present/blank. Every existential predicate should come in a positive and a negative. This goes right to Ruby's if/unless insight. So this is just riding along with this PR, because it highlighted it.\r\n\r\nAlso, I really dislike guard statements inside methods that produce multi exit wounds."}
+{"id":10,"body":"But would entertain a different method name than `defined?` if you have a great one."}
+{"id":11,"body":"Actually, fair point that we already have Kernel#defined? with different semantics. I'll yank and find a better name before reintroducing in a separate PR (maybe #set?)."}

@@ -1,0 +1,110 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+require 'agent_seo'
+require 'json'
+require 'optparse'
+
+options = {
+  secondary_keywords: [],
+  target_density: 1.5
+}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: seo-keywords [options] KEYWORD'
+  opts.separator ''
+  opts.separator 'Analyze keyword density and distribution in content.'
+  opts.separator ''
+  opts.separator 'Options:'
+
+  opts.on('-f', '--file FILE', 'Content file to analyze (reads from stdin if not provided)') do |f|
+    options[:file] = f
+  end
+
+  opts.on('-s', '--secondary KEYWORDS', 'Comma-separated secondary keywords') do |s|
+    options[:secondary_keywords] = s.split(',').map(&:strip)
+  end
+
+  opts.on('-d', '--target-density PERCENT', Float, 'Target keyword density (default: 1.5)') do |d|
+    options[:target_density] = d
+  end
+
+  opts.on('--json', 'Output as JSON') do
+    options[:json] = true
+  end
+
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end.parse!
+
+keyword = ARGV[0]
+unless keyword
+  warn 'Error: Keyword required'
+  warn 'Usage: seo-keywords [options] KEYWORD'
+  exit 1
+end
+
+begin
+  content = if options[:file]
+              File.read(options[:file])
+            elsif !$stdin.tty?
+              $stdin.read
+            else
+              warn 'Error: No content provided. Use -f FILE or pipe content to stdin.'
+              exit 1
+            end
+rescue Errno::ENOENT => e
+  warn "Error: #{e.message}"
+  exit 1
+end
+
+analyzer = AgentSeo::KeywordAnalyzer.new
+result = analyzer.analyze(
+  content,
+  keyword,
+  secondary_keywords: options[:secondary_keywords],
+  target_density: options[:target_density]
+)
+
+if options[:json]
+  puts JSON.pretty_generate(result)
+else
+  puts 'Keyword Analysis Results'
+  puts '=' * 50
+  puts ''
+  puts "Primary Keyword: #{keyword}"
+  puts "  Density: #{result[:primary_keyword][:density]}%"
+  puts "  Target: #{result[:primary_keyword][:target_density]}%"
+  puts "  Status: #{result[:primary_keyword][:density_status]}"
+  puts "  Exact Matches: #{result[:primary_keyword][:exact_matches]}"
+  puts "  Total Occurrences: #{result[:primary_keyword][:total_occurrences]}"
+  puts ''
+  puts 'Critical Placements:'
+  placements = result[:primary_keyword][:critical_placements]
+  puts "  In first 100 words: #{placements[:in_first_100_words] ? 'Yes' : 'No'}"
+  puts "  In H1: #{placements[:in_h1] ? 'Yes' : 'No'}"
+  puts "  In H2 headings: #{placements[:in_h2_headings]}"
+  puts "  In conclusion: #{placements[:in_conclusion] ? 'Yes' : 'No'}"
+  puts ''
+
+  if result[:secondary_keywords].any?
+    puts 'Secondary Keywords:'
+    result[:secondary_keywords].each do |kw|
+      puts "  #{kw[:keyword]}: #{kw[:total_occurrences]} occurrences (#{kw[:density]}%)"
+    end
+    puts ''
+  end
+
+  stuffing = result[:keyword_stuffing]
+  puts "Keyword Stuffing Risk: #{stuffing[:risk_level].upcase}"
+  stuffing[:warnings].each { |w| puts "  - #{w}" } if stuffing[:warnings].any?
+  puts ''
+
+  if result[:recommendations].any?
+    puts 'Recommendations:'
+    result[:recommendations].each { |r| puts "  - #{r}" }
+  end
+end

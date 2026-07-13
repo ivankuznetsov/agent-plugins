@@ -1,0 +1,42 @@
+{
+  "name": "agent-reviewer",
+  "version": "0.2.0",
+  "description": "Clone your team's best code reviewers. Reads their PR review history in context, extracts a persona per reviewer — what they care about, what they catch, how they sound — and runs them as a code-review panel. Personas, not rule lists.",
+  "author": {
+    "name": "Ivan Kuznetsov",
+    "email": "github@ivankuznetsov",
+    "url": "https://github.com/ivankuznetsov"
+  },
+  "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+  "repository": "https://github.com/ivankuznetsov/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agent-reviewer",
+    "codex-plugin",
+    "claude-code",
+    "code-review",
+    "reviewer-persona",
+    "pull-request",
+    "team-of-rivals"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Agent Reviewer",
+    "shortDescription": "Clone your team's best reviewers from their PR history and run them as a review panel.",
+    "longDescription": "Agent Reviewer turns your team's pull-request review history into a panel of code-review agents. It ranks the people who do the reviews that matter, collects each one's comments in context (the diff they were left on, the PR's intent), and extracts a persona per reviewer — what they care about, what they catch that others miss, what they let slide, and how they sound — rather than a deterministic rule list. Each persona becomes a reviewer agent; run them together as a panel on a diff or PR. Inspired by Base44's commit-history onboarding prompt: look at the history and find what the people working on this codebase cared deeply about.",
+    "developerName": "Ivan Kuznetsov",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/ivankuznetsov/agent-plugins",
+    "defaultPrompt": [
+      "Use Agent Reviewer to find the prominent reviewers in this repo.",
+      "Use Agent Reviewer to extract a persona from a reviewer's PR history.",
+      "Use Agent Reviewer to review my current changes with the team's reviewer panel."
+    ],
+    "screenshots": []
+  }
+}

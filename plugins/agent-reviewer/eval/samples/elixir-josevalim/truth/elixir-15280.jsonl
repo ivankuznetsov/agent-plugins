@@ -1,0 +1,3 @@
+{"id":0,"body":"```suggestion\n      # We need to wrap the example below in a module because\n      # we attempt to continue compilation when inside a function\n      Code.compile_string(\n```"}
+{"id":1,"body":"```suggestion\n        \"defmodule Repro do\\n  def run, do:  <<(<<1>>)::integer>>\\nend\\n\"\n```"}
+{"id":2,"body":"```suggestion\n      Code.compile_string(\"defmodule Repro do\\n  def run, do:  <<(<<1>>)::integer>>\\nend\")\n```"}

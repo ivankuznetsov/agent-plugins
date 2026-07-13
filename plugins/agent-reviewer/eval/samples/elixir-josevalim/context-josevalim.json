@@ -1,0 +1,479 @@
+[
+  {
+    "pr": 15430,
+    "repo": "elixir",
+    "title": "Remove qualified call in IO.ANSI",
+    "path": "lib/elixir/lib/io/ansi.ex",
+    "diff_hunk": "@@ -319,7 +319,6 @@ defmodule IO.ANSI do\n   end\n \n   defp do_format(term, rem, acc, false, append_reset) when is_atom(term) do\n-    format_sequence(term)",
+    "body": "This call is necessary so it raises in case the atom is invalid. Perhaps we should add a test?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15430,
+    "repo": "elixir",
+    "title": "Remove qualified call in IO.ANSI",
+    "path": "lib/elixir/lib/io/ansi.ex",
+    "diff_hunk": "@@ -319,7 +319,6 @@ defmodule IO.ANSI do\n   end\n \n   defp do_format(term, rem, acc, false, append_reset) when is_atom(term) do\n-    format_sequence(term)\n     do_format([], rem, acc, false, append_reset)",
+    "body": "```suggestion\n    format_sequence(term)\n    do_format([], rem, acc, false, append_reset)\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15413,
+    "repo": "elixir",
+    "title": "Inline in empty list in erlang pass",
+    "path": "lib/elixir/src/elixir_erl_pass.erl",
+    "diff_hunk": "@@ -576,6 +576,9 @@ translate_remote('Elixir.String.Chars', to_string, Meta, [Arg], S) ->\n     {clause, Generated, [Var], [[Guard]], [Fast]},\n     {clause, Generated, [Var], [], [Slow]}\n   ]}, VS};\n+translate_remote(lists, member, Meta, [_Expr, []], S) ->\n+  Ann = ?ann(Meta),\n+  {{atom, Ann, false}, S};",
+    "body": "We need to execute the expression in case of side-effects, so it has to be something like before:\n\n\n```suggestion\n  {{block, Ann, [{match, Ann, {var, Ann, '_'}, Expr}, {atom, Ann, false}]}, S};\n```\n\nShall we add a test to the test/erlang/* files? I think we test other optimizations there already.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15413,
+    "repo": "elixir",
+    "title": "Inline in empty list in erlang pass",
+    "path": "lib/elixir/test/elixir/module/types/expr_test.exs",
+    "diff_hunk": "@@ -1818,6 +1818,11 @@ defmodule Module.Types.ExprTest do\n     end\n \n     test \"Kernel.in/2\" do\n+      assert typecheck!(\n+               [x],\n+               x in []\n+             ) == boolean()",
+    "body": "On `apply.ex`, you can replace this:\n\n    {:lists, :member, [{[term(), list(term())], boolean()}]},\n\nwith this:\n\n    {:lists, :member, [{[term(), empty_list()], atom([false])}, {[term(), non_empty_list(term())], boolean()}]},",
+    "in_reply_to": 3291759708
+  },
+  {
+    "pr": 15413,
+    "repo": "elixir",
+    "title": "Inline in empty list in erlang pass",
+    "path": "lib/elixir/src/elixir_erl_pass.erl",
+    "diff_hunk": "@@ -576,6 +576,9 @@ translate_remote('Elixir.String.Chars', to_string, Meta, [Arg], S) ->\n     {clause, Generated, [Var], [[Guard]], [Fast]},\n     {clause, Generated, [Var], [], [Slow]}\n   ]}, VS};\n+translate_remote(lists, member, Meta, [_Expr, []], S) ->\n+  Ann = ?ann(Meta),\n+  {{atom, Ann, false}, S};",
+    "body": "Or even better, perhaps a test for `Kernel.in/2` like this:\n\n    false = send(self(), :hello) in []\n    assert_received :hello\n\n",
+    "in_reply_to": 3292340512
+  },
+  {
+    "pr": 15413,
+    "repo": "elixir",
+    "title": "Inline in empty list in erlang pass",
+    "path": "lib/elixir/src/elixir_erl_pass.erl",
+    "diff_hunk": "@@ -576,6 +576,14 @@ translate_remote('Elixir.String.Chars', to_string, Meta, [Arg], S) ->\n     {clause, Generated, [Var], [[Guard]], [Fast]},\n     {clause, Generated, [Var], [], [Slow]}\n   ]}, VS};\n+translate_remote(lists, member, Meta, [Expr, []], S) ->\n+  Ann = ?ann(Meta),\n+  {TExpr, S1} = translate(Expr, Ann, S),\n+  {VarName, S2} = elixir_erl_var:build('_', S1),\n+  Generated = erl_anno:set_generated(true, Ann),\n+  Var = {var, Generated, VarName},\n+  Block = {block, Generated, [{match, Generated, Var, TExpr}, {atom, Ann, false}]},\n+  {Block, S2};",
+    "body": "Do we need a VarName, I believe we could use '_' directly below instead:\n\n```suggestion\n  Generated = erl_anno:set_generated(true, Ann),\n  Var = {var, Generated, '_'},\n  Block = {block, Generated, [{match, Generated, Var, TExpr}, {atom, Ann, false}]},\n  {Block, S1};\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15394,
+    "repo": "elixir",
+    "title": "Fix `Mix.Task.requirements/1` spec",
+    "path": "lib/mix/lib/mix/task.ex",
+    "diff_hunk": "@@ -276,7 +276,7 @@ defmodule Mix.Task do\n   to be a task optionally followed by its arguments.\n   \"\"\"\n   @doc since: \"1.11.0\"\n-  @spec requirements(task_module) :: []\n+  @spec requirements(task_module) :: [String.t]",
+    "body": "```suggestion\n  @spec requirements(task_module) :: [String.t()]\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15357,
+    "repo": "elixir",
+    "title": "Add SWAR versions of `Base` validations",
+    "path": "lib/elixir/lib/base.ex",
+    "diff_hunk": "@@ -371,22 +481,21 @@ defmodule Base do\n     decode_name = :\"decode16#{base}!\"\n     validate_name = :\"validate16#{base}?\"\n     valid_char_name = :\"valid_char16#{base}?\"\n+    valid_word_name = :\"valid_word16#{base}?\"\n \n     {min, decoded} = to_decode_list.(alphabet)\n \n     defp unquote(validate_name)(<<>>), do: true\n \n-    defp unquote(validate_name)(<<c1, c2, c3, c4, c5, c6, c7, c8, rest::binary>>) do\n-      unquote(valid_char_name)(c1) and\n-        unquote(valid_char_name)(c2) and\n-        unquote(valid_char_name)(c3) and\n-        unquote(valid_char_name)(c4) and\n-        unquote(valid_char_name)(c5) and\n-        unquote(valid_char_name)(c6) and\n-        unquote(valid_char_name)(c7) and\n-        unquote(valid_char_name)(c8) and\n-        unquote(validate_name)(rest)\n-    end\n+    # SWAR fast path: 7+1 = 8 bytes per stride. The SWAR guard validates 7\n+    # bytes in `w` in one shot; the 8th byte `b` is checked with the per-byte\n+    # guard. Stride stays 8 to preserve the even-length invariant.\n+    defp unquote(validate_name)(<<w::56, b, rest::binary>>)\n+         when unquote(valid_word_name)(w) and unquote(valid_char_name)(b),\n+         do: unquote(validate_name)(rest)\n+\n+    # 8+ bytes but the SWAR guard failed → at least one byte is invalid.\n+    defp unquote(validate_name)(<<_::56, _, _::binary>>), do: false",
+    "body": "You don't need to do exactly 7 bytes. What about something like this:\n\n```suggestion\n    defp unquote(validate_name)(<<w::56, rest::binary>>),\n         do: unquote(valid_word_name)(w) and unquote(validate_name)(rest)\n```\n\nBut then you need to add a:\n\n```\ndefp unquote(validate_name)(<<char, rest::binary>>), do: unquote(valid_char_name)(char)\n```\n\nat the end (we can probably remove the `c1, c2, c3, c4` and `c1, c2` clauses).\n",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15335,
+    "repo": "elixir",
+    "title": "Improve ambiguous import error message",
+    "path": "lib/elixir/test/elixir/kernel/errors_test.exs",
+    "diff_hunk": "@@ -694,6 +694,54 @@ defmodule Kernel.ErrorsTest do\n     )\n   end\n \n+  test \"macro/function import conflict\" do\n+    assert_compile_error(\n+      [\n+        \"nofile:12:\",\n+        \"conflicting foo/1 import from modules Kernel.ErrorsTest.MacroFunImportB and Kernel.ErrorsTest.MacroFunImportA\"\n+      ],\n+      ~c\"\"\"\n+      defmodule Kernel.ErrorsTest.MacroFunImportA do\n+        defmacro foo(x), do: x\n+      end\n+\n+      defmodule Kernel.ErrorsTest.MacroFunImportB do\n+        def foo(x), do: x\n+      end\n+\n+      defmodule Kernel.ErrorsTest.MacroFunImportConflict do\n+        import Kernel.ErrorsTest.MacroFunImportA\n+        import Kernel.ErrorsTest.MacroFunImportB\n+        foo(1)\n+      end\n+      \"\"\"\n+    )\n+  end\n+\n+  test \"macro/macro import conflict\" do\n+    assert_compile_error(\n+      [\n+        \"nofile:12:\",\n+        \"conflicting foo/1 import from modules Kernel.ErrorsTest.MacroMacroImportB and Kernel.ErrorsTest.MacroMacroImportA\"\n+      ],\n+      ~c\"\"\"\n+      defmodule Kernel.ErrorsTest.MacroMacroImportA do\n+        defmacro foo(x), do: x\n+      end\n+\n+      defmodule Kernel.ErrorsTest.MacroMacroImportB do\n+        defmacro foo(x), do: x\n+      end\n+\n+      defmodule Kernel.ErrorsTest.MacroMacroImportConflict do\n+        import Kernel.ErrorsTest.MacroMacroImportA\n+        import Kernel.ErrorsTest.MacroMacroImportB\n+        foo(1)\n+      end\n+      \"\"\"\n+    )\n+  end\n+",
+    "body": "```suggestion\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15332,
+    "repo": "elixir",
+    "title": "Hash-cons BDD descriptors",
+    "path": "lib/elixir/lib/module/types/descr.ex",
+    "diff_hunk": "@@ -5746,6 +5770,26 @@ defmodule Module.Types.Descr do\n \n   ## BDD helpers\n \n+  defp bdd_leaf_new(arg1, arg2), do: {:erlang.phash2({arg1, arg2}), arg1, arg2}\n+\n+  defp bdd_node_new(lit, c, u, d),\n+    do: {bdd_compute_hash(lit, c, u, d), lit, c, u, d}\n+\n+  defp bdd_compute_hash(lit, c, u, d),\n+    do: :erlang.phash2({bdd_hash(lit), bdd_hash(c), bdd_hash(u), bdd_hash(d)})\n+\n+  defp bdd_leaf_value(bdd_leaf(arg1, arg2)), do: {arg1, arg2}",
+    "body": "We should remove this function, because we are building tuples for no reasons. Just pass the whole leaf downstream and let callers pattern match on `bdd_leaf(arg1, arg2)`.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15332,
+    "repo": "elixir",
+    "title": "Hash-cons BDD descriptors",
+    "path": "lib/elixir/lib/module/types/descr.ex",
+    "diff_hunk": "@@ -5746,6 +5770,26 @@ defmodule Module.Types.Descr do\n \n   ## BDD helpers\n \n+  defp bdd_leaf_new(arg1, arg2), do: {:erlang.phash2({arg1, arg2}), arg1, arg2}",
+    "body": "Pairs allocate less in memory and computes the hash faster:\n\n```suggestion\n  defp bdd_leaf_new(arg1, arg2), do: {:erlang.phash2([arg1 | arg2]), arg1, arg2}\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15332,
+    "repo": "elixir",
+    "title": "Hash-cons BDD descriptors",
+    "path": "lib/elixir/lib/module/types/descr.ex",
+    "diff_hunk": "@@ -5746,6 +5770,26 @@ defmodule Module.Types.Descr do\n \n   ## BDD helpers\n \n+  defp bdd_leaf_new(arg1, arg2), do: {:erlang.phash2({arg1, arg2}), arg1, arg2}\n+\n+  defp bdd_node_new(lit, c, u, d),\n+    do: {bdd_compute_hash(lit, c, u, d), lit, c, u, d}\n+\n+  defp bdd_compute_hash(lit, c, u, d),\n+    do: :erlang.phash2({bdd_hash(lit), bdd_hash(c), bdd_hash(u), bdd_hash(d)})",
+    "body": "Let's not build a tuple just to hash it. We can use a simple boost style hashing combiner:\n\n```suggestion\n  defp bdd_compute_hash(lit, c, u, d) do\n    h1 = bdd_combine_hash(bdd_hash(lit), bdd_hash(c))\n    h2 = bdd_combine_hash(h1, bdd_hash(u))\n    bdd_combine_hash(h2, bdd_hash(d)) &&& 0xFFFFFFFF\n  end\n\n  # Boost-style hash_combine for four already-hashed integers.\n  # Cheaper than :erlang.phash2({lit, c, u, d}) and good enough for ruling out equality.\n  @compile {:inline, bdd_combine_hash: 2, bdd_hash: 1}\n  defp bdd_combine_hash(acc, x) do\n    bxor(acc, x + 0x9E3779B9 + (acc <<< 6) + (acc >>> 2))\n  end\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15331,
+    "repo": "elixir",
+    "title": "In EEX Compiler, flatten expr list only once, not on every iteration",
+    "path": "lib/eex/lib/eex/compiler.ex",
+    "diff_hunk": "@@ -479,8 +479,7 @@ defmodule EEx.Compiler do\n   # Changes placeholder to real expression\n \n   defp insert_quoted({:__EEX__, _, [key]}, quoted) do\n-    {^key, value} = List.keyfind(quoted, key, 0)\n-    value\n+    Map.get(quoted, key)",
+    "body": "```suggestion\n    Map.fetch!(quoted, key)\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15329,
+    "repo": "elixir",
+    "title": "Refactor `Float.round/2` algorithm for better performance",
+    "path": "lib/elixir/lib/float.ex",
+    "diff_hunk": "@@ -366,133 +363,140 @@ defmodule Float do\n     raise ArgumentError, invalid_precision_message(precision)\n   end\n \n+  # Float rounding via Russ Cox's \"unrounded scaling\" algorithm specialised for\n+  # fixed-precision rounding. Reference: https://research.swtch.com/fp\n+  #\n+  # 1. Decompose float = (-1)^sign * mantissa * 2^binary_exp\n+  #    (mantissa has 53 bits incl. implicit leading 1).\n+  # 2. Bounded multiply `product = mantissa * 10^precision` (≤103 bits, exact).\n+  # 3. Round `product / 2^-binary_exp` to an integer per the requested mode.\n+  # 4. Emit float closest to `rounded_int / 10^precision`:\n+  #    - fast path: when rounded_int < 2^53, IEEE float division is correctly rounded.\n+  #    - slow path: bignum scaling + manual mantissa extraction.\n   defp round(num, _precision, _rounding) when is_float(num) and num == 0.0, do: num\n \n-  defp round(float, precision, rounding) do\n-    <<sign::1, exp::11, significant::52-bitstring>> = <<float::float>>\n-    {num, count} = decompose(significant, 1)\n-    count = count - exp + 1023\n+  defp round(float, precision, mode) do\n+    <<sign::1, exp::11, mantissa::52>> = <<float::float>>\n \n     cond do\n-      # Precision beyond 15 digits\n-      count >= 104 ->\n-        case rounding do\n-          :ceil when sign === 0 -> 1 / power_of_10(precision)\n-          :floor when sign === 1 -> -1 / power_of_10(precision)\n-          :ceil when sign === 1 -> -0.0\n-          :half_up when sign === 1 -> -0.0\n-          _ -> 0.0\n-        end\n+      # Subnormal — tiny but non-zero; treat per-mode (ceil(+) and floor(-) bump\n+      # to 10^-precision; everything else rounds to signed zero).\n+      exp == 0 ->\n+        tiny_round(sign, precision, mode)\n \n-      # We are asking more precision than we have\n-      count <= precision ->\n+      # |float| >= 2^52 — already integer-valued at any precision >= 1.\n+      exp - 1075 >= 0 ->\n         float\n \n       true ->\n-        # Difference in precision between float and asked precision\n-        # We subtract 1 because we need to calculate the remainder too\n-        diff = count - precision - 1\n-\n-        # Get up to latest so we calculate the remainder\n-        power_of_10 = power_of_10(diff)\n-\n-        # Convert the numerand to decimal base\n-        num = num * power_of_5(count)\n-\n-        # Move to the given precision - 1\n-        num = div(num, power_of_10)\n-        div = div(num, 10)\n-        num = rounding(rounding, sign, num, div)\n-\n-        # Convert back to float without loss\n-        # https://www.exploringbinary.com/correct-decimal-to-floating-point-using-big-integers/\n-        den = power_of_10(precision)\n-        boundary = den <<< 52\n-\n-        cond do\n-          num == 0 and sign == 1 ->\n-            -0.0\n-\n-          num == 0 ->\n-            0.0\n-\n-          num >= boundary ->\n-            {den, exp} = scale_down(num, boundary, 52)\n-            decimal_to_float(sign, num, den, exp)\n-\n-          true ->\n-            {num, exp} = scale_up(num, boundary, 52)\n-            decimal_to_float(sign, num, den, exp)\n-        end\n+        mantissa = @power_of_2_to_52 ||| mantissa\n+        shift = 1075 - exp\n+        do_round(sign, mantissa, shift, precision, mode)\n     end\n   end\n \n-  defp decompose(significant, initial) do\n-    decompose(significant, 1, 0, initial)\n-  end\n-\n-  defp decompose(<<1::1, bits::bitstring>>, count, last_count, acc) do\n-    decompose(bits, count + 1, count, (acc <<< (count - last_count)) + 1)\n+  # |float * 10^precision| < 0.5 — integer round is 0; ceil/floor still bump per sign.\n+  defp do_round(sign, _mantissa, shift, precision, mode) when shift >= 104 do\n+    tiny_round(sign, precision, mode)\n   end\n \n-  defp decompose(<<0::1, bits::bitstring>>, count, last_count, acc) do\n-    decompose(bits, count + 1, last_count, acc)\n-  end\n-\n-  defp decompose(<<>>, _count, last_count, acc) do\n-    {acc, last_count}\n-  end\n+  defp do_round(sign, mantissa, shift, precision, mode) do\n+    power = power_of_10(precision)\n+    product = mantissa * power\n+    half = 1 <<< (shift - 1)\n+    quotient = product >>> shift\n+    remainder = product - (quotient <<< shift)\n+    rounded_int = round_step(mode, sign, quotient, remainder, half)\n \n-  defp scale_up(num, boundary, exp) when num >= boundary, do: {num, exp}\n-  defp scale_up(num, boundary, exp), do: scale_up(num <<< 1, boundary, exp - 1)\n+    cond do\n+      rounded_int == 0 ->\n+        signed_zero(sign)\n \n-  defp scale_down(num, den, exp) do\n-    new_den = den <<< 1\n+      rounded_int < @power_of_2_to_52 <<< 1 ->\n+        # Both rounded_int and power fit in 53 bits, so IEEE float division\n+        # is correctly rounded.\n+        result = :erlang.float(rounded_int) / :erlang.float(power)",
+    "body": ":erlang.float is being deprecated and they are probably not needed here.\n\n```suggestion\n        result = rounded_int / power\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15329,
+    "repo": "elixir",
+    "title": "Refactor `Float.round/2` algorithm for better performance",
+    "path": "lib/elixir/lib/float.ex",
+    "diff_hunk": "@@ -366,133 +363,140 @@ defmodule Float do\n     raise ArgumentError, invalid_precision_message(precision)\n   end\n \n+  # Float rounding via Russ Cox's \"unrounded scaling\" algorithm specialised for\n+  # fixed-precision rounding. Reference: https://research.swtch.com/fp\n+  #\n+  # 1. Decompose float = (-1)^sign * mantissa * 2^binary_exp\n+  #    (mantissa has 53 bits incl. implicit leading 1).\n+  # 2. Bounded multiply `product = mantissa * 10^precision` (≤103 bits, exact).\n+  # 3. Round `product / 2^-binary_exp` to an integer per the requested mode.\n+  # 4. Emit float closest to `rounded_int / 10^precision`:\n+  #    - fast path: when rounded_int < 2^53, IEEE float division is correctly rounded.\n+  #    - slow path: bignum scaling + manual mantissa extraction.\n   defp round(num, _precision, _rounding) when is_float(num) and num == 0.0, do: num\n \n-  defp round(float, precision, rounding) do\n-    <<sign::1, exp::11, significant::52-bitstring>> = <<float::float>>\n-    {num, count} = decompose(significant, 1)\n-    count = count - exp + 1023\n+  defp round(float, precision, mode) do\n+    <<sign::1, exp::11, mantissa::52>> = <<float::float>>\n \n     cond do\n-      # Precision beyond 15 digits\n-      count >= 104 ->\n-        case rounding do\n-          :ceil when sign === 0 -> 1 / power_of_10(precision)\n-          :floor when sign === 1 -> -1 / power_of_10(precision)\n-          :ceil when sign === 1 -> -0.0\n-          :half_up when sign === 1 -> -0.0\n-          _ -> 0.0\n-        end\n+      # Subnormal — tiny but non-zero; treat per-mode (ceil(+) and floor(-) bump\n+      # to 10^-precision; everything else rounds to signed zero).\n+      exp == 0 ->\n+        tiny_round(sign, precision, mode)\n \n-      # We are asking more precision than we have\n-      count <= precision ->\n+      # |float| >= 2^52 — already integer-valued at any precision >= 1.\n+      exp - 1075 >= 0 ->\n         float\n \n       true ->\n-        # Difference in precision between float and asked precision\n-        # We subtract 1 because we need to calculate the remainder too\n-        diff = count - precision - 1\n-\n-        # Get up to latest so we calculate the remainder\n-        power_of_10 = power_of_10(diff)\n-\n-        # Convert the numerand to decimal base\n-        num = num * power_of_5(count)\n-\n-        # Move to the given precision - 1\n-        num = div(num, power_of_10)\n-        div = div(num, 10)\n-        num = rounding(rounding, sign, num, div)\n-\n-        # Convert back to float without loss\n-        # https://www.exploringbinary.com/correct-decimal-to-floating-point-using-big-integers/\n-        den = power_of_10(precision)\n-        boundary = den <<< 52\n-\n-        cond do\n-          num == 0 and sign == 1 ->\n-            -0.0\n-\n-          num == 0 ->\n-            0.0\n-\n-          num >= boundary ->\n-            {den, exp} = scale_down(num, boundary, 52)\n-            decimal_to_float(sign, num, den, exp)\n-\n-          true ->\n-            {num, exp} = scale_up(num, boundary, 52)\n-            decimal_to_float(sign, num, den, exp)\n-        end\n+        mantissa = @power_of_2_to_52 ||| mantissa\n+        shift = 1075 - exp\n+        do_round(sign, mantissa, shift, precision, mode)\n     end\n   end\n \n-  defp decompose(significant, initial) do\n-    decompose(significant, 1, 0, initial)\n-  end\n-\n-  defp decompose(<<1::1, bits::bitstring>>, count, last_count, acc) do\n-    decompose(bits, count + 1, count, (acc <<< (count - last_count)) + 1)\n+  # |float * 10^precision| < 0.5 — integer round is 0; ceil/floor still bump per sign.\n+  defp do_round(sign, _mantissa, shift, precision, mode) when shift >= 104 do\n+    tiny_round(sign, precision, mode)\n   end\n \n-  defp decompose(<<0::1, bits::bitstring>>, count, last_count, acc) do\n-    decompose(bits, count + 1, last_count, acc)\n-  end\n-\n-  defp decompose(<<>>, _count, last_count, acc) do\n-    {acc, last_count}\n-  end\n+  defp do_round(sign, mantissa, shift, precision, mode) do\n+    power = power_of_10(precision)\n+    product = mantissa * power\n+    half = 1 <<< (shift - 1)\n+    quotient = product >>> shift\n+    remainder = product - (quotient <<< shift)\n+    rounded_int = round_step(mode, sign, quotient, remainder, half)\n \n-  defp scale_up(num, boundary, exp) when num >= boundary, do: {num, exp}\n-  defp scale_up(num, boundary, exp), do: scale_up(num <<< 1, boundary, exp - 1)\n+    cond do\n+      rounded_int == 0 ->\n+        signed_zero(sign)\n \n-  defp scale_down(num, den, exp) do\n-    new_den = den <<< 1\n+      rounded_int < @power_of_2_to_52 <<< 1 ->\n+        # Both rounded_int and power fit in 53 bits, so IEEE float division\n+        # is correctly rounded.\n+        result = :erlang.float(rounded_int) / :erlang.float(power)\n+        if sign == 1, do: -result, else: result\n \n-    if num < new_den do\n-      {den >>> 52, exp}\n-    else\n-      scale_down(num, new_den, exp + 1)\n+      true ->\n+        bignum_to_float(sign, rounded_int, power)\n     end\n   end\n \n-  defp decimal_to_float(sign, num, den, exp) do\n-    quo = div(num, den)\n-    rem = num - quo * den\n+  defp round_step(:half_up, _sign, quotient, remainder, half) do\n+    if remainder >= half, do: quotient + 1, else: quotient\n+  end\n \n-    tmp =\n-      case den >>> 1 do\n-        den when rem > den -> quo + 1\n-        den when rem < den -> quo\n-        _ when (quo &&& 1) === 1 -> quo + 1\n-        _ -> quo\n+  defp round_step(:floor, 0, quotient, _remainder, _half), do: quotient\n+  defp round_step(:floor, 1, quotient, remainder, _half) when remainder > 0, do: quotient + 1\n+  defp round_step(:floor, 1, quotient, _remainder, _half), do: quotient\n+\n+  defp round_step(:ceil, 0, quotient, remainder, _half) when remainder > 0, do: quotient + 1\n+  defp round_step(:ceil, 0, quotient, _remainder, _half), do: quotient\n+  defp round_step(:ceil, 1, quotient, _remainder, _half), do: quotient\n+\n+  defp signed_zero(0), do: 0.0\n+  defp signed_zero(1), do: -0.0\n+\n+  # Result of rounding a non-zero float whose |float * 10^precision| < 0.5.\n+  # ceil(+) → +10^-precision, floor(-) → -10^-precision, others → signed 0.\n+  defp tiny_round(0, precision, :ceil), do: 1.0 / :erlang.float(power_of_10(precision))\n+  defp tiny_round(1, precision, :floor), do: -1.0 / :erlang.float(power_of_10(precision))\n+  defp tiny_round(sign, _precision, _mode), do: signed_zero(sign)",
+    "body": "```suggestion\n  defp tiny_round(0, precision, :ceil), do: 1.0 / power_of_10(precision)\n  defp tiny_round(1, precision, :floor), do: -1.0 / power_of_10(precision)\n  defp tiny_round(sign, _precision, _mode), do: signed_zero(sign)\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15329,
+    "repo": "elixir",
+    "title": "Refactor `Float.round/2` algorithm for better performance",
+    "path": "lib/elixir/lib/float.ex",
+    "diff_hunk": "@@ -366,133 +365,140 @@ defmodule Float do\n     raise ArgumentError, invalid_precision_message(precision)\n   end\n \n+  # Float rounding via Russ Cox's \"unrounded scaling\" algorithm specialised for\n+  # fixed-precision rounding. Reference: https://research.swtch.com/fp\n+  #\n+  # 1. Decompose float = (-1)^sign * mantissa * 2^binary_exp\n+  #    (mantissa has 53 bits incl. implicit leading 1).\n+  # 2. Bounded multiply `product = mantissa * 10^precision` (≤103 bits, exact).\n+  # 3. Round `product / 2^-binary_exp` to an integer per the requested mode.\n+  # 4. Emit float closest to `rounded_int / 10^precision`:\n+  #    - fast path: when rounded_int < 2^53, IEEE float division is correctly rounded.\n+  #    - slow path: bignum scaling + manual mantissa extraction.\n   defp round(num, _precision, _rounding) when is_float(num) and num == 0.0, do: num\n \n-  defp round(float, precision, rounding) do\n-    <<sign::1, exp::11, significant::52-bitstring>> = <<float::float>>\n-    {num, count} = decompose(significant, 1)\n-    count = count - exp + 1023\n+  defp round(float, precision, mode) do\n+    <<sign::1, exp::11, mantissa::52>> = <<float::float>>\n \n     cond do\n-      # Precision beyond 15 digits\n-      count >= 104 ->\n-        case rounding do\n-          :ceil when sign === 0 -> 1 / power_of_10(precision)\n-          :floor when sign === 1 -> -1 / power_of_10(precision)\n-          :ceil when sign === 1 -> -0.0\n-          :half_up when sign === 1 -> -0.0\n-          _ -> 0.0\n-        end\n+      # Subnormal — tiny but non-zero; treat per-mode (ceil(+) and floor(-) bump\n+      # to 10^-precision; everything else rounds to signed zero).\n+      exp == 0 ->\n+        tiny_round(sign, precision, mode)\n \n-      # We are asking more precision than we have\n-      count <= precision ->\n+      # |float| >= 2^52 — already integer-valued at any precision >= 1.",
+    "body": "This is not checking precision, it seems the comment is incorrect.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15329,
+    "repo": "elixir",
+    "title": "Refactor `Float.round/2` algorithm for better performance",
+    "path": "lib/elixir/lib/float.ex",
+    "diff_hunk": "@@ -344,15 +344,14 @@ defmodule Float do\n \n   \"\"\"\n   @spec round(float, precision_range) :: float\n-  # This implementation is slow since it relies on big integers.\n-  # Faster implementations are available on more recent papers\n-  # and could be implemented in the future.\n   def round(float, precision \\\\ 0)\n \n   def round(float, 0) when float == 0.0, do: float\n \n   def round(float, 0) when is_float(float) do\n-    case float |> :erlang.round() |> :erlang.float() do\n+    rounded = :erlang.round(float) * 1.0\n+\n+    case rounded do",
+    "body": "```suggestion\n    case :erlang.round(float) * 1.0 do\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15327,
+    "repo": "elixir",
+    "title": "Fix incorrect guard type refinement with length/map_size and != operator",
+    "path": "lib/elixir/test/elixir/module/types/pattern_test.exs",
+    "diff_hunk": "@@ -1159,6 +1159,17 @@ defmodule Module.Types.PatternTest do\n \n       assert typecheck!([x], 0 != length(x), x) == dynamic(non_empty_list(term()))\n       assert typecheck!([x], not (0 != length(x)), x) == dynamic(empty_list())\n+\n+      assert typecheck!([x], length(x) != 1, x) == dynamic(list(term()))\n+      assert typecheck!([x], length(x) == 1, x) == dynamic(list(term()))",
+    "body": "This cannot be an empty list, right?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15316,
+    "repo": "elixir",
+    "title": "Consistently return path as binary in relative_to_cwd",
+    "path": "lib/elixir/test/elixir/path_test.exs",
+    "diff_hunk": "@@ -430,3 +430,27 @@ defmodule PathTest do\n     defp strip_drive_letter_if_windows(path), do: path\n   end\n end\n+\n+defmodule PathCwdFailureTest do",
+    "body": "```suggestion\ndefmodule Path.SyncTest do\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15306,
+    "repo": "elixir",
+    "title": "Fix reentrancy of Code.eval_*",
+    "path": "lib/elixir/src/elixir.erl",
+    "diff_hunk": "@@ -341,20 +350,43 @@ erl_eval(Expr, Binding, Env) ->\n   LocalHandler = {value, fun ?MODULE:eval_local_handler/2},\n   ExternalHandler = {value, fun ?MODULE:eval_external_handler/3},\n \n+  %% ?elixir_eval_env is used by the external handler.\n+  %%\n+  %% The reason why we use the process dictionary to pass the environment\n+  %% is because we want to avoid passing closures to erl_eval, as that\n+  %% would effectively tie the eval code to the Elixir version and it is\n+  %% best if it depends solely on Erlang/OTP.\n+  %%\n+  %% The downside is that functions that escape the eval context will no\n+  %% longer have the original environment they came from.\n+  %%\n+  %% We keep a stack of envs in the process dictionary so nested eval calls\n+  %% in the same process do not clobber the outer env.\n+  push_pdict(?elixir_eval_env, Env),",
+    "body": "I am not sure if we need the push and pop into the direct, because the try-block already captures the state. I'd do this:\n\n```\nPreviousEvalEnv = erlang:get(?elixir_eval_env),\ntry\n\nafter\n  case PreviousEvalEnv of\n    undefined -> erlang:delete(?elixir_eval_env);\n    _ -> erlang:put(?elixir_eval_env, PreviousEvalEnv)\n  end\nend\n```\n\nThe same for dbg_callback. WDYT?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15287,
+    "repo": "elixir",
+    "title": "Bdd negation and difference optimizations",
+    "path": "lib/elixir/lib/module/types/descr.ex",
+    "diff_hunk": "@@ -5693,6 +5749,17 @@ defmodule Module.Types.Descr do\n   defp tuple_insert_static(descr, index, type) do\n     Map.update!(descr, :tuple, fn bdd ->\n       bdd_map(bdd, fn {tag, elements} ->\n+        # If the tuple is open, then we want List.insert_at to put the new element at the correct\n+        # index, which requires filling the tuple with `term()` values first.\n+        # Closed tuples of an incorrect size will be ignored (they are cancelled by the earlier\n+        # intersection with `tuple_of_size_at_least`).\n+        elements =",
+    "body": "Do we need a test?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15287,
+    "repo": "elixir",
+    "title": "Bdd negation and difference optimizations",
+    "path": "lib/elixir/lib/module/types/descr.ex",
+    "diff_hunk": "@@ -5693,6 +5749,17 @@ defmodule Module.Types.Descr do\n   defp tuple_insert_static(descr, index, type) do\n     Map.update!(descr, :tuple, fn bdd ->\n       bdd_map(bdd, fn {tag, elements} ->\n+        # If the tuple is open, then we want List.insert_at to put the new element at the correct\n+        # index, which requires filling the tuple with `term()` values first.\n+        # Closed tuples of an incorrect size will be ignored (they are cancelled by the earlier\n+        # intersection with `tuple_of_size_at_least`).\n+        elements =",
+    "body": "Ok, a test was already failing without these changes.",
+    "in_reply_to": 3101357775
+  },
+  {
+    "pr": 15287,
+    "repo": "elixir",
+    "title": "Bdd negation and difference optimizations",
+    "path": "lib/elixir/lib/module/types/descr.ex",
+    "diff_hunk": "@@ -5834,6 +5901,10 @@ defmodule Module.Types.Descr do\n   defp bdd_difference_union(i, u1, u2),\n     do: bdd_difference(i, bdd_union(u1, u2))\n \n+  defp bdd_negation_union(u1, u2) do\n+    bdd_intersection(bdd_negation(u1), bdd_negation(u2))\n+  end",
+    "body": "```suggestion\n  # We avoid unions because they are lazy and we prune\n  # intersections more actively.\n  defp bdd_negation_union(u1, u2) do\n    bdd_intersection(bdd_negation(u1), bdd_negation(u2))\n  end\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15287,
+    "repo": "elixir",
+    "title": "Bdd negation and difference optimizations",
+    "path": "lib/elixir/lib/module/types/descr.ex",
+    "diff_hunk": "@@ -6122,24 +6184,35 @@ defmodule Module.Types.Descr do\n             bdd_difference(bdd_leaf_intersection(leaf, d, intersection), lit)\n           )\n \n-        if c == :bdd_bot do\n-          rest\n+        with true <- c != :bdd_bot,\n+             new_leaf = intersection.(leaf, lit),\n+             true <- new_leaf != :bdd_bot do\n+          bdd_union(bdd_leaf_intersection(new_leaf, c, intersection), rest)\n         else\n-          case intersection.(leaf, lit) do\n-            :bdd_bot -> rest\n-            new_leaf -> bdd_union(bdd_leaf_intersection(new_leaf, c, intersection), rest)\n-          end\n+          _ -> rest\n         end\n     end\n   end\n \n-  # Lazy negation: eliminate the union, then perform normal negation (switching leaves)\n+  # {lit, c, u, d} = (lit and c) or u or (not lit and d), so\n+  # its negation is ((lit and not c) or (not lit and not d)) and not u.\n   def bdd_negation(:bdd_top), do: :bdd_bot\n   def bdd_negation(:bdd_bot), do: :bdd_top\n   def bdd_negation({_, _} = pair), do: {pair, :bdd_bot, :bdd_bot, :bdd_top}\n \n   def bdd_negation({lit, c, u, d}) do\n-    {lit, bdd_negation(bdd_union(c, u)), :bdd_bot, bdd_negation(bdd_union(d, u))}\n+    inner =\n+      {lit, bdd_negation(c), :bdd_bot, bdd_negation(d)}\n+\n+    case u do\n+      :bdd_bot -> inner\n+      _ -> bdd_intersection(inner, bdd_negation(u))\n+    end\n+    |> case do",
+    "body": "```suggestion\n    case bdd_intersection(inner, bdd_negation(u)) do\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15280,
+    "repo": "elixir",
+    "title": "Fix compiler crash on invalid nested bitstring",
+    "path": "lib/elixir/test/elixir/kernel/binary_test.exs",
+    "diff_hunk": "@@ -196,6 +196,12 @@ defmodule Kernel.BinaryTest do\n     assert_compile_error(message, fn ->\n       Code.eval_string(~s[<<\"foo\"::float>>])\n     end)\n+\n+    assert_compile_error(message, fn ->\n+      Code.compile_string(",
+    "body": "```suggestion\n      # We need to wrap the example below in a module because\n      # we attempt to continue compilation when inside a function\n      Code.compile_string(\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15280,
+    "repo": "elixir",
+    "title": "Fix compiler crash on invalid nested bitstring",
+    "path": "lib/elixir/test/elixir/kernel/binary_test.exs",
+    "diff_hunk": "@@ -196,6 +196,12 @@ defmodule Kernel.BinaryTest do\n     assert_compile_error(message, fn ->\n       Code.eval_string(~s[<<\"foo\"::float>>])\n     end)\n+\n+    assert_compile_error(message, fn ->\n+      Code.compile_string(\n+        \"defmodule Repro do\\n  def run do\\n    <<(<<1>>)::integer>>\\n  end\\nend\\n\"",
+    "body": "```suggestion\n        \"defmodule Repro do\\n  def run, do:  <<(<<1>>)::integer>>\\nend\\n\"\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15280,
+    "repo": "elixir",
+    "title": "Fix compiler crash on invalid nested bitstring",
+    "path": "lib/elixir/test/elixir/kernel/binary_test.exs",
+    "diff_hunk": "@@ -196,6 +196,14 @@ defmodule Kernel.BinaryTest do\n     assert_compile_error(message, fn ->\n       Code.eval_string(~s[<<\"foo\"::float>>])\n     end)\n+\n+    assert_compile_error(message, fn ->\n+      # We need to wrap the example below in a module because\n+      # we attempt to continue compilation when inside a function\n+      Code.compile_string(\n+        \"defmodule Repro do\\n  def run, do:  <<(<<1>>)::integer>>\\nend\\n\"\n+      )",
+    "body": "```suggestion\n      Code.compile_string(\"defmodule Repro do\\n  def run, do:  <<(<<1>>)::integer>>\\nend\")\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15278,
+    "repo": "elixir",
+    "title": "Don't crash when inspecting OTP 29 native records",
+    "path": "lib/elixir/lib/inspect.ex",
+    "diff_hunk": "@@ -669,6 +669,10 @@ defimpl Inspect, for: Any do\n     Inspect.Map.inspect_as_struct(struct, Macro.inspect_atom(:literal, module), info, opts)\n   end\n \n+  def inspect(native_record, _opts) do",
+    "body": "```suggestion\n  # A temporary clause to deal with native records until they are officially supported\n  def inspect(native_record, _opts) do\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15272,
+    "repo": "elixir",
+    "title": "Fix invalid module reference in prune_stacktrace",
+    "path": "lib/elixir/test/elixir/code_test.exs",
+    "diff_hunk": "@@ -215,6 +215,30 @@ defmodule CodeTest do\n       end\n     end\n \n+    test \"prunes elixir_expand from macro expansion stacktraces\" do\n+      defmodule PruneStacktraceMacro do\n+        defmacro bad do\n+          quote do\n+            receive 1\n+          end\n+        end\n+      end\n+\n+      stacktrace =\n+        try do\n+          Code.eval_quoted(\n+            quote do\n+              require PruneStacktraceMacro\n+              PruneStacktraceMacro.bad()\n+            end\n+          )\n+        rescue\n+          CompileError -> __STACKTRACE__\n+        end\n+\n+      refute Enum.any?(stacktrace, &match?({:elixir_expand, :expand, 3, _}, &1))",
+    "body": "Let’s check for both elixir_dispatch and elixir_expand, no need to match in the function name.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15270,
+    "repo": "elixir",
+    "title": "Show remaining runs when using `--repeat-until-failure`",
+    "path": "lib/ex_unit/lib/ex_unit.ex",
+    "diff_hunk": "@@ -570,6 +570,8 @@ defmodule ExUnit do\n   end\n \n   defp maybe_repeated_run(options, seed, load_us, repeat) do\n+    options = Keyword.put(options, :repeat_until_failure_remaining, repeat)",
+    "body": "```suggestion\n    options = Keyword.put(options, :remaining_runs, repeat)\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15270,
+    "repo": "elixir",
+    "title": "Show remaining runs when using `--repeat-until-failure`",
+    "path": "lib/ex_unit/lib/ex_unit/cli_formatter.ex",
+    "diff_hunk": "@@ -12,7 +12,18 @@ defmodule ExUnit.CLIFormatter do\n   ## Callbacks\n \n   def init(opts) do\n-    IO.puts(\"Running ExUnit with seed: #{opts[:seed]}, max_cases: #{opts[:max_cases]}\")\n+    remaining =\n+      if opts[:repeat_until_failure] > 0 do\n+        \", remaining_runs: #{opts[:repeat_until_failure_remaining]}\"",
+    "body": "```suggestion\n      if opts[:remaining_runs] > 0 do\n        \", remaining_runs: #{opts[:remaining_runs]}\"\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15270,
+    "repo": "elixir",
+    "title": "Show remaining runs when using `--repeat-until-failure`",
+    "path": "lib/ex_unit/lib/ex_unit/cli_formatter.ex",
+    "diff_hunk": "@@ -12,7 +12,18 @@ defmodule ExUnit.CLIFormatter do\n   ## Callbacks\n \n   def init(opts) do\n-    IO.puts(\"Running ExUnit with seed: #{opts[:seed]}, max_cases: #{opts[:max_cases]}\")\n+    remaining =\n+      if opts[:remaining_runs] > 0 do",
+    "body": "```suggestion\n      if opts[:repeat_until_failure] > 0 do\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15267,
+    "repo": "elixir",
+    "title": "Deduplicate tuple DNF entries",
+    "path": "lib/elixir/lib/module/types/descr.ex",
+    "diff_hunk": "@@ -5278,6 +5278,7 @@ defmodule Module.Types.Descr do\n         {tag, elements} -> tuple_eliminate_negations(tag, elements, negs)\n       end\n     end)\n+    |> Enum.uniq()",
+    "body": "```suggestion\n    # We want to avoid each_singleton? from failing,\n    # so we remove contiguous duplicates (cheaper than uniq)\n    |> Enum.dedup()\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15216,
+    "repo": "elixir",
+    "title": "Improve function argument naming, specs and guards in Mix",
+    "path": "lib/mix/lib/mix.ex",
+    "diff_hunk": "@@ -651,7 +652,9 @@ defmodule Mix do\n   The path for local archives or escripts.\n   \"\"\"\n   @doc since: \"1.10.0\"\n-  @spec path_for(:archives | :escripts) :: String.t()\n+  @spec path_for(kind :: :archives | :escripts) :: String.t()",
+    "body": "This variable is also redundant with the function name, we can skip it.\n\n```suggestion\n  @spec path_for(:archives | :escripts) :: String.t()\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15216,
+    "repo": "elixir",
+    "title": "Improve function argument naming, specs and guards in Mix",
+    "path": "lib/mix/lib/mix.ex",
+    "diff_hunk": "@@ -1221,5 +1225,6 @@ defmodule Mix do\n   end\n \n   @doc false\n+  @spec install?() :: boolean()",
+    "body": "No need to spec `@doc false`, as we use it mostly for documentation.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15216,
+    "repo": "elixir",
+    "title": "Improve function argument naming, specs and guards in Mix",
+    "path": "lib/mix/lib/mix.ex",
+    "diff_hunk": "@@ -508,7 +509,7 @@ defmodule Mix do\n   @doc \"\"\"\n   Returns the Mix target.\n   \"\"\"\n-  @spec target() :: atom()\n+  @spec target() :: target :: atom()",
+    "body": "I am sorry but I don't believe these variables are helpful. It is clear from the function name and spec that it will return a target.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15216,
+    "repo": "elixir",
+    "title": "Improve function argument naming, specs and guards in Mix",
+    "path": "lib/mix/lib/mix.ex",
+    "diff_hunk": "@@ -452,6 +452,7 @@ defmodule Mix do\n   import Kernel, except: [raise: 2]\n \n   @doc false\n+  @spec start() :: :ok",
+    "body": "No need to spec `@doc false`.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15216,
+    "repo": "elixir",
+    "title": "Improve function argument naming, specs and guards in Mix",
+    "path": "lib/mix/lib/mix.ex",
+    "diff_hunk": "@@ -536,7 +536,7 @@ defmodule Mix do\n       end\n \n   \"\"\"\n-  @spec compilers() :: [atom()]\n+  @spec compilers() :: [compiler :: atom()]",
+    "body": "```suggestion\n  @spec compilers() :: [atom()]\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15194,
+    "repo": "elixir",
+    "title": "Fix --warnings-as-errors not catching misnamed test file warnings",
+    "path": "lib/mix/lib/mix/tasks/test.ex",
+    "diff_hunk": "@@ -746,6 +746,16 @@ defmodule Mix.Tasks.Test do\n \n       {:noop, _} ->\n         cond do\n+          warnings_as_errors? and warn_files != [] ->\n+            message =\n+              \"\\nERROR! Test suite aborted after successful execution due to warnings while using the --warnings-as-errors option\"\n+\n+            IO.puts(:stderr, IO.ANSI.format([:red, message]))\n+\n+            System.at_exit(fn _ ->\n+              exit({:shutdown, 1})\n+            end)",
+    "body": "This is a bit duplicated now, can we please extract it into a helper?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15194,
+    "repo": "elixir",
+    "title": "Fix --warnings-as-errors not catching misnamed test file warnings",
+    "path": "lib/mix/test/mix/tasks/test_test.exs",
+    "diff_hunk": "@@ -594,6 +594,39 @@ defmodule Mix.Tasks.TestTest do\n       end)\n     end\n \n+    test \"fail with exit status 1 if only misnamed test files with --warnings-as-errors (no tests to run)\" do",
+    "body": "```suggestion\n    test \"fail with exit status 1 if misnamed test files with --warnings-as-errors (no tests to run)\" do\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15188,
+    "repo": "elixir",
+    "title": "Fix compile env change triggering full recompilation of path dependencies",
+    "path": "lib/mix/test/mix/tasks/deps_test.exs",
+    "diff_hunk": "@@ -837,16 +837,24 @@ defmodule Mix.Tasks.DepsTest do\n \n   test \"checks if compile env changed\" do\n     in_fixture(\"deps_status\", fn ->\n+      # Write another file, it should not be recompiled upon compiled env change.\n+      File.write!(\"custom/raw_repo/lib/foo.ex\", \"\"\"\n+      defmodule RawRepo.Foo do\n+      end\n+      \"\"\")\n+\n       Mix.Project.push(RawRepoDepApp)\n       Mix.Tasks.Deps.Loadpaths.run([])\n+      # 2 files",
+    "body": "```suggestion\n```",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15172,
+    "repo": "elixir",
+    "title": "Add support for [:raw] opts in File.read",
+    "path": "lib/elixir/lib/file.ex",
+    "diff_hunk": "@@ -408,15 +415,24 @@ defmodule File do\n       File.read(\"non_existing.txt\")\n       #=> {:error, :enoent}\n   \"\"\"\n-  @spec read(Path.t()) :: {:ok, binary} | {:error, posix | :badarg | :terminated | :system_limit}\n-  def read(path) do\n-    :file.read_file(IO.chardata_to_string(path))\n+  @spec read(Path.t(), [exists_option]) ::\n+          {:ok, binary} | {:error, posix | :badarg | :terminated | :system_limit}\n+        when exists_option: :raw\n+  def read(path, opts \\\\ []) do\n+    :file.read_file(IO.chardata_to_string(path), opts)",
+    "body": "Erlang is already doing the change you propose, so I think this fine as is.",
+    "in_reply_to": 2910794494
+  },
+  {
+    "pr": 15161,
+    "repo": "elixir",
+    "title": "Fix `PartitionSupervisor.count_children/1` and `stop/3` to support via tuples",
+    "path": "lib/elixir/lib/partition_supervisor.ex",
+    "diff_hunk": "@@ -498,7 +498,7 @@ defmodule PartitionSupervisor do\n           supervisors: non_neg_integer,\n           workers: non_neg_integer\n         }\n-  def count_children(supervisor) when is_atom(supervisor) do\n+  def count_children(supervisor) when is_atom(supervisor) or elem(supervisor, 0) == :via do",
+    "body": "They can also be {node, name} tuples, so I would simply remove the guards.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15161,
+    "repo": "elixir",
+    "title": "Fix `PartitionSupervisor.count_children/1` and `stop/3` to support via tuples",
+    "path": "lib/elixir/lib/partition_supervisor.ex",
+    "diff_hunk": "@@ -498,7 +498,7 @@ defmodule PartitionSupervisor do\n           supervisors: non_neg_integer,\n           workers: non_neg_integer\n         }\n-  def count_children(supervisor) when is_atom(supervisor) do\n+  def count_children(supervisor) when is_atom(supervisor) or elem(supervisor, 0) == :via do",
+    "body": "Ah, ignore me. The partition supervisor has to resolve locally. So it is all good. Perhaps we should encapsulate all guards into a `defguardp` to avoid future mistakes?",
+    "in_reply_to": 2907574585
+  },
+  {
+    "pr": 15157,
+    "repo": "elixir",
+    "title": "Fix `Float.parse/1` inconsistent error handling for non-scientific no…",
+    "path": "lib/elixir/lib/float.ex",
+    "diff_hunk": "@@ -201,13 +201,14 @@ defmodule Float do\n   end\n \n   defp parse_unsigned(rest, dot?, false = _e?, acc) do\n-    float =\n-      acc\n-      |> add_dot(dot?)\n-      |> :lists.reverse()\n-      |> :erlang.list_to_float()\n-\n-    {float, rest}\n+    acc\n+    |> add_dot(dot?)\n+    |> :lists.reverse()\n+    |> :erlang.list_to_float()\n+  rescue\n+    ArgumentError -> :error",
+    "body": "I would wrap only the list_to_float in the try, since that's the only part we are expecting to fail?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15157,
+    "repo": "elixir",
+    "title": "Fix `Float.parse/1` inconsistent error handling for non-scientific no…",
+    "path": "lib/elixir/lib/float.ex",
+    "diff_hunk": "@@ -201,13 +201,14 @@ defmodule Float do\n   end\n \n   defp parse_unsigned(rest, dot?, false = _e?, acc) do\n-    float =\n-      acc\n-      |> add_dot(dot?)\n-      |> :lists.reverse()\n-      |> :erlang.list_to_float()\n-\n-    {float, rest}\n+    acc\n+    |> add_dot(dot?)\n+    |> :lists.reverse()\n+    |> :erlang.list_to_float()\n+  rescue\n+    ArgumentError -> :error",
+    "body": "Ah, in that case, this approach is fine. We can ship it then.",
+    "in_reply_to": 2906542390
+  },
+  {
+    "pr": 15157,
+    "repo": "elixir",
+    "title": "Fix `Float.parse/1` inconsistent error handling for non-scientific no…",
+    "path": "lib/elixir/lib/float.ex",
+    "diff_hunk": "@@ -201,13 +201,14 @@ defmodule Float do\n   end\n \n   defp parse_unsigned(rest, dot?, false = _e?, acc) do\n-    float =\n-      acc\n-      |> add_dot(dot?)\n-      |> :lists.reverse()\n-      |> :erlang.list_to_float()\n-\n-    {float, rest}\n+    acc\n+    |> add_dot(dot?)\n+    |> :lists.reverse()\n+    |> :erlang.list_to_float()\n+  rescue\n+    ArgumentError -> :error",
+    "body": "Yes please, let me know when it is ready then!",
+    "in_reply_to": 2906542390
+  },
+  {
+    "pr": 15155,
+    "repo": "elixir",
+    "title": "Preserve directory permissions in `File.cp_r/3`",
+    "path": "lib/elixir/test/elixir/file_test.exs",
+    "diff_hunk": "@@ -869,6 +869,27 @@ defmodule FileTest do\n       assert src_mode == dest_mode\n     end\n \n+    @tag :unix",
+    "body": "It would probably be important to assert this one on Windows too?",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15152,
+    "repo": "elixir",
+    "title": "Fix `File.cp_r/3` infinite loop with symlink cycles",
+    "path": "lib/elixir/lib/file.ex",
+    "diff_hunk": "@@ -1199,7 +1199,7 @@ defmodule File do\n     if source_parts != dest_parts and List.starts_with?(dest_parts, source_parts) do\n       {:error, :einval, destination}\n     else\n-      case do_cp_r(source, destination, on_conflict, dereference?, []) do\n+      case do_cp_r(source, destination, on_conflict, dereference?, [], MapSet.new()) do",
+    "body": "Instead of passing two variables, you can keep dereference as `nil | MapSet.new` and use nil checks instead!",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15152,
+    "repo": "elixir",
+    "title": "Fix `File.cp_r/3` infinite loop with symlink cycles",
+    "path": "lib/elixir/lib/file.ex",
+    "diff_hunk": "@@ -1254,7 +1254,14 @@ defmodule File do\n       {:ok, :symlink} ->\n         case :file.read_link(src) do\n           {:ok, link} when dereference? ->\n-            do_cp_r(Path.expand(link, Path.dirname(src)), dest, on_conflict, dereference?, acc)\n+            resolved = Path.expand(link, Path.dirname(src))\n+\n+            if MapSet.member?(visited, resolved) do\n+              {:error, :eloop, src}",
+    "body": "eloop is a new code, right? It may be better to use one of the existing ones, such as einval.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15143,
+    "repo": "elixir",
+    "title": " Filter modules during collection in IEx autocomplete",
+    "path": "lib/iex/lib/iex/autocomplete.ex",
+    "diff_hunk": "@@ -609,24 +609,24 @@ defmodule IEx.Autocomplete do\n   end\n \n   defp match_modules(hint, elixir_root?) do\n-    modules =\n+    loaded =\n       for mod <- :erlang.loaded(),\n           str = Atom.to_string(mod),\n           String.starts_with?(str, hint),\n           do: str\n \n-    modules =\n-      if elixir_root? and String.starts_with?(\"Elixir.Elixir\", hint),\n-        do: [\"Elixir.Elixir\" | modules],\n-        else: modules\n-\n-    modules =\n+    from_apps =\n       case :code.get_mode() do\n-        :interactive -> modules ++ match_modules_from_applications(hint)\n-        _otherwise -> modules\n+        :interactive -> match_modules_from_applications(hint)\n+        _otherwise -> []\n       end\n \n-    :lists.usort(modules)\n+    elixir =\n+      if elixir_root? and String.starts_with?(\"Elixir.Elixir\", hint),\n+        do: [\"Elixir.Elixir\"],\n+        else: []\n+\n+    :lists.usort(elixir ++ loaded ++ from_apps)",
+    "body": "Doing `left ++ right` iwill traverse `left`even if `right` is empty, which is why the code was written in the previous style.",
+    "in_reply_to": null
+  },
+  {
+    "pr": 15143,
+    "repo": "elixir",
+    "title": " Filter modules during collection in IEx autocomplete",
+    "path": "lib/iex/lib/iex/autocomplete.ex",
+    "diff_hunk": "@@ -609,24 +609,24 @@ defmodule IEx.Autocomplete do\n   end\n \n   defp match_modules(hint, elixir_root?) do\n-    modules =\n+    loaded =\n       for mod <- :erlang.loaded(),\n           str = Atom.to_string(mod),\n           String.starts_with?(str, hint),\n           do: str\n \n-    modules =\n-      if elixir_root? and String.starts_with?(\"Elixir.Elixir\", hint),\n-        do: [\"Elixir.Elixir\" | modules],\n-        else: modules\n-\n-    modules =\n+    from_apps =\n       case :code.get_mode() do\n-        :interactive -> modules ++ match_modules_from_applications(hint)\n-        _otherwise -> modules\n+        :interactive -> match_modules_from_applications(hint)\n+        _otherwise -> []\n       end\n \n-    :lists.usort(modules)\n+    elixir =\n+      if elixir_root? and String.starts_with?(\"Elixir.Elixir\", hint),\n+        do: [\"Elixir.Elixir\"],\n+        else: []\n+\n+    :lists.usort(elixir ++ loaded ++ from_apps)",
+    "body": "I'd avoid on principle anyway. The previous code should be strictly faster. :) You can rename the vars if you want.",
+    "in_reply_to": 2897824313
+  },
+  {
+    "pr": 15140,
+    "repo": "elixir",
+    "title": "Reduce memory usage in IEx autocomplete module listing",
+    "path": "lib/iex/lib/iex/autocomplete.ex",
+    "diff_hunk": "@@ -509,19 +509,25 @@ defmodule IEx.Autocomplete do\n   end\n \n   defp match_elixir_modules(module, hint) do\n-    name = Atom.to_string(module)\n-    depth = length(String.split(name, \".\")) + 1\n-    base = name <> \".\" <> hint\n+    prefix = Atom.to_string(module) <> \".\"\n+    prefix_size = byte_size(prefix)\n+    base = prefix <> hint\n \n     for mod <- match_modules(base, module == Elixir),\n-        parts = String.split(mod, \".\"),\n-        depth <= length(parts),\n-        name = Enum.at(parts, depth - 1),\n+        rest = binary_part(mod, prefix_size, byte_size(mod) - prefix_size),",
+    "body": "Sorry, there may be a bug here. is it guaranteeed that `byte_size(mod) - prefix_size` is greater than 0?",
+    "in_reply_to": null
+  }
+]

@@ -1,0 +1,83 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+require 'agent_seo'
+require 'json'
+require 'optparse'
+
+options = {}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: seo-scrub [options]'
+  opts.separator ''
+  opts.separator 'Remove AI-generated content watermarks and telltale signs.'
+  opts.separator 'Removes invisible Unicode characters and replaces em-dashes.'
+  opts.separator ''
+  opts.separator 'Options:'
+
+  opts.on('-f', '--file FILE', 'Content file to scrub (reads from stdin if not provided)') do |f|
+    options[:file] = f
+  end
+
+  opts.on('-o', '--output FILE', 'Output file (prints to stdout if not provided)') do |o|
+    options[:output] = o
+  end
+
+  opts.on('--stats', 'Show scrubbing statistics') do
+    options[:stats] = true
+  end
+
+  opts.on('--json', 'Output as JSON (includes content and stats)') do
+    options[:json] = true
+  end
+
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end.parse!
+
+begin
+  content = if options[:file]
+              File.read(options[:file], encoding: 'UTF-8')
+            elsif !$stdin.tty?
+              $stdin.read
+            else
+              warn 'Error: No content provided. Use -f FILE or pipe content to stdin.'
+              exit 1
+            end
+rescue Errno::ENOENT => e
+  warn "Error: #{e.message}"
+  exit 1
+end
+
+scrubber = AgentSeo::ContentScrubber.new
+cleaned_content, stats = scrubber.scrub(content)
+
+if options[:json]
+  result = {
+    content: cleaned_content,
+    stats: stats,
+    changes_made: stats.values.sum.positive?
+  }
+  puts JSON.pretty_generate(result)
+elsif options[:output]
+  File.write(options[:output], cleaned_content, encoding: 'UTF-8')
+  if options[:stats]
+    warn 'Content Scrubbing Complete:'
+    warn "  - Unicode watermarks removed: #{stats[:unicode_removed]}"
+    warn "  - Format-control chars removed: #{stats[:format_control_removed]}"
+    warn "  - Em-dashes replaced: #{stats[:emdashes_replaced]}"
+  end
+  warn "Scrubbed content saved to: #{options[:output]}"
+else
+  if options[:stats]
+    warn 'Content Scrubbing Complete:'
+    warn "  - Unicode watermarks removed: #{stats[:unicode_removed]}"
+    warn "  - Format-control chars removed: #{stats[:format_control_removed]}"
+    warn "  - Em-dashes replaced: #{stats[:emdashes_replaced]}"
+    warn ''
+  end
+  puts cleaned_content
+end

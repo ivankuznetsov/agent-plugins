@@ -1,0 +1,76 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+require 'agent_seo'
+require 'json'
+require 'optparse'
+
+options = {}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: seo-intent [options] KEYWORD'
+  opts.separator ''
+  opts.separator 'Analyze search intent of a keyword using pattern-based classification.'
+  opts.separator 'Classifies as: Informational, Navigational, Transactional, or Commercial.'
+  opts.separator ''
+  opts.separator 'Options:'
+
+  opts.on('--serp-features FEATURES', "Comma-separated SERP features (e.g., 'featured_snippet,shopping')") do |f|
+    options[:serp_features] = f.split(',').map(&:strip)
+  end
+
+  opts.on('--json', 'Output as JSON') do
+    options[:json] = true
+  end
+
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end.parse!
+
+keyword = ARGV[0]
+unless keyword
+  warn 'Error: Keyword required'
+  warn 'Usage: seo-intent [options] KEYWORD'
+  exit 1
+end
+
+analyzer = AgentSeo::SearchIntentAnalyzer.new
+result = analyzer.analyze(
+  keyword,
+  serp_features: options[:serp_features]
+)
+
+if options[:json]
+  puts JSON.pretty_generate(result)
+else
+  puts 'Search Intent Analysis'
+  puts '=' * 50
+  puts ''
+  puts "Keyword: #{result[:keyword]}"
+  puts ''
+  puts "Primary Intent: #{result[:primary_intent].upcase}"
+  puts "Secondary Intent: #{result[:secondary_intent].upcase}" if result[:secondary_intent]
+  puts ''
+
+  puts 'Confidence Scores:'
+  result[:confidence].sort_by { |_, v| -v }.each do |intent, score|
+    bar = '#' * (score / 5).to_i
+    puts "  #{intent.ljust(15)} #{score.to_s.rjust(5)}% #{bar}"
+  end
+  puts ''
+
+  if result[:signals_detected].any?
+    puts 'Detected Signals:'
+    result[:signals_detected].each do |intent, signals|
+      puts "  #{intent}:"
+      signals.each { |s| puts "    - #{s}" }
+    end
+    puts ''
+  end
+
+  puts 'Content Recommendations:'
+  result[:recommendations].each { |r| puts "  - #{r}" }
+end

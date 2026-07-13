@@ -1,0 +1,4 @@
+{"id":0,"body":"I had that at first, but I then arrested myself with a charge of YAGNI. I couldn't come up with any other use cases except for the healthcheck, so decided to focus on that. The API is a lot more straight forward than something generic."}
+{"id":1,"body":"But I still think we could reuse this. We could inherit the QuietAssets middleware in Propshaft from this and just hardset the path:. But not sure it's even worth it. The implementation is so small here."}
+{"id":2,"body":"In fact, I just made the implementation even slimmer by borrowing from Propshaft's quiet asset middleware. So thanks for the reminder of that one!"}
+{"id":3,"body":"I did not. Not sure what happened there. Please do PR to restore!"}

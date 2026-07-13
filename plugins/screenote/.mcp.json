@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "screenote": {
+      "type": "http",
+      "url": "${SCREENOTE_URL:-https://screenote.ai}/mcp/messages"
+    },
+    "browser-use": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "browser-use[cli]==0.13.4",
+        "--with",
+        "mcp==1.26.0",
+        "python",
+        "-c",
+        "import os, runpy; runpy.run_path(os.path.join(os.environ.get('CLAUDE_PLUGIN_ROOT', '.'), 'mcp', 'screenote_browser_use_mcp.py'), run_name='__main__')"
+      ],
+      "cwd": ".",
+      "env": {
+        "BROWSER_USE_HEADLESS": "false"
+      }
+    }
+  }
+}

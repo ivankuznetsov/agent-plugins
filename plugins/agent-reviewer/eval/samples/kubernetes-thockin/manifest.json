@@ -1,0 +1,56 @@
+{
+  "reviewer": "thockin",
+  "repo": "kubernetes/kubernetes",
+  "ecosystem": "Go",
+  "voice": "Meticulous systems/API-design review; validation, versioning, naming precision, long-term API evolution.",
+  "source": "GitHub public PR inline review comments",
+  "collected": "2026-06-02",
+  "context_file": "context-thockin.json",
+  "context_comments": 223,
+  "eval_prs": 6,
+  "eval_comments": 110,
+  "prs": [
+    {
+      "pr": 136976,
+      "title": "Create Workload API v1alpha2",
+      "comments": 52,
+      "blind": "blind/kubernetes-136976.hunks.jsonl",
+      "truth": "truth/kubernetes-136976.jsonl"
+    },
+    {
+      "pr": 136996,
+      "title": "[Declarative Validation] Add `k8s:minLength` tag",
+      "comments": 27,
+      "blind": "blind/kubernetes-136996.hunks.jsonl",
+      "truth": "truth/kubernetes-136996.jsonl"
+    },
+    {
+      "pr": 137120,
+      "title": "Enable validation-gen lint rule",
+      "comments": 6,
+      "blind": "blind/kubernetes-137120.hunks.jsonl",
+      "truth": "truth/kubernetes-137120.jsonl"
+    },
+    {
+      "pr": 137349,
+      "title": "Pass --readonly-pkg to openapi-gen in kube_codegen.sh",
+      "comments": 7,
+      "blind": "blind/kubernetes-137349.hunks.jsonl",
+      "truth": "truth/kubernetes-137349.jsonl"
+    },
+    {
+      "pr": 137864,
+      "title": "fix(declarative validation): union validation ratcheting when oldObj is nil",
+      "comments": 6,
+      "blind": "blind/kubernetes-137864.hunks.jsonl",
+      "truth": "truth/kubernetes-137864.jsonl"
+    },
+    {
+      "pr": 138657,
+      "title": "Enable validation-gen for all existing and future APIs",
+      "comments": 12,
+      "blind": "blind/kubernetes-138657.hunks.jsonl",
+      "truth": "truth/kubernetes-138657.jsonl"
+    }
+  ]
+}

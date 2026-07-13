@@ -1,0 +1,6 @@
+{"id":0,"body":"usually we would want a list flag to single use a singular name so it can be specified more than once, e.g.\r\n\r\n```\r\n--dv-enforced-roots=foo\r\n--dv-enforced-roots=bar\r\n```"}
+{"id":1,"body":"why 2 blank lines? "}
+{"id":2,"body":"Why do we need to run the tool twice -- a regular run includes lint, but if lint passes it will actually emit code (vs this which just does nothing)?  The tool is not the slowest codegen but it's not \"fast\" either"}
+{"id":3,"body":"Is there no way to avoid this?  It's just going to get forgotten, and things will SEEM to pass lint but not actually pass"}
+{"id":4,"body":"I think it would be cleaner overall to do something like:\r\n  * 1 run of the tool\r\n  * pass --lint-exclude=k8s.io/code-generator\r\n\r\nOr even put a tag in those tests, like `//+k8s:validation-gen-nolint` which would skip lint for the whole file. ?"}
+{"id":5,"body":"\"I am personally tracking\" is an incredible demonstration of what I am afraid of."}

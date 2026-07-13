@@ -1,0 +1,3 @@
+{"id":0,"body":"This rescue is for the fetch correct? Let's just check if the key isn't present and raise early instead of using fetch and rescuing exceptions "}
+{"id":1,"body":"The code is validating way more than missing \"to\". We need tests for those cases as well "}
+{"id":2,"body":"The message of this exception is always the same. Push to inside the exception definition. "}

@@ -1,0 +1,16 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint SKILL.md structure
+        run: bash evals/lint-skills.sh
+      - name: Verify mirror drift fails lint
+        run: bash evals/lint-skills-test.sh

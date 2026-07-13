@@ -1,0 +1,5 @@
+{"id":0,"path":"lib/mix/lib/mix.ex","diff_hunk":"@@ -651,7 +652,9 @@ defmodule Mix do\n   The path for local archives or escripts.\n   \"\"\"\n   @doc since: \"1.10.0\"\n-  @spec path_for(:archives | :escripts) :: String.t()\n+  @spec path_for(kind :: :archives | :escripts) :: String.t()"}
+{"id":1,"path":"lib/mix/lib/mix.ex","diff_hunk":"@@ -1221,5 +1225,6 @@ defmodule Mix do\n   end\n \n   @doc false\n+  @spec install?() :: boolean()"}
+{"id":2,"path":"lib/mix/lib/mix.ex","diff_hunk":"@@ -508,7 +509,7 @@ defmodule Mix do\n   @doc \"\"\"\n   Returns the Mix target.\n   \"\"\"\n-  @spec target() :: atom()\n+  @spec target() :: target :: atom()"}
+{"id":3,"path":"lib/mix/lib/mix.ex","diff_hunk":"@@ -452,6 +452,7 @@ defmodule Mix do\n   import Kernel, except: [raise: 2]\n \n   @doc false\n+  @spec start() :: :ok"}
+{"id":4,"path":"lib/mix/lib/mix.ex","diff_hunk":"@@ -536,7 +536,7 @@ defmodule Mix do\n       end\n \n   \"\"\"\n-  @spec compilers() :: [atom()]\n+  @spec compilers() :: [compiler :: atom()]"}

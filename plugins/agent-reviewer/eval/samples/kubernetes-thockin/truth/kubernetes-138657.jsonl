@@ -1,0 +1,12 @@
+{"id":0,"body":"s/GoPath/ImportPath/ ?\n"}
+{"id":1,"body":"Do we need to codify \"internal version\" further?  Why not something like a \"version set\" or just group?"}
+{"id":2,"body":"comments?"}
+{"id":3,"body":"Why not use `json` tags - yaml parser still respects them, I think?"}
+{"id":4,"body":"\"Classify\" got renamed?"}
+{"id":5,"body":"Classify again"}
+{"id":6,"body":"I am confused - in the first commit you build scaffolding around YAML files (\"apiversion.yaml\") to indicate API metadata, but then you never use it?  No such file in this PR?"}
+{"id":7,"body":"This construction feels tautological -- can you add comments on what's going on in things like this?"}
+{"id":8,"body":"what if there's an `=true` and then an `=false` -- should that be an error or should the last one win?"}
+{"id":9,"body":"this one does not spec `staging/src` but the next one does - on purpose?"}
+{"id":10,"body":"s/atleast/at least/"}
+{"id":11,"body":"I still find it a little confusing to have 2 dirs which each specify overlapping parts of the same object (e.g. the example in staging/src/k8s.io/api/apps/apigroup.yaml and pkg/apis/apps/apigroup.yaml\n\nWould it make sense to put all of the yaml into one file and xref the internal and external dirs?\n\nMaybe let me ask a different question.  Is it s goal that someone be able to `git clone` the standalone k8s.io/api repo and run (some of) the codegen against it, and have it properly update the parts that are stored in that repo?  E.g. it would work for client-gen but not validation-gen.\n\nIf yes, then we NEED split yaml.  If no, then maybe we don't?"}

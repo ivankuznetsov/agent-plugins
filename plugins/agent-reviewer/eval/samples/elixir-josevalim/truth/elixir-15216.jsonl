@@ -1,0 +1,5 @@
+{"id":0,"body":"This variable is also redundant with the function name, we can skip it.\n\n```suggestion\n  @spec path_for(:archives | :escripts) :: String.t()\n```"}
+{"id":1,"body":"No need to spec `@doc false`, as we use it mostly for documentation."}
+{"id":2,"body":"I am sorry but I don't believe these variables are helpful. It is clear from the function name and spec that it will return a target."}
+{"id":3,"body":"No need to spec `@doc false`."}
+{"id":4,"body":"```suggestion\n  @spec compilers() :: [atom()]\n```"}
