@@ -63,6 +63,26 @@ if (cd "$capture_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
 fi
 echo "PASS: lint rejects Browser Use capture-contract drift"
 
+shell_case="$TMP_DIR/shell-safety/repo/plugins/screenote"
+make_case "$shell_case"
+python3 - "$shell_case/references/cli.md" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+path.write_text(
+    path.read_text().replace(
+        "--body <one-shell-quoted-explanatory-reply-argument>",
+        '--body "<explanatory-reply>"',
+    )
+)
+PY
+if (cd "$shell_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  echo "FAIL: lint accepted unsafe dynamic comment interpolation" >&2
+  exit 1
+fi
+echo "PASS: lint rejects unsafe dynamic comment interpolation"
+
 transport_case="$TMP_DIR/screenote-http-mcp/repo/plugins/screenote"
 make_case "$transport_case"
 python3 - "$transport_case/.mcp.json" <<'PY'

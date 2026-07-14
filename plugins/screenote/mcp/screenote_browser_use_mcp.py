@@ -253,10 +253,27 @@ class ScreenoteBrowserUseServer(BrowserUseServer):
             target_id=None, focus=False
         )
         await cdp_session.cdp_client.send.Runtime.evaluate(
-            params={"expression": f"window.scrollTo(0, {y})", "returnByValue": True},
+            params={
+                "expression": (
+                    "window.scrollTo({left: 0, top: "
+                    f"{y}, behavior: 'instant'}})"
+                ),
+                "returnByValue": True,
+            },
             session_id=cdp_session.session_id,
         )
-        return await self._page_metrics()
+        metrics = await self._page_metrics()
+        page_height = metrics.get("page", {}).get("height")
+        viewport_height = metrics.get("viewport", {}).get("height")
+        observed_y = metrics.get("scroll", {}).get("y")
+        if type(page_height) is not int or type(viewport_height) is not int:
+            raise RuntimeError(f"Could not verify scroll position: {metrics}")
+        expected_y = min(y, max(page_height - viewport_height, 0))
+        if observed_y != expected_y:
+            raise RuntimeError(
+                f"Scroll verification failed: requested {y}, expected {expected_y}, got {observed_y}"
+            )
+        return metrics
 
     async def _screenshot_to_file(
         self, path_value: Any, max_height: Any
@@ -336,7 +353,15 @@ class ScreenoteBrowserUseServer(BrowserUseServer):
     def _remove_profile_dir(self) -> None:
         if self._screenote_profile_dir is None:
             return
-        shutil.rmtree(self._screenote_profile_dir, ignore_errors=True)
+        profile_dir = self._screenote_profile_dir
+        try:
+            shutil.rmtree(profile_dir)
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            raise RuntimeError(
+                f"Could not remove ephemeral browser profile: {profile_dir}"
+            ) from exc
         self._screenote_profile_dir = None
 
     async def run(self) -> None:

@@ -43,9 +43,18 @@ screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" login --devic
 ```
 
 Surface the authorization URL and short code to the user, keep the login
-process running, and continue only after it succeeds. Screenote stores and
-refreshes OAuth credentials itself. Never ask the user to paste a credential,
-never copy the credential file into a project, and never read its contents.
+process running, and continue only after it succeeds. Device login is a
+streaming exception to the ordinary-command output rule: it writes one
+`device_authorization` JSON event to stderr before it finishes, then writes its
+terminal success JSON to stdout or its terminal error JSON to stderr. Parse
+stdout and stderr as separate JSON Lines streams. Do not treat the first stderr
+event as failure; use the process exit status and terminal record. If the
+command runner merges the two streams, parse each complete line as one JSON
+record, surface the `device_authorization` event, and classify only the later
+non-event record as terminal. Screenote stores and refreshes OAuth credentials
+itself. Never ask the user to paste a
+credential, never copy the credential file into a project, and never read its
+contents.
 
 Run `project list` again after login. For authentication or authorization
 errors, stop and show the CLI's JSON error. Do not silently fall back to another
@@ -88,6 +97,16 @@ screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" \
 ```
 
 Do not write a repository's project selection into the global CLI config.
+
+Treat every substituted user, page, repository, and server value as data. When
+the command runner accepts an argument array, pass each value as its own argv
+element. When it accepts only shell source, encode every value as one POSIX
+shell word before inserting it: surround the value with single quotes and
+replace every embedded single quote with `'"'"'`. Never place raw dynamic
+text inside double quotes: `$()`, backticks, backslashes, and expansions remain
+active there. For example, the literal `Fixed user's $(layout)` must become the
+single shell word `'Fixed user'"'"'s $(layout)'`. Apply this rule to names,
+paths, titles, replies, resolution notes, and ids.
 
 ## Browser Use capture boundary
 
@@ -264,8 +283,8 @@ screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" --project "<p
 screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" --project "<project-id-from-fresh-project-list>" screenshot list --page "<page-id-from-page-list>" --limit 100 --offset 0
 screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" --project "<project-id-from-fresh-project-list>" annotation list --screenshot "<screenshot-id-from-screenshot-list>" --status open --limit 100 --offset 0
 screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" --project "<project-id-from-fresh-project-list>" annotation get --annotation "<annotation-id-from-annotation-list>" --crop-file "<private-screenote-dir>/annotation-<annotation-id-from-annotation-list>.png"
-screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" --project "<project-id-from-fresh-project-list>" comment add --annotation "<annotation-id-from-annotation-list>" --body "<explanatory-reply>"
-screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" --project "<project-id-from-fresh-project-list>" annotation resolve --annotation "<annotation-id-from-annotation-list>" --comment "<resolution-note>"
+screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" --project "<project-id-from-fresh-project-list>" comment add --annotation "<annotation-id-from-annotation-list>" --body <one-shell-quoted-explanatory-reply-argument>
+screenote --base-url "${SCREENOTE_BASE_URL:-https://screenote.ai}" --project "<project-id-from-fresh-project-list>" annotation resolve --annotation "<annotation-id-from-annotation-list>" --comment <one-shell-quoted-resolution-note-argument>
 ```
 
 Both list commands are paginated. Read `pagination.total`, add the number of
@@ -290,6 +309,9 @@ stop; never resolve without the explanatory comment.
 ## Output discipline
 
 Successful ordinary commands emit one JSON document. `snapshot` emits JSON
-Lines. Errors emit JSON on stderr and a non-zero exit status. Parse JSON rather
-than scraping human text, show server errors verbatim, and never print or log
-OAuth credential material.
+Lines. As documented under OAuth, `login --device` emits a nonterminal
+`device_authorization` JSON event on stderr before its terminal stdout success
+or stderr failure. Other errors emit JSON on stderr and a non-zero exit status.
+Keep stdout and stderr separate, parse complete JSON records rather than
+scraping human text, show server errors verbatim, and never print or log OAuth
+credential material.

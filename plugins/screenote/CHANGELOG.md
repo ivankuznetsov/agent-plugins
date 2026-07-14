@@ -2,7 +2,7 @@
 
 All notable changes to the Screenote plugin are documented here.
 
-## [2.0.0] - 2026-07-14
+## [2.0.0] - 2026-07-13
 
 ### Changed
 
@@ -14,20 +14,25 @@ All notable changes to the Screenote plugin are documented here.
 ### Fixed
 
 - Require every viewport variant of one logical screenshot to share the same page and title.
+- Force instant scrolling so pages with smooth-scroll CSS still settle at deterministic offsets.
 - Keep project selection repo-local and validate it against a fresh project list.
 - Decode annotation crops to private local files instead of placing encoded image data in agent context.
 - Make every agent-issued CLI command independent of shell state from earlier tool calls.
 - Continue presenting remaining feedback when one annotation crop is unavailable.
+- Shell-encode dynamic comment and resolution text as single argv values.
+- Parse device authorization as a nonterminal JSON event followed by terminal output.
 - Validate plugin manifests, marketplace paths, skill frontmatter, and trigger fixtures in portable CI.
 
 ### Added
 
 - Retained a pinned Browser Use adapter solely for local page capture, with exact viewport sizing, numeric-only settling metrics, exact scrolling, bounded file-backed screenshots, and ephemeral browser profiles.
 - Added runtime smoke coverage for desktop, tablet, and mobile capture dimensions.
+- Run the pinned Browser Use runtime smoke in CI, including ephemeral-profile cleanup.
 
 ### Security
 
 - Keep the Browser Use MCP server capture-only; projects, snapshots, annotations, comments, and resolution use the Screenote CLI and OAuth exclusively.
+- Surface ephemeral browser-profile cleanup failures instead of silently leaving authenticated state on disk.
 
 ## [1.6.0] - 2026-07-13
 

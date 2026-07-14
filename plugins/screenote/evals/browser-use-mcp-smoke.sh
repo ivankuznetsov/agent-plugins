@@ -48,7 +48,7 @@ VIEWPORTS = [(1280, 800), (768, 1024), (390, 844)]
 
 class FixtureHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        body = b"""<!doctype html><html><body style='margin:0'>
+        body = b"""<!doctype html><html style='scroll-behavior:smooth'><body style='margin:0'>
         <div style='height:6200px;background:linear-gradient(#123,#def)'></div>
         </body></html>"""
         self.send_response(200)
@@ -89,6 +89,10 @@ async def main():
     fixture_thread.start()
     fixture_url = f"http://127.0.0.1:{fixture.server_port}/"
     params = load_params()
+    profile_dirs_before = set(
+        Path(tempfile.gettempdir()).glob("screenote-browser-use-*")
+    )
+    created_profiles = set()
     try:
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:
@@ -117,6 +121,15 @@ async def main():
                             raise SystemExit(
                                 f"Viewport verification drifted for {width}x{height}: {metrics}"
                             )
+
+                    created_profiles = set(
+                        Path(tempfile.gettempdir()).glob("screenote-browser-use-*")
+                    ) - profile_dirs_before
+                    if len(created_profiles) != 1:
+                        raise SystemExit(
+                            "Browser Use did not create exactly one ephemeral profile: "
+                            f"{sorted(map(str, created_profiles))}"
+                        )
 
                     await session.call_tool("browser_navigate", {"url": fixture_url})
                     await session.call_tool(
@@ -167,6 +180,12 @@ async def main():
                             raise SystemExit("bounded tall-page capture did not report cap_fired")
                 finally:
                     await session.call_tool("browser_close_all", {})
+                    leaked_profiles = [path for path in created_profiles if path.exists()]
+                    if leaked_profiles:
+                        raise SystemExit(
+                            "browser_close_all left ephemeral profiles behind: "
+                            f"{sorted(map(str, leaked_profiles))}"
+                        )
     finally:
         fixture.shutdown()
         fixture.server_close()
@@ -176,7 +195,7 @@ async def main():
     print(f"- pinned dependency: browser-use[cli]==0.13.4")
     print(f"- tools: {len(by_name)}")
     print("- verified viewports: 1280x800, 768x1024, 390x844")
-    print("- navigate/exact-scroll/5000px PNG capture: passed")
+    print("- navigate/exact-scroll/5000px PNG capture/profile cleanup: passed")
 
 
 asyncio.run(main())

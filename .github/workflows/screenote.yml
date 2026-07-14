@@ -44,3 +44,6 @@ jobs:
           bash -n plugins/screenote/evals/lint-skills.sh
           bash -n plugins/screenote/evals/lint-skills-test.sh
           bash -n plugins/screenote/evals/browser-use-mcp-smoke.sh
+      - uses: astral-sh/setup-uv@v8
+      - name: Exercise pinned Browser Use adapter
+        run: bash plugins/screenote/evals/browser-use-mcp-smoke.sh
