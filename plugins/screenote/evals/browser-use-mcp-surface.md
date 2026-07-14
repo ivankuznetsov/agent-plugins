@@ -18,6 +18,11 @@ uv run --with 'browser-use[cli]==0.13.4' --with 'mcp==1.26.0' \
 
 Claude Code locates the adapter through `CLAUDE_PLUGIN_ROOT`; Codex resolves `.mcp.json`'s `cwd: "."` against the installed plugin root. The adapter sets a fresh temporary Browser Use `user_data_dir` and removes it after `browser_close_all` or server shutdown. The plugin sets `BROWSER_USE_HEADLESS=false` so manual login opens a visible Chromium window by default.
 
+`BROWSER_USE_EXECUTABLE_PATH` may select a known local Chrome/Chromium binary
+for deterministic CI or troubleshooting. The adapter requires an absolute,
+executable file after path resolution; normal plugin use relies on Browser
+Use's own browser discovery.
+
 ## Pinned Direct-Control Tools
 
 The local smoke test verifies these current tool names:
@@ -50,4 +55,14 @@ The live smoke requires these names and schemas, exercises all three canonical v
 
 ## Capture Contract
 
-The skills preflight every requested dimension before calling `create_multi_viewport_screenshot`. Normal settling consumes numeric-only metrics rather than page text. Lazy-load traversal stops at the actual bottom/no-advance condition or the 5000 px/10-scroll cap, and capture writes the first 5000 px directly to a new PNG below the system temp directory. The upstream base64 image response and overlapping tile stitching are not part of the Screenote capture path.
+The adapter is a local capture engine only. The skills preflight every
+requested dimension before browser navigation or any Screenote publication.
+Normal settling consumes numeric-only metrics rather than page text.
+Lazy-load traversal stops at the actual bottom/no-advance condition or the
+5000 px/10-scroll cap, and capture writes the first 5000 px directly to a new
+PNG below the system temp directory. The upstream base64 image response and
+overlapping tile stitching are not part of the Screenote capture path.
+
+After `browser_close_all` deletes the ephemeral browser profile, the public
+`screenote` CLI publishes the completed manifest through OAuth. Projects,
+snapshots, annotations, comments, and resolution never use this MCP server.

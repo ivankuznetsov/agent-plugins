@@ -1,119 +1,148 @@
 # Screenote
 
-Give your AI coding agent eyes. Screenshot any page, snapshot your whole app, annotate in Screenote, and let Claude Code or Codex read the feedback without leaving the terminal.
+Give your AI coding agent eyes. Capture a page or your whole app, publish it to
+Screenote, annotate visually, and let Claude Code or Codex retrieve the
+feedback from the terminal.
 
-**Supports Claude Code + Codex (GPT-5.5).**
+Screenote account operations use the public `screenote` CLI and OAuth. A
+bundled, pinned Browser Use adapter is used only to create local PNG files; it
+never talks to the Screenote API.
 
-## Quick Start
+**Supports Claude Code and Codex.**
 
-### Prerequisites
-
-Screenote launches a bundled adapter around [Browser Use](https://github.com/browser-use/browser-use) `0.13.4`. Install [uv](https://github.com/astral-sh/uv) and Python 3.11+ so the plugin can resolve the pinned runtime and start it on demand. The adapter adds exact viewport sizing and bounded screenshot-to-file capture, and uses a temporary Chromium profile that is deleted when the skill finishes. The bundled MCP config sets `BROWSER_USE_HEADLESS=false` so manual login opens a visible Chromium window; change it to `true` only for fully public/headless runs.
+## Quick start
 
 ### 1. Install the plugin
 
-Recommended marketplace install:
+Claude Code:
 
 ```bash
 /plugin marketplace add ivankuznetsov/agent-plugins
 /plugin install screenote@aikuznetsov-marketplace
 ```
 
+Codex:
+
 ```bash
 codex plugin marketplace add ivankuznetsov/agent-plugins
 ```
 
-Then open Codex's plugin UI (`/plugins`) and install **Screenote** from **AI Kuznetsov**.
+Then open `/plugins` and install **Screenote** from **AI Kuznetsov**.
 
-Direct Claude Code install remains available for existing users:
+### 2. Install the Screenote CLI
 
 ```bash
-/plugin marketplace add ivankuznetsov/screenote-skills
-/plugin install screenote@screenote-marketplace
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@latest
 ```
 
-### 2. Connect to Screenote
+This requires Go 1.26 or newer and the Go bin directory on `PATH`. The skills
+check the required CLI commands and offer this install when it is missing or
+outdated.
 
-On first use, the agent will authorize access to your Screenote account through the Screenote MCP server.
+### 3. Install capture prerequisites
 
-### 3. Use it
+The plugin launches a bundled adapter around
+[Browser Use](https://github.com/browser-use/browser-use) `0.13.4`. Install
+[uv](https://github.com/astral-sh/uv), Python 3.11+, and Chromium or Chrome.
+The local `.mcp.json` pins Browser Use and MCP runtime versions and starts the
+adapter on demand.
 
-Tell the agent to screenshot a page:
+The adapter verifies exact viewport sizes, writes bounded screenshots directly
+to private temporary files, and uses an ephemeral Chromium profile. It defaults
+to `BROWSER_USE_HEADLESS=false`, so application login can happen safely in a
+visible browser window. The profile is deleted when capture finishes.
+
+### 4. Connect with OAuth
+
+On a machine with a browser:
+
+```bash
+screenote --base-url https://screenote.ai login
+```
+
+For SSH, tmux, containers, and other headless sessions:
+
+```bash
+screenote --base-url https://screenote.ai login --device
+```
+
+Open the displayed authorization URL, approve the short code, and return to
+the terminal. The CLI stores and refreshes OAuth credentials. The plugin never
+asks you to paste a token into chat or copy one into a project.
+
+### 5. Capture and review
 
 ```bash
 /screenote http://localhost:3000/login
 ```
 
-You'll get a link to annotate the screenshot in Screenote. Draw on it, leave comments, then pull the feedback back:
+Open the returned Screenote link, draw annotations, and leave comments. Then:
 
 ```bash
 /feedback
 ```
 
-The agent sees every annotation with its position and comment, and can start fixing things right away.
-
-### 4. Snapshot your entire app
-
-Take a visual snapshot of every page in your app at once:
+For a whole application:
 
 ```bash
 /snapshot http://localhost:3000
 ```
 
-The agent discovers all routes in your codebase, handles authentication, and screenshots each page. Every screenshot is tagged with the current date and last git commit hash.
+## Architecture
 
-## What's New
-
-- Screenote now ships a pinned Browser Use MCP adapter instead of depending on a host-provided Playwright MCP server.
-- `/screenote` and `/snapshot` capture full scrolling pages by default, not just the first viewport.
-- Output is capped at the first **5000 px**, and lazy-load traversal is bounded to **10 downward scrolls**, so long or infinite-scroll pages finish predictably.
-- Captures are written directly to temporary PNG files, avoiding oversized MCP image payloads and overlapping stitched tiles.
-- Snapshot browser profiles are ephemeral and authenticated sessions are closed on every completion or abort path.
-
-## How It Works
-
+```text
+page ── Browser Use adapter ── local PNG files
+                                    │
+                                    ▼
+                         screenote snapshot (OAuth CLI)
+                                    │
+                                    ▼
+                       Screenote review and annotations
+                                    │
+                                    ▼
+                   screenote annotation/comment (OAuth CLI)
 ```
-You                       Agent                        Screenote
- │                            │                            │
- │  "fix the login page"      │                            │
- │ ──────────────────────────►│                            │
- │                            │── /screenote /login ──────►│
- │                            │                            │
- │            open link, draw annotations, leave comments  │
- │ ◄──────────────────────────────────────────────────────►│
- │                            │                            │
- │  "ok read my feedback"     │                            │
- │ ──────────────────────────►│                            │
- │                            │── /feedback ──────────────►│
- │                            │◄── annotations + regions ──│
- │                            │                            │
- │                            │  (fixes code based on      │
- │                            │   your visual feedback)     │
- │                            │                            │
- │                            │── /screenote /login ──────►│
- │                            │  (screenshot to verify)     │
-```
+
+The boundary is deliberate:
+
+- Browser Use MCP: local navigation, sizing, scrolling, and file capture only.
+- Screenote CLI: project selection, snapshot publication, annotations,
+  comments, and resolution.
+- No Screenote HTTP MCP server, API key, or token-based workflow is used.
 
 ## Usage
 
-Claude Code examples below use slash commands. In Codex, use the same skill names through the plugin namespace, for example `$screenote:screenote`, `$screenote:feedback`, and `$screenote:snapshot`.
+Claude Code examples use slash commands. In Codex, invoke the same shared
+skills through the plugin namespace, such as `$screenote:screenote`,
+`$screenote:snapshot`, and `$screenote:feedback`.
 
-### Screenshot a page
+### Screenshot one page
 
 ```bash
 /screenote https://myapp.com/dashboard
 ```
 
-Captures **three viewports by default** — desktop (1280×800), tablet (768×1024), and mobile (390×844) — and uploads them as one Screenshot. Each viewport is a full-page capture: the agent scrolls first to trigger lazy-loaded content, bounds traversal to 10 downward scrolls, and caps the resulting image at 5000 px. In Screenote, device icons let the reviewer switch between variants and annotate each layout independently.
+The default captures desktop (1280×800), tablet (768×1024), and mobile
+(390×844) as variants of one logical screenshot. Device tabs in Screenote
+switch between those variants.
 
-Works with any URL your machine can reach — localhost, staging, production.
+Each variant is a full-page capture. The agent traverses lazy-loaded content
+for at most 10 downward scrolls and caps output at 5000 px, so infinite pages
+finish predictably. Captures are file-backed; the adapter does not return a
+large base64 screenshot or stitch overlapping tiles.
 
-For a single viewport instead, prefix the argument:
+Capture one viewport by prefixing it:
 
 ```bash
 /screenote desktop https://myapp.com/dashboard
 /screenote tablet  https://myapp.com/dashboard
 /screenote mobile  https://myapp.com/dashboard
+```
+
+Natural-language targets also work:
+
+```bash
+/screenote the signup page
 ```
 
 ### Snapshot the entire app
@@ -122,59 +151,44 @@ For a single viewport instead, prefix the argument:
 /snapshot http://localhost:3000
 ```
 
-The snapshot workflow:
-1. **Discovers routes** — scans your codebase for route definitions (React Router, Next.js, Vue Router, Express, Django, Rails, etc.)
-2. **Handles auth** — logs in if needed so authenticated pages are captured
-3. **Screenshots every page at three viewports** — desktop, tablet, mobile (default), with a 5000 px output cap and 10-scroll lazy-load budget
-4. **Tags with metadata** — every screenshot title includes the date and last git commit hash (e.g., `App Snapshot — 2025-06-15 — a1b2c3d — /dashboard`)
-5. **Uploads to Screenote** — all viewports are uploaded; reviewers flip between them per page
+The snapshot workflow discovers routes from code and the running app, confirms
+the route set, handles application authentication in one ephemeral browser
+session, captures serially, and publishes one resumable manifest through the
+CLI. Date and Git commit metadata identify the batch.
 
-For a single viewport, prefix the argument:
+Select one viewport when the complete route matrix would be too large:
 
 ```bash
-/snapshot desktop http://localhost:3000
-/snapshot tablet  http://localhost:3000
-/snapshot mobile  http://localhost:3000
+/snapshot mobile http://localhost:3000
 ```
 
-### Read annotations
-
-After you've annotated the screenshot in Screenote:
+### Read and resolve feedback
 
 ```bash
 /feedback
-```
-
-The agent matches your local project name to a Screenote project, lists recent screenshots by title, and lets you pick one. Each annotation is presented with its position and comment, then the agent offers to fix the issues.
-
-Filter by viewport by prefixing the argument:
-
-```bash
 /feedback desktop
 /feedback mobile login
 ```
 
-### Natural language
-
-You can also just describe what you want:
-
-```bash
-/screenote the signup page
-```
-
-The agent will figure out the URL from your project's routes.
+The agent refreshes the project list through the CLI, selects a screenshot,
+downloads private annotation crops, and can comment and resolve after making
+the requested changes. Paginated versions and annotations are exhausted rather
+than silently stopping at the first page.
 
 ### Project matching
 
-The plugin automatically matches your local working directory name to a Screenote project. If no match is found, it asks you to pick an existing project or create a new one.
+The plugin validates a repo-local project cache against a fresh CLI project
+list and otherwise matches the working-directory name. If no match exists, it
+asks you to choose or offers to create a project through the CLI.
 
 ## Requirements
 
 - A [Screenote](https://screenote.ai) account
 - Claude Code or Codex
-- Python 3.11+ and [uv](https://github.com/astral-sh/uv) for the bundled Browser Use adapter
-- Chromium or Chrome available to Browser Use
-- The Screenote MCP server configured by this plugin
+- The [Screenote CLI](https://github.com/ivankuznetsov/screenote-cli), installed
+  with Go 1.26+
+- OAuth completed with `screenote login` or `screenote login --device`
+- Python 3.11+, `uv`, and Chromium/Chrome for local Browser Use capture
 
 ## License
 

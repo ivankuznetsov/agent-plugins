@@ -1,0 +1,52 @@
+name: Screenote plugin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugins/screenote/**"
+      - "plugins/agent-writing/agents/journalist.md"
+      - ".agents/plugins/marketplace.json"
+      - ".claude-plugin/marketplace.json"
+      - "README.md"
+      - ".github/workflows/screenote.yml"
+  pull_request:
+    paths:
+      - "plugins/screenote/**"
+      - "plugins/agent-writing/agents/journalist.md"
+      - ".agents/plugins/marketplace.json"
+      - ".claude-plugin/marketplace.json"
+      - "README.md"
+      - ".github/workflows/screenote.yml"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate marketplace and plugin JSON
+        run: >-
+          jq empty
+          .agents/plugins/marketplace.json
+          .claude-plugin/marketplace.json
+          plugins/screenote/.claude-plugin/marketplace.json
+          plugins/screenote/.claude-plugin/plugin.json
+          plugins/screenote/.codex-plugin/plugin.json
+      - name: Validate plugin schemas and skill frontmatter
+        run: python3 plugins/screenote/evals/validate-plugin.py
+      - name: Validate Screenote CLI skill contract
+        run: bash plugins/screenote/evals/lint-skills.sh
+      - name: Verify capture and transport drift fail lint
+        run: bash plugins/screenote/evals/lint-skills-test.sh
+      - name: Validate Browser Use adapter and shell scripts
+        run: |
+          python3 -c "import ast, pathlib; ast.parse(pathlib.Path('plugins/screenote/mcp/screenote_browser_use_mcp.py').read_text())"
+          bash -n plugins/screenote/evals/lint-skills.sh
+          bash -n plugins/screenote/evals/lint-skills-test.sh
+          bash -n plugins/screenote/evals/browser-use-mcp-smoke.sh
+      - uses: astral-sh/setup-uv@v8.3.2
+      - name: Exercise pinned Browser Use adapter
+        run: |
+          browser_path=$(command -v google-chrome || command -v chromium)
+          BROWSER_USE_EXECUTABLE_PATH="$browser_path" \
+            bash plugins/screenote/evals/browser-use-mcp-smoke.sh
