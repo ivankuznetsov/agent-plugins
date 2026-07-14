@@ -62,6 +62,20 @@ if ! (cd "$installed_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
 fi
 echo "PASS: version-named Codex cache fixture passes lint"
 
+catalog_case="$TMP_DIR/missing-codex-catalog/repo/plugins/screenote"
+make_case "$catalog_case"
+python3 - "$TMP_DIR/missing-codex-catalog/repo/.agents/plugins/marketplace.json" <<'PY'
+from pathlib import Path
+import sys
+
+Path(sys.argv[1]).unlink()
+PY
+if (cd "$catalog_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  echo "FAIL: lint accepted a source checkout with a missing Codex catalog" >&2
+  exit 1
+fi
+echo "PASS: lint rejects a source checkout with a missing Codex catalog"
+
 python3 - "$capture_case/references/cli.md" <<'PY'
 from pathlib import Path
 import sys

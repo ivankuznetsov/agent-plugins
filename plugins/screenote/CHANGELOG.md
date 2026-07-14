@@ -11,6 +11,7 @@ All notable changes to the Screenote plugin are documented here.
 - Skip repository-level marketplace checks when validating an installed plugin
   while retaining them in the source checkout.
 - Add a regression fixture for the real Codex cache layout.
+- Reject source checkouts with either repository marketplace catalog missing.
 
 ## [2.0.0] - 2026-07-13
 
