@@ -50,6 +50,32 @@ if ! (cd "$capture_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
   exit 1
 fi
 echo "PASS: clean standalone fixture passes lint"
+
+installed_version=$(jq -r '.version' "$ROOT_DIR/.codex-plugin/plugin.json")
+installed_case="$TMP_DIR/codex-cache/$installed_version"
+mkdir -p "$installed_case"
+cp -R "$ROOT_DIR/." "$installed_case/"
+if ! (cd "$installed_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  (cd "$installed_case" && bash evals/lint-skills.sh) || true
+  echo "FAIL: version-named Codex cache fixture does not pass lint" >&2
+  exit 1
+fi
+echo "PASS: version-named Codex cache fixture passes lint"
+
+catalog_case="$TMP_DIR/missing-codex-catalog/repo/plugins/screenote"
+make_case "$catalog_case"
+python3 - "$TMP_DIR/missing-codex-catalog/repo/.agents/plugins/marketplace.json" <<'PY'
+from pathlib import Path
+import sys
+
+Path(sys.argv[1]).unlink()
+PY
+if (cd "$catalog_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  echo "FAIL: lint accepted a source checkout with a missing Codex catalog" >&2
+  exit 1
+fi
+echo "PASS: lint rejects a source checkout with a missing Codex catalog"
+
 python3 - "$capture_case/references/cli.md" <<'PY'
 from pathlib import Path
 import sys

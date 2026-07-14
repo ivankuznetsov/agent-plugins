@@ -21,6 +21,7 @@ SEMVER_RE = re.compile(
 )
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 EXPECTED_SKILLS = {"screenote", "snapshot", "feedback"}
+EXPECTED_PLUGIN_NAME = "screenote"
 EXPECTED_BROWSER_ARGS = [
     "run",
     "--with",
@@ -37,9 +38,18 @@ EXPECTED_BROWSER_ARGS = [
 ]
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
-VENDORED_REPO_ROOT = PLUGIN_ROOT.parents[1]
-if not (VENDORED_REPO_ROOT / ".agents" / "plugins" / "marketplace.json").is_file():
-    VENDORED_REPO_ROOT = None
+CANDIDATE_REPO_ROOT = PLUGIN_ROOT.parents[1]
+VENDORED_REPO_ROOT = (
+    CANDIDATE_REPO_ROOT
+    if PLUGIN_ROOT.name == EXPECTED_PLUGIN_NAME
+    and PLUGIN_ROOT.parent.name == "plugins"
+    and (
+        (CANDIDATE_REPO_ROOT / ".git").exists()
+        or (CANDIDATE_REPO_ROOT / ".agents" / "plugins" / "marketplace.json").is_file()
+        or (CANDIDATE_REPO_ROOT / ".claude-plugin" / "marketplace.json").is_file()
+    )
+    else None
+)
 REPO_ROOT = VENDORED_REPO_ROOT or PLUGIN_ROOT
 ERRORS: list[str] = []
 
@@ -186,8 +196,8 @@ def validate_codex_manifest() -> tuple[str | None, str | None]:
         label,
     )
     name, version = validate_manifest_common(payload, label)
-    if name is not None and name != PLUGIN_ROOT.name:
-        fail(label, "name must match the plugin directory")
+    if name is not None and name != EXPECTED_PLUGIN_NAME:
+        fail(label, f"name must be {EXPECTED_PLUGIN_NAME!r}")
     if payload.get("skills") != "./skills/":
         fail(label, "skills must be ./skills/")
     else:
