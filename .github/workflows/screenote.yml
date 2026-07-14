@@ -46,4 +46,7 @@ jobs:
           bash -n plugins/screenote/evals/browser-use-mcp-smoke.sh
       - uses: astral-sh/setup-uv@v8.3.2
       - name: Exercise pinned Browser Use adapter
-        run: bash plugins/screenote/evals/browser-use-mcp-smoke.sh
+        run: |
+          browser_path=$(command -v google-chrome || command -v chromium)
+          BROWSER_USE_EXECUTABLE_PATH="$browser_path" \
+            bash plugins/screenote/evals/browser-use-mcp-smoke.sh

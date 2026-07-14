@@ -18,6 +18,11 @@ uv run --with 'browser-use[cli]==0.13.4' --with 'mcp==1.26.0' \
 
 Claude Code locates the adapter through `CLAUDE_PLUGIN_ROOT`; Codex resolves `.mcp.json`'s `cwd: "."` against the installed plugin root. The adapter sets a fresh temporary Browser Use `user_data_dir` and removes it after `browser_close_all` or server shutdown. The plugin sets `BROWSER_USE_HEADLESS=false` so manual login opens a visible Chromium window by default.
 
+`BROWSER_USE_EXECUTABLE_PATH` may select a known local Chrome/Chromium binary
+for deterministic CI or troubleshooting. The adapter requires an absolute,
+executable file after path resolution; normal plugin use relies on Browser
+Use's own browser discovery.
+
 ## Pinned Direct-Control Tools
 
 The local smoke test verifies these current tool names:

@@ -135,7 +135,9 @@ for method in browser_set_viewport browser_page_metrics browser_scroll_to browse
   require_text mcp/screenote_browser_use_mcp.py "$method" "adapter implements $method"
 done
 require_text mcp/screenote_browser_use_mcp.py '_close_all_sessions' "adapter cleans its ephemeral profile when sessions close"
+require_text mcp/screenote_browser_use_mcp.py 'BROWSER_USE_EXECUTABLE_PATH' "adapter supports an explicit CI browser binary"
 require_text evals/browser-use-mcp-smoke.sh 'browser_close_all' "browser smoke verifies close-all cleanup"
+require_text evals/browser-use-mcp-smoke.sh 'BROWSER_USE_EXECUTABLE_PATH' "browser smoke forwards an explicit CI browser binary"
 
 if jq -e '.version == "2.0.0" and .skills == "./skills/" and .mcpServers == "./.mcp.json" and (has("apps") | not)' .codex-plugin/plugin.json >/dev/null; then
   pass "Codex manifest loads shared skills and capture-only MCP config"

@@ -66,6 +66,8 @@ def load_params():
     browser = config["mcpServers"]["browser-use"]
     env = dict(browser.get("env", {}))
     env["BROWSER_USE_HEADLESS"] = "true"
+    if executable_path := os.environ.get("BROWSER_USE_EXECUTABLE_PATH"):
+        env["BROWSER_USE_EXECUTABLE_PATH"] = executable_path
     return StdioServerParameters(
         command=browser["command"],
         args=browser.get("args", []),

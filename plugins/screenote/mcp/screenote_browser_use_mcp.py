@@ -145,6 +145,18 @@ class ScreenoteBrowserUseServer(BrowserUseServer):
                 tempfile.mkdtemp(prefix="screenote-browser-use-")
             )
 
+        executable_path = os.environ.get("BROWSER_USE_EXECUTABLE_PATH")
+        if executable_path and "executable_path" not in kwargs:
+            resolved_executable = Path(executable_path).expanduser().resolve()
+            if not resolved_executable.is_file() or not os.access(
+                resolved_executable, os.X_OK
+            ):
+                self._remove_profile_dir()
+                raise RuntimeError(
+                    "BROWSER_USE_EXECUTABLE_PATH must point to an executable file"
+                )
+            kwargs["executable_path"] = str(resolved_executable)
+
         try:
             await super()._init_browser_session(
                 allowed_domains=allowed_domains,
