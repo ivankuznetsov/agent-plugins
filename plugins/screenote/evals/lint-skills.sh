@@ -139,24 +139,32 @@ require_text mcp/screenote_browser_use_mcp.py 'BROWSER_USE_EXECUTABLE_PATH' "ada
 require_text evals/browser-use-mcp-smoke.sh 'browser_close_all' "browser smoke verifies close-all cleanup"
 require_text evals/browser-use-mcp-smoke.sh 'BROWSER_USE_EXECUTABLE_PATH' "browser smoke forwards an explicit CI browser binary"
 
-if jq -e '.version == "2.0.0" and .skills == "./skills/" and .mcpServers == "./.mcp.json" and (has("apps") | not)' .codex-plugin/plugin.json >/dev/null; then
+PLUGIN_VERSION=$(jq -r '.version // empty' .codex-plugin/plugin.json)
+if jq -e '.skills == "./skills/" and .mcpServers == "./.mcp.json" and (has("apps") | not)' .codex-plugin/plugin.json >/dev/null; then
   pass "Codex manifest loads shared skills and capture-only MCP config"
 else
   fail "Codex manifest component paths are incorrect"
 fi
 
 for manifest in .claude-plugin/plugin.json .codex-plugin/plugin.json; do
-  if jq -e '.version == "2.0.0"' "$manifest" >/dev/null; then pass "$manifest version is 2.0.0"; else fail "$manifest version is not 2.0.0"; fi
+  if jq -e --arg version "$PLUGIN_VERSION" '.version == $version' "$manifest" >/dev/null; then pass "$manifest version is $PLUGIN_VERSION"; else fail "$manifest version does not match $PLUGIN_VERSION"; fi
 done
-for marketplace in .claude-plugin/marketplace.json ../../.claude-plugin/marketplace.json; do
-  if jq -e 'any(.plugins[]; .name == "screenote" and .version == "2.0.0")' "$marketplace" >/dev/null; then
-    pass "$marketplace Screenote version is 2.0.0"
+MARKETPLACES=(.claude-plugin/marketplace.json)
+if [ -f ../../.claude-plugin/marketplace.json ]; then
+  MARKETPLACES+=(../../.claude-plugin/marketplace.json)
+fi
+for marketplace in "${MARKETPLACES[@]}"; do
+  if jq -e --arg version "$PLUGIN_VERSION" 'any(.plugins[]; .name == "screenote" and .version == $version)' "$marketplace" >/dev/null; then
+    pass "$marketplace Screenote version is $PLUGIN_VERSION"
   else
-    fail "$marketplace Screenote version is not 2.0.0"
+    fail "$marketplace Screenote version does not match $PLUGIN_VERSION"
   fi
 done
 
-ACTIVE_FILES=(README.md references skills .claude-plugin .codex-plugin ../../.claude-plugin/marketplace.json)
+ACTIVE_FILES=(README.md references skills .claude-plugin .codex-plugin)
+if [ -f ../../.claude-plugin/marketplace.json ]; then
+  ACTIVE_FILES+=(../../.claude-plugin/marketplace.json)
+fi
 for forbidden in \
   '/mcp/messages' \
   'create_multi_viewport_screenshot' \

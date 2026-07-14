@@ -21,6 +21,7 @@ SEMVER_RE = re.compile(
 )
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 EXPECTED_SKILLS = {"screenote", "snapshot", "feedback"}
+EXPECTED_PLUGIN_NAME = "screenote"
 EXPECTED_BROWSER_ARGS = [
     "run",
     "--with",
@@ -186,8 +187,8 @@ def validate_codex_manifest() -> tuple[str | None, str | None]:
         label,
     )
     name, version = validate_manifest_common(payload, label)
-    if name is not None and name != PLUGIN_ROOT.name:
-        fail(label, "name must match the plugin directory")
+    if name is not None and name != EXPECTED_PLUGIN_NAME:
+        fail(label, f"name must be {EXPECTED_PLUGIN_NAME!r}")
     if payload.get("skills") != "./skills/":
         fail(label, "skills must be ./skills/")
     else:

@@ -1,6 +1,6 @@
 {
   "name": "screenote",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Capture full-page browser snapshots and manage Screenote feedback through the OAuth CLI from Claude Code or Codex.",
   "author": {
     "name": "ivankuznetsov"
