@@ -33,6 +33,11 @@ all four hosts.
 Screenote's bearer-safe launcher reads its approved command tuples from the
 generated contract artifact, while a shipped workflow runtime validates JSON
 collections, pagination, and identifiers before canonical skills act on them.
+That runtime also fails closed on CLI errors: it accepts complete JSON from
+stderr, preserves top-level or nested machine-readable error codes, and stops
+the workflow before later commands run. Missing setup and exit-3 authentication
+failures receive bounded recovery guidance; other nonzero outcomes retain the
+diagnostic without guessing a recovery path.
 LLM Wiki's shared transactional refresh runner dispatches exactly one configured
 owner, including a validated OpenClaw workspace agent, from a disposable refresh
 worktree.

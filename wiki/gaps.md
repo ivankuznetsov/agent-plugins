@@ -4,7 +4,10 @@
   `screenote_cli.minimum_release` when one is published, then refresh the
   compatibility evidence and tests.
 - The protected-secret Screenote integration is opt-in for authorized release
-  environments and intentionally does not run for forks or absent secrets.
+  environments and intentionally does not run for forks or absent secrets. The
+  `expired_token`, `ambiguous_project`, and `inaccessible_project` scenarios are
+  offline fixtures; this queued change does not establish that a live upstream
+  CLI emits those exact JSON envelopes.
 - No main cross-project wiki is configured for this checkout. Project-local
   knowledge remains authoritative here.
 - Automatic Screenote annotation resolution remains deferred until the

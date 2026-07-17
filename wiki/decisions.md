@@ -27,6 +27,11 @@ passes untrusted values as separate argv elements, and leaves credentials in
 CLI-supported environment/config channels. The final annotation resolution is
 a UI action until it enters the approved command contract.
 
+Every nonzero CLI result stops the workflow. The runtime preserves the JSON
+diagnostic and error code, gives specific setup guidance only for exit-2
+`missing_token` / `missing_project` and exit-3 authentication failures, and
+does not choose an alternative when a project is ambiguous or inaccessible.
+
 ## Packages are plain self-contained directories
 
 Adapters, scripts, agents, references, context, and manifests live below the
