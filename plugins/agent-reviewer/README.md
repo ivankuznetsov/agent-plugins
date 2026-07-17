@@ -32,7 +32,21 @@ Each persona carries a scope block (repos, history window, build date) and can b
 
 ```text
 /plugin marketplace add ivankuznetsov/agent-plugins
-/plugin install agent-reviewer
+/plugin install agent-reviewer@aikuznetsov-marketplace
+```
+
+Codex:
+
+```bash
+codex plugin marketplace add ivankuznetsov/agent-plugins
+codex plugin add agent-reviewer@aikuznetsov-marketplace
+```
+
+Pi and OpenClaw install the self-contained package directory from a clone:
+
+```bash
+pi install /path/to/agent-plugins/plugins/agent-reviewer
+openclaw plugins install /path/to/agent-plugins/plugins/agent-reviewer
 ```
 
 Requires `gh` (authenticated) and `jq`. The optional eval harness also requires
@@ -57,6 +71,10 @@ Set the repo scope with `ORG` + `REPOS` (one or many, same org): `ORG=acme REPOS
 ### Codex
 
 Ask for Agent Reviewer: *"use Agent Reviewer to extract a persona for our top reviewer and review my current branch."* The `agent-reviewer` skill drives the same pipeline.
+
+Pi and OpenClaw expose the same workflow as `agent-reviewer`. Review mode uses
+two independent passes by default, unions findings, and applies the same
+confidence gate on every host.
 
 ## What you get
 

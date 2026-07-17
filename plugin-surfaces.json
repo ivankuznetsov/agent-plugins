@@ -36,7 +36,7 @@
     {
       "name": "agent-reviewer",
       "path": "plugins/agent-reviewer",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "stability": "stable",
       "metadata": {
         "display_name": "Agent Reviewer",
@@ -97,7 +97,7 @@
     {
       "name": "agent-seo",
       "path": "plugins/agent-seo",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "stability": "stable",
       "metadata": {
         "display_name": "Agent SEO",
@@ -137,7 +137,7 @@
     {
       "name": "agent-writing",
       "path": "plugins/agent-writing",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "stability": "stable",
       "metadata": {
         "display_name": "Agent Writing",
@@ -174,7 +174,7 @@
     {
       "name": "llm-wiki",
       "path": "plugins/llm-wiki",
-      "version": "0.1.9",
+      "version": "0.2.0",
       "stability": "stable",
       "metadata": {
         "display_name": "LLM Wiki",
@@ -206,7 +206,7 @@
     {
       "name": "screenote",
       "path": "plugins/screenote",
-      "version": "2.0.1",
+      "version": "3.0.0",
       "stability": "stable",
       "metadata": {
         "display_name": "Screenote",

@@ -4,6 +4,22 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-07-17
+
+### Added
+
+- Native OpenClaw packaging and discovery alongside Claude Code, Codex, and Pi.
+- Generated, self-contained host adapters and deterministic package isolation
+  validation.
+
+### Changed
+
+- The established Pi names (`wiki-bootstrap`, `wiki-research`, `wiki-plan`,
+  and `wiki-status`) are also used by OpenClaw to avoid host skill collisions.
+
+Publish and tag `v0.2.0` in the upstream LLM Wiki repository before vendoring
+that release and creating `llm-wiki-v0.2.0` here.
+
 ## [0.1.9] - 2026-06-18
 
 Worktree-safe wiki maintenance and a single shared changelog compiler. The

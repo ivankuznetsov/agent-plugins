@@ -40,6 +40,35 @@ codex plugin marketplace add ivankuznetsov/agent-plugins
 
 Open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install the plugins you want.
 
+### Pi
+
+Clone this repository, then install any self-contained plugin directory:
+
+```bash
+pi install /path/to/agent-plugins/plugins/agent-writing
+pi install /path/to/agent-plugins/plugins/agent-seo
+pi install /path/to/agent-plugins/plugins/screenote
+pi install /path/to/agent-plugins/plugins/llm-wiki
+pi install /path/to/agent-plugins/plugins/agent-reviewer
+```
+
+### OpenClaw
+
+Install the same copied directories as native OpenClaw packages:
+
+```bash
+openclaw plugins install /path/to/agent-plugins/plugins/agent-writing
+openclaw plugins install /path/to/agent-plugins/plugins/agent-seo
+openclaw plugins install /path/to/agent-plugins/plugins/screenote
+openclaw plugins install /path/to/agent-plugins/plugins/llm-wiki
+openclaw plugins install /path/to/agent-plugins/plugins/agent-reviewer
+```
+
+See the complete invocation and tested-version matrix in
+[Agent compatibility](docs/agent-compatibility.md). Screenote 2.x users should
+also read the [JSON CLI migration](docs/screenote-cli-migration.md) before
+upgrading.
+
 ## Repository layout
 
 ```text
@@ -58,11 +87,12 @@ Plugins are vendored as plain directories, not submodules. Codex reads marketpla
 
 When refreshing a plugin from an upstream source repo, I copy the contents into the matching `plugins/<name>` directory without the nested `.git` metadata, then update both marketplace catalogs if the plugin metadata changed.
 
-Validate the catalogs after any edit:
+Validate the contract, generated packages, and offline behavior after any edit:
 
 ```bash
-jq . .claude-plugin/marketplace.json
-jq . .agents/plugins/marketplace.json
+python3 scripts/validate-agent-packages.py --inventory
+python3 scripts/generate-agent-packages.py --check
+python3 -m unittest discover -s tests -v
 ```
 
 The required package contract, offline security suite, and isolated native-host

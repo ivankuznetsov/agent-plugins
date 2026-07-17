@@ -1,6 +1,6 @@
 {
   "name": "screenote",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "type": "module",
   "description": "Capture pages, publish screenshots, and retrieve visual feedback through the Screenote OAuth CLI.",
   "homepage": "https://screenote.ai",

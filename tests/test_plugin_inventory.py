@@ -142,6 +142,19 @@ class PluginInventoryTests(unittest.TestCase):
                     validate_repository(root),
                 )
 
+    def test_contract_detects_generated_and_local_mirror_version_drift(self):
+        scenarios = {
+            "openclaw.plugin.json": self._write_stale_openclaw_manifest,
+            "local Claude marketplace": self._write_stale_local_marketplace,
+        }
+        for expected, mutate in scenarios.items():
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                make_fixture(root)
+                mutate(root)
+                errors = validate_repository(root)
+                self.assertTrue(any(expected in error for error in errors), errors)
+
     @staticmethod
     def _add_catalog_plugin(root, name):
         for path in (
@@ -165,6 +178,25 @@ class PluginInventoryTests(unittest.TestCase):
     @staticmethod
     def _make_unsupported_without_approval(contract):
         contract["plugins"][0]["platforms"]["pi"]["support"] = "unsupported"
+
+    @staticmethod
+    def _write_stale_openclaw_manifest(root):
+        write_json(
+            root / "plugins" / "demo" / "openclaw.plugin.json",
+            {"id": "demo", "version": "0.9.0"},
+        )
+
+    @staticmethod
+    def _write_stale_local_marketplace(root):
+        write_json(
+            root / "plugins" / "demo" / ".claude-plugin" / "marketplace.json",
+            {
+                "name": "demo",
+                "plugins": [
+                    {"name": "demo", "source": "./", "version": "0.9.0"}
+                ],
+            },
+        )
 
 
 if __name__ == "__main__":

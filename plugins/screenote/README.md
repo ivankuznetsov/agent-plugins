@@ -8,6 +8,27 @@ The plugin ships the same `screenote`, `snapshot`, and `feedback` workflows for
 Claude Code, Codex, Pi, and OpenClaw. It detects the `screenote` executable but
 never installs it or starts authentication automatically.
 
+## Install
+
+Claude Code and Codex use the shared marketplaces:
+
+```text
+/plugin marketplace add ivankuznetsov/agent-plugins
+/plugin install screenote@aikuznetsov-marketplace
+```
+
+```bash
+codex plugin marketplace add ivankuznetsov/agent-plugins
+codex plugin add screenote@aikuznetsov-marketplace
+```
+
+Pi and OpenClaw install the self-contained package directory from a clone:
+
+```bash
+pi install /path/to/agent-plugins/plugins/screenote
+openclaw plugins install /path/to/agent-plugins/plugins/screenote
+```
+
 ## Prerequisite
 
 Until a tagged Screenote CLI release contains the OAuth-first command contract,
@@ -70,7 +91,8 @@ does not perform the final resolution mutation.
   Failed captures remain private and their exact recovery path is reported.
 
 See [the shared CLI contract](references/cli.md) for the complete allowlist,
-error mapping, project precedence, capture boundary, and cleanup rules.
+error mapping, project precedence, capture boundary, cleanup rules, and the
+2.x setup migration.
 
 ## Requirements
 

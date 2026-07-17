@@ -4,7 +4,7 @@
   "generated_by": "scripts/generate-agent-packages.py",
   "plugins": {
     "agent-reviewer": {
-      "version": "0.2.0",
+      "version": "0.3.0",
       "canonical": {
         "skills/agent-reviewer/SKILL.md": {
           "sha256": "79e4b8b7c75b1f4e695d64dae27906d610914a962f1050039b33cc47e555aa8d",
@@ -195,7 +195,7 @@
       }
     },
     "agent-seo": {
-      "version": "1.1.0",
+      "version": "1.2.0",
       "canonical": {
         "skills/seo/SKILL.md": {
           "sha256": "cde17fa5fd3e7061e7742ee786b99edb87ef2ac7d74d5eb823b1fb948315d504",
@@ -453,7 +453,7 @@
       }
     },
     "agent-writing": {
-      "version": "0.4.0",
+      "version": "0.5.0",
       "canonical": {
         "skills/writing/SKILL.md": {
           "sha256": "6722d1a13c1a9a69b66ddc132c7b818df688293c6514728672fe5ac539f61d0a",
@@ -602,7 +602,7 @@
       }
     },
     "llm-wiki": {
-      "version": "0.1.9",
+      "version": "0.2.0",
       "canonical": {
         "skills/bootstrap/SKILL.md": {
           "sha256": "c4465a91d62a01d448e68ff1df4d1674d6c2a52f831f81cd4756826fe3d6f353",
@@ -777,7 +777,7 @@
       }
     },
     "screenote": {
-      "version": "2.0.1",
+      "version": "3.0.0",
       "canonical": {
         "skills/screenote/SKILL.md": {
           "sha256": "cc2438df107a896f90a871d13444f086068486226d741d2c16fcc670195d241c",

@@ -2,6 +2,38 @@
 
 All notable changes to the Screenote plugin are documented here.
 
+## [3.0.0] - 2026-07-17
+
+### Added
+
+- Self-contained Pi and native OpenClaw packages for `screenote`, `snapshot`,
+  and `feedback`.
+- An argv-safe launcher with an explicit command allowlist and compatibility
+  check against the OAuth-first CLI baseline.
+- Offline JSON error, project-precedence, capture-recovery, and credential
+  sentinel tests plus an opt-in protected live integration.
+
+### Changed
+
+- Capture now uses each host's native browser automation and uploads one
+  private file at a time with `screenshot create`.
+- Snapshot route discovery publishes repeated approved screenshot-create calls;
+  feedback comments after fixes and leaves final resolution to the Screenote UI.
+- Project selection follows explicit flag, environment, then CLI config.
+
+### Removed
+
+- The bundled browser transport configuration and runtime adapter.
+- Bulk snapshot publication and automatic annotation resolution from agent
+  workflows.
+
+### Security
+
+- Credentials remain in Screenote environment/config channels and are rejected
+  as command arguments.
+- Successful temporary captures are deleted; failed captures remain mode
+  `0600` in a private mode-`0700` directory with a reported recovery path.
+
 ## [2.0.1] - 2026-07-13
 
 ### Fixed

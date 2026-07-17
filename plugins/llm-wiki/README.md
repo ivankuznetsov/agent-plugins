@@ -2,7 +2,7 @@
 
 Bootstrap and query LLM-maintained project wikis before planning or implementation.
 
-**Supports Claude Code + Codex (GPT-5.5) + Pi.**
+**Supports Claude Code + Codex + Pi + OpenClaw.**
 
 ![LLM Wiki in action](assets/wiki-in-action.svg)
 
@@ -63,10 +63,10 @@ If Codex displays a fully qualified marketplace namespace, use that displayed na
 
 ## Install: Pi
 
-Install the Pi package from GitHub:
+Install the self-contained package directory from this marketplace clone:
 
 ```bash
-pi install git:github.com/ivankuznetsov/llm-wiki
+pi install /path/to/agent-plugins/plugins/llm-wiki
 ```
 
 Then invoke the Pi skills with prefixed names to avoid collisions with other Pi packages:
@@ -78,11 +78,23 @@ Then invoke the Pi skills with prefixed names to avoid collisions with other Pi 
 /skill:wiki-status
 ```
 
-For local development from this checkout, run this from the target project:
+For linked local development from the standalone upstream checkout, run this
+from the target project:
 
 ```bash
 pi install /path/to/llm-wiki -l
 ```
+
+## Install: OpenClaw
+
+Install the self-contained package directory from this marketplace clone:
+
+```bash
+openclaw plugins install /path/to/agent-plugins/plugins/llm-wiki
+```
+
+OpenClaw exposes the collision-safe `wiki-bootstrap`, `wiki-research`,
+`wiki-plan`, and `wiki-status` skill names.
 
 ## Usage Examples
 
@@ -132,7 +144,10 @@ When present, `llm-wiki` searches a main cross-project wiki before creating or u
 
 ## Automation
 
-`bootstrap` installs wiki context for Claude Code, Codex, and Pi, regardless of which agent runs setup.
+`bootstrap` installs project wiki context through the instruction surfaces used
+by Claude Code, Codex, and Pi. OpenClaw can run the same bootstrap and wiki
+workflows from its workspace; its generated package adapter does not alter the
+canonical maintenance scripts.
 
 - Claude Code receives wiki context through `CLAUDE.md` and a Claude `SessionStart` context hook when available.
 - Codex receives wiki context through `AGENTS.md`.

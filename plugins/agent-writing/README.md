@@ -1,6 +1,9 @@
 # Agent Writing
 
-Agent Writing is a Claude Code and Codex plugin that ships three writing voices working as a **team of rivals**: a journalist who investigates and grounds, a writer who drafts, and an editor who cuts. The writer and editor run as a continuous cycle until the editor says the draft is ready.
+Agent Writing is a Claude Code, Codex, Pi, and OpenClaw plugin that ships three
+writing voices working as a **team of rivals**: a journalist who investigates
+and grounds, a writer who drafts, and an editor who cuts. The writer and editor
+run as a continuous cycle until the editor says the draft is ready.
 
 The plugin lives alongside `agent-seo`, `llm-wiki`, and `screenote` in the shared `ivankuznetsov/agent-plugins` marketplace.
 
@@ -38,6 +41,18 @@ Use Agent Writing to investigate the screenote plugin's annotation flow.
 Use Agent Writing to draft a piece from ./writing/investigations/screenote-annotations-2026-05-26.md.
 Use Agent Writing to run the writer-editor cycle on ./writing/drafts/screenote-annotations-2026-05-26-v1.md.
 ```
+
+### Pi and OpenClaw
+
+Install the self-contained package directory from a clone:
+
+```bash
+pi install /path/to/agent-plugins/plugins/agent-writing
+openclaw plugins install /path/to/agent-plugins/plugins/agent-writing
+```
+
+Both hosts expose `agent-writing` and preserve the five-round default,
+language/persona variants, rivalry, and project-local `./writing/` artifacts.
 
 ## Slash commands (Claude Code)
 

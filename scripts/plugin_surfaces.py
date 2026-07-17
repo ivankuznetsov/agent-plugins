@@ -557,7 +557,12 @@ def validate_repository(root: Path) -> list[str]:
         if name in codex and codex[name] != f"./{expected_path}":
             errors.append(f"{label}: path mismatch in Codex catalog: {codex[name]!r}")
 
-        for manifest in (".claude-plugin/plugin.json", ".codex-plugin/plugin.json", "package.json"):
+        for manifest in (
+            ".claude-plugin/plugin.json",
+            ".codex-plugin/plugin.json",
+            "package.json",
+            "openclaw.plugin.json",
+        ):
             path = plugin_root / manifest
             if not path.is_file():
                 continue
@@ -568,6 +573,27 @@ def validate_repository(root: Path) -> list[str]:
                 continue
             if marker is not None and marker != version:
                 errors.append(f"{label}: version mismatch with {manifest}")
+
+        local_catalog_path = plugin_root / ".claude-plugin" / "marketplace.json"
+        if local_catalog_path.is_file():
+            try:
+                local_catalog = load_json(local_catalog_path)
+            except (OSError, json.JSONDecodeError) as exc:
+                errors.append(f"{label}.local marketplace: invalid JSON: {exc}")
+            else:
+                local_entries = [
+                    entry
+                    for entry in local_catalog.get("plugins", [])
+                    if isinstance(entry, dict) and entry.get("name") == name
+                ]
+                if len(local_entries) != 1:
+                    errors.append(
+                        f"{label}.local marketplace: expected exactly one mirror entry"
+                    )
+                elif local_entries[0].get("version") != version:
+                    errors.append(
+                        f"{label}: version mismatch with local Claude marketplace"
+                    )
 
         for field, value, required in _iter_declared_paths(plugin):
             path_error = _relative_path_error(value, f"{label}.{field}")
