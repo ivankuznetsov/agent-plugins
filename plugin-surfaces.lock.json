@@ -7,20 +7,32 @@
       "version": "0.2.0",
       "canonical": {
         "skills/agent-reviewer/SKILL.md": {
-          "sha256": "5e7f7037dedb14658437274773b989ac0ee438a3e880641212645185fb0e33e1",
-          "semantic_sha256": "2719382277413ede73cf413dc0b23e0ab43b4f294e83ad3eca7187bcd84c3313",
+          "sha256": "79e4b8b7c75b1f4e695d64dae27906d610914a962f1050039b33cc47e555aa8d",
+          "semantic_sha256": "464bb2825bfaf8d5b1972a64b46745bd9d897f5163467a63bc31b8919586996c",
           "sections": {
-            "1:agent reviewer": "c98a51e4a750440157c054275579b6479ebc1c08034ab3462e2b98945562bff3",
-            "2:the pipeline": "0f82ba4ecb24b7558563efb3e1ad54d6a42b69a3a82f37c9aaf3c36c3e424c17",
-            "3:1. pick the reviewers — as a dialog": "48c716b46b975576f902a3fcea363df2dfd6d4fac176f84ee27cefe74d783f63",
-            "3:2. collect the context": "615bee0ecbb6cfe6d972c63f9ba13a8cf2f917c6edb41c9e85e220fbf1c7fae4",
-            "3:3. extract the persona": "9985183510ad8c96ed936150d5e3d1552db05ae8c6e5bece43f2de2c59ce16b7",
-            "3:4. review as a panel": "801cf65a96e49c5bd474fcaeeeee7396362d1718023fdb99001a2b2d39ec3ee2",
-            "2:scope: one repo or many": "d0066170c4a72bf2a9bdc477208f89be9eadeee2fed3e8193442c467b9fa3426",
-            "2:updating a persona": "52ad5ff124b5539a3f4d8adfbeb288ff0bec10eb5119a08ee0d79018b4dcd7f3",
-            "2:claude code commands": "97f6cde59301ddc4fb0e5b6e8ed03ca8a647e9d761ceac749af2b00fb4aba843",
-            "2:compound engineering": "fa55001e7848f2c3add6e449d4dc4574f3a2ca5213aa1d33a440eb5c7c240a63",
-            "2:principles": "dd8f3f4f0adb3ea4472a4b84172682ca6243c74c4fa5fdfbb0b2f63eba9174bb"
+            "1:agent reviewer": "8bcf146a35269ce121bf6f892f8f0d0d29d902f1130e2d61efaf73a3df6644da",
+            "2:installed resources and working files": "88a2e8c89c05bda5e5beb614d7f5f09aa4a670f6d930d7ccebff284cc4934892",
+            "2:choose the workflow": "7a5b5769a52fe620141d097b7971475ee6dda94fc582ff2330a06833705e190d",
+            "2:extract personas": "6ae5d281a57056da158b1950e76abdcd789b8a5a3c94e5eea5baef34d23a7b5e",
+            "3:1. select reviewers": "ce720f95d1b3c013b592a79447acaa53a0e771cdd6d324cbb0ce450bd79ad3f6",
+            "3:2. collect full context for every selected reviewer": "fc3a4056711b89eb9c1402c0187a368fad082980bc5f7928409eb769d8895b59",
+            "3:3. profile one person at a time": "7597c42b93d610875f2e7f0d1f4931d0c394810de53a5e1f23536d9db45018d0",
+            "3:4. report extraction": "3801090505afb65be995f8095dcb0a8bd7fc82b3f88b07b9939a280453137d72",
+            "2:review with the persona panel": "0f642068929bd7c49d9c69391fd26e91ffec23101cf19eb35e291039fc65133b",
+            "3:arguments and defaults": "fcac0ae3b00ea7cad566613d226f8113ed4c8fd35f61f11c91301c5db5d7a119",
+            "3:1. resolve the target with fixed precedence": "fcba99882462c3ab7f224c3fc45a13ce1c5b26b41ff460cec4571343886a4313",
+            "3:2. resolve the panel": "0cbf78f84490e2f9c65ec4838404e7b1ab94e63635c78e3a1827abc352a29ea6",
+            "3:3. build one whole-change packet": "e087a96615b1177b4a5297fbf60ccdcb6c92d734a1c80c136b0bf8b043677e49",
+            "3:4. run independent passes for each persona": "66e0c4781bdbc2daac95c227578dce4699219db851c8754b46527ed58fc6d578",
+            "3:5. union, deduplicate, then apply the confidence gate": "0769e24cecb389dba3ab65bc83c568646907e57545ae3467c3abbef9b0474b10",
+            "3:6. consolidate the panel": "a70d19fc24c715813a9c957f3ecf1fd6079e9f9ab5515a729b5c7165a3520c40",
+            "2:update a persona": "559155715746a4733b73a598959c74509ca09737c3121d870c7d7348a35fba33",
+            "3:1. read and confirm the stored scope": "f8ffb56b6c2aface08aff426b8537e25ce7f855b4a62808b77bfa1ab9922699a",
+            "3:2. validate the new scope": "f1bfbeaa87b16b21f6ccecd553ee81e1999e9b862704957af4b5f81728ed62af",
+            "3:3. re-collect the full new scope": "8162fcaeb01889208b73559ff6cd92ec9842b2d4d9bca57e6f457dc3d1202040",
+            "3:4. re-extract and overwrite": "f2d5eb617ce183ecae95c50d6cda5295481010cdb313807d0d5d2bede77d8de8",
+            "3:5. report the persona delta": "adfd292be5422a793d6df38bacd7ae825a462950293522c7de9ec8423f54eca5",
+            "2:principles": "622314a6d47131de3cb59ba0ef2ab8823bcd33fea1d7c4af3b6342ad5f1c58bf"
           }
         }
       },
@@ -120,9 +132,9 @@
       },
       "adapters": {
         "pi/skills/agent-reviewer/SKILL.md": {
-          "sha256": "cbe26a406411e4f256d494e346ae739edd29cc935c6aefe9ef6f067c9b3d89c2",
+          "sha256": "b46d6fcc526ed4300c64ea7f4c686691f02fe2e623e61b321399409b8c5df932",
           "canonical": "skills/agent-reviewer/SKILL.md",
-          "canonical_semantic_sha256": "2719382277413ede73cf413dc0b23e0ab43b4f294e83ad3eca7187bcd84c3313",
+          "canonical_semantic_sha256": "464bb2825bfaf8d5b1972a64b46745bd9d897f5163467a63bc31b8919586996c",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -130,13 +142,45 @@
           ]
         },
         "openclaw/skills/agent-reviewer/SKILL.md": {
-          "sha256": "b1b1d98ccfef63b8d3cf90f92fd8813debb6a4362a459530e09b3441bae02f6f",
+          "sha256": "70a8e114f321881b9b7cf1abf266d02b87270fb0d86a8500e89cbcfa05e0d5f2",
           "canonical": "skills/agent-reviewer/SKILL.md",
-          "canonical_semantic_sha256": "2719382277413ede73cf413dc0b23e0ab43b4f294e83ad3eca7187bcd84c3313",
+          "canonical_semantic_sha256": "464bb2825bfaf8d5b1972a64b46745bd9d897f5163467a63bc31b8919586996c",
           "overlays": [
             "frontmatter",
             "invocation",
             "install-path"
+          ]
+        }
+      },
+      "legacy_entrypoints": {
+        "commands/reviewer:extract.md": {
+          "sha256": "967cdcba060f919b75b9aa92faa472df631f8ed0b38d91fceee41adcd79d3af2",
+          "canonical": "skills/agent-reviewer/SKILL.md",
+          "mode": "extract",
+          "arguments": "[<login> ...]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/reviewer:review.md": {
+          "sha256": "cdf59c7088e6342a015203786f134e1f8ddf845f1adee4f4963615258125feb4",
+          "canonical": "skills/agent-reviewer/SKILL.md",
+          "mode": "review",
+          "arguments": "[<file-or-PR>] [--only <login>] [--passes <N>] [--min-confidence <0..1>]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/reviewer:update.md": {
+          "sha256": "25065b0bdfe879293317c8236e750e4fa9a753f889e64ad0b387cb57387635a5",
+          "canonical": "skills/agent-reviewer/SKILL.md",
+          "mode": "update",
+          "arguments": "<login> [--add-repo <repo>] [--since <YYYY-MM-DD>]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
           ]
         }
       }
@@ -145,22 +189,23 @@
       "version": "1.1.0",
       "canonical": {
         "skills/seo/SKILL.md": {
-          "sha256": "61ed5d288bbf304aafcc4997db4da8782d8dc18acda938e1bf183b9bee682910",
-          "semantic_sha256": "613290053533c963c3b17e1690a9006f2939dc4f36d83c799af9ee72084eb165",
+          "sha256": "cde17fa5fd3e7061e7742ee786b99edb87ef2ac7d74d5eb823b1fb948315d504",
+          "semantic_sha256": "4dcd8a76ef588507d64091704ff5835d1b5c20717f76b6d59af85d5629f2226b",
           "sections": {
             "1:agent seo": "4677d492eb19143423a901c669664a11e627e5b0f22f19710b8ad44825f9749f",
-            "2:invocation": "2508002cfe4b90623e86772d49c0ca80c9684cc30c9eae48360bc3b9ebe4feba",
-            "2:shared ground rules": "65446474621088c869610662e47e3a1e978f3f6fa32d80c561e6a522493ecd91",
-            "2:workflow map": "76d4e2ceadb3351e1c1ab9427bb56165b0fb094f4c111c1312de5fea9a90086a",
-            "2:research workflow": "c654acd9c2a9af88207bbf3d828ace5bbb6c8994ac527569d427275619226898",
-            "2:writing workflow": "63afccec29dfd1c50123cd8be487cf1b07b91891ed50de344ccabb71a16c7cd7",
-            "2:humanize workflow": "498d56566095b43b459d5c924ae3dbf015e75df6f6b2ac30884f2664de09da6e",
-            "2:fact-check workflow": "fb6f35a48b3c4f9d8b5ad003b8909306c117bb17413bcbcfea9e7a01e74b6f53",
-            "2:optimization workflow": "596bcc3a0c919e52536c0ac744b6731e7fe08c9f24880ff8500c116f58814a7c",
-            "2:analyze existing workflow": "98c58b7ab9b6e313e22dcbc04dfb68733d1144b33a99fee6437d04a711e6562a",
-            "2:rewrite workflow": "da57fb0ff110b5ff700ea67b6681c7a341aad294adcd5fae736c0729c4a5702e",
-            "2:data workflow": "cbefc3d4d22a8f0e4da451c0df08fb53e83f45d5999a9654b0ac6d9d3a6d020c",
-            "2:performance review workflow": "e1cb1cf5d799ece62784965564bc1b86f1b86dae9c47d7d3fabb63ed92f1d1a5",
+            "2:invocation": "fb2f08a6f4b9b9785914057eecddbd24f5698293033c668f8fa8e9f5050d40e3",
+            "2:shared ground rules": "be9ed276f6c67648b749e0fc163762acfe7c98b8af29c65575594ba79de88b0e",
+            "2:workflow map": "5be5e6d44d3ae0efee714536e0b9865ee49e69160240d69fc096b56e9c5ed083",
+            "2:research workflow": "bc36fd280cb4f4e002017233080d658c712880ea2420f4edfbd0a8ab658a0bc3",
+            "2:writing workflow": "c5bb2e65203c381e77049a6588a8a23813fd191a4b47c1886b8e312040942245",
+            "2:humanize workflow": "dae63057cad3bf9f6068167415449d9ac4ce577bbbc7796446277847afa5b38b",
+            "2:fact-check workflow": "68013b8bc8da9b93c9dca04baed3e4b2650d1be02a3138329c0504ac9085d05c",
+            "2:optimization workflow": "4a76d65df20f27bbca00a7bb13bd9a4a059d683c1f9e197edda8af7566b7185d",
+            "2:analyze existing workflow": "9776893dc0682bb01988d92e4ed6d7e30a4425ee3065c428ecff48d90fc0cf3b",
+            "2:rewrite workflow": "a6b109ad1761c5bba17d3e27f91d814377ef15d343ffd6d9727e9fd148fb758b",
+            "2:scrub workflow": "e156ba04e59486bb452970998fb3a8bf92378533e228d47ce5e2b64b4182058f",
+            "2:data workflow": "0455c8d986bbb500d6488792a48121981f14caf49f42098fd14e69e2fff07eba",
+            "2:performance review workflow": "a42211ef32258e3388746144bf28569fef4c569d8d3aa6e09ea52e19c118f847",
             "2:ruby analysis tools": "b3faaef9aab06153e815df38613e836b244c81da339bfd948d52aedbb9df963c",
             "2:quality targets": "187d77f4733ef740f67ff243acf6058786ea31e23b2d561e301d8ec49cb56a6a"
           }
@@ -169,7 +214,7 @@
       "resources": {
         "agents": {
           "exists": true,
-          "sha256": "6386bbbf8a0f00b05f0638c424891d1649f9f3a12d8a287157fca1f16fb529b4",
+          "sha256": "f2510a380397b269f3d79448ab76e695041f0b67473465c202ba50aa14d8a8a8",
           "files": [
             "agents/content-analyzer.md",
             "agents/editor.md",
@@ -268,7 +313,7 @@
         "pi/skills/agent-seo/SKILL.md": {
           "sha256": "ffab02b70c29ab29a517cb4936f05cb0ec57e088eba09d1f3eda804a1751912a",
           "canonical": "skills/seo/SKILL.md",
-          "canonical_semantic_sha256": "613290053533c963c3b17e1690a9006f2939dc4f36d83c799af9ee72084eb165",
+          "canonical_semantic_sha256": "4dcd8a76ef588507d64091704ff5835d1b5c20717f76b6d59af85d5629f2226b",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -278,11 +323,113 @@
         "openclaw/skills/agent-seo/SKILL.md": {
           "sha256": "91075d82594fd1b034fbd95dcc40af2fe1a8c89dd630b1b16b66ba3b4d619c0a",
           "canonical": "skills/seo/SKILL.md",
-          "canonical_semantic_sha256": "613290053533c963c3b17e1690a9006f2939dc4f36d83c799af9ee72084eb165",
+          "canonical_semantic_sha256": "4dcd8a76ef588507d64091704ff5835d1b5c20717f76b6d59af85d5629f2226b",
           "overlays": [
             "frontmatter",
             "invocation",
             "install-path"
+          ]
+        }
+      },
+      "legacy_entrypoints": {
+        "commands/seo:analyze-existing.md": {
+          "sha256": "626435ac8cd96b18100ca9d7828baa5a9614a9084f4839806002d8d8632bef5c",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "analyze-existing",
+          "arguments": "[URL or file path]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:data.md": {
+          "sha256": "ce0f639d86b18ee08914ddc1ea3479588afa83f387f78ac0f1c8a3a2af671364",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "data",
+          "arguments": "[type] [arguments]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:fact-check.md": {
+          "sha256": "b3354c060279edac9524de01e0c55e3d8193fa7c0fcd6899c983513eebc6f6d4",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "fact-check",
+          "arguments": "[file path or paste text]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:humanize.md": {
+          "sha256": "33f8e7703b64fbc417bfe12208dba6e17ba8da29d4124a4730ad91953d90d956",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "humanize",
+          "arguments": "[file path or paste text]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:optimize.md": {
+          "sha256": "5293e9d10f4482f3081c819fabf1b4abfb674fe79a39738d0c11da49634f28f5",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "optimize",
+          "arguments": "[article file]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:performance-review.md": {
+          "sha256": "6f603799a949c1734beee6745c9509371542d2baa7325d44598492f0309829c0",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "performance-review",
+          "arguments": "[days]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:research.md": {
+          "sha256": "67702ca85a84cb7a1578e7ad55bec977e0df2fb8770dce547a6317d25d14f2c8",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "research",
+          "arguments": "[topic]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:rewrite.md": {
+          "sha256": "c141e44da6626ce4c4c02c25359c17f954210c9961d438ba2e846e2441d025aa",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "rewrite",
+          "arguments": "[topic or analysis file]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:scrub.md": {
+          "sha256": "e9374352fd79839e3ca5803eabe4b1a0a27b22ff53edda95fccdb4629978015b",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "scrub",
+          "arguments": "[file path]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/seo:write.md": {
+          "sha256": "f034a5ab4587ccc96e4163878a181659983d6a2730d4f74966314a0189d715ef",
+          "canonical": "skills/seo/SKILL.md",
+          "mode": "write",
+          "arguments": "[topic or research brief]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
           ]
         }
       }
@@ -291,26 +438,27 @@
       "version": "0.4.0",
       "canonical": {
         "skills/writing/SKILL.md": {
-          "sha256": "1e57a49b70dff369f80ad2913f6f361cce5f9dd3142db83537bc4de657fcf061",
-          "semantic_sha256": "66e923505425aeed17e861bb93613a8d0f5e3789aad9b0246adef0a4713ecde4",
+          "sha256": "6722d1a13c1a9a69b66ddc132c7b818df688293c6514728672fe5ac539f61d0a",
+          "semantic_sha256": "aca29c5fcec3c5e54f60d89f31d12caee0e23f70bbfe2d4da9e6bd5f4f500341",
           "sections": {
             "1:agent writing": "8cadbd1a26b6b91e84c8d1904236d7c1fb76ff12cd77863d4c9451134d0ed254",
             "2:invocation": "bf6121bede0e1c5cf40d08a39dd3e23c26a03e5227a5a1fddd83a260a1e4477f",
+            "2:public controls and defaults": "46d736d57c1ae447fa7fd6f85cfabf496bd8fab72c28bf224f64441a6dfc07aa",
             "2:shared ground rules": "fe84b8d5023d7fb68afd46f65ff43c19cf3336adf6e3982eb88fe52ea8b9c992",
-            "2:workflow map": "aa9837b4b525aa020b34cd08aae79df3773b5ed81857fb88b41abf428943a3b9",
-            "2:role summaries": "b036fabe5066fd7637b0127dcfc636eed512603557b8bb3ec41f9d2c07da66f2",
-            "2:investigate workflow": "071940071a622776a19a6b1cf1083189b065e75560b3bece0aa49ae3531f1f8b",
-            "2:draft workflow": "bc23946591760688c657db2d38f6cee2770f0fc1b44494cef1a8f740a91e47ed",
+            "2:workflow map": "04e3f101222ce2e273f9456325faafab07ec72e31ab314dc23f39710634171ac",
+            "2:role summaries": "3a0bc3482530cffcac760a9c57fef4c03daeaafe7c22e6b19247b4e5aa37d9f3",
+            "2:investigate workflow": "db965c1e767af425c48f8bfd0b4334d871f5d2427f2012fbcb7e08f429a21280",
+            "2:draft workflow": "815fd4e2033e3e6e11904123485a3f5bdcb2a8f1cf405f92d4c56c711cd67893",
             "2:rewrite workflow": "a227fdfa5b04d9fd633b3a3a9b9c69fd9922251737171fe0b00584577fc6b5f5",
-            "2:review workflow": "e8b7b0881643c57264ef4568db7a00c53ff7b852ffbc24cdef3d0b98db8d2d6c",
-            "2:full cycle workflow": "9d7619e832c401fb00fae1bceaaeb1d782b8a4a1c878203db613c500c336dab9"
+            "2:review workflow": "70e269985c298bbfedd34550c067681d019619b2742c9f92dcc9a842678ccf79",
+            "2:full cycle workflow": "86c7322ef10bc55d8d2fcdb4ef717d1a83e448e67be38a7017db427bd5e4c43a"
           }
         }
       },
       "resources": {
         "agents": {
           "exists": true,
-          "sha256": "eb2cb2e549c72c686fa234dd113272ccde86d9b75ed36110f914790a9017557b",
+          "sha256": "2426143771e755de9683e7178f533d3bf8ccdd154bc1ac97e1ba313f820590eb",
           "files": [
             "agents/editor-ru.md",
             "agents/editor.md",
@@ -335,7 +483,7 @@
         "pi/skills/agent-writing/SKILL.md": {
           "sha256": "4d3feda071be005663114ff05852b73913e61dd018ed420279c30b939b7c1878",
           "canonical": "skills/writing/SKILL.md",
-          "canonical_semantic_sha256": "66e923505425aeed17e861bb93613a8d0f5e3789aad9b0246adef0a4713ecde4",
+          "canonical_semantic_sha256": "aca29c5fcec3c5e54f60d89f31d12caee0e23f70bbfe2d4da9e6bd5f4f500341",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -345,11 +493,83 @@
         "openclaw/skills/agent-writing/SKILL.md": {
           "sha256": "d7a5b9986bc022bc9a20fb376dbe52c7721091cfd7ae23ed0f21226a089feab9",
           "canonical": "skills/writing/SKILL.md",
-          "canonical_semantic_sha256": "66e923505425aeed17e861bb93613a8d0f5e3789aad9b0246adef0a4713ecde4",
+          "canonical_semantic_sha256": "aca29c5fcec3c5e54f60d89f31d12caee0e23f70bbfe2d4da9e6bd5f4f500341",
           "overlays": [
             "frontmatter",
             "invocation",
             "install-path"
+          ]
+        }
+      },
+      "legacy_entrypoints": {
+        "commands/write:editor-ru.md": {
+          "sha256": "ae2f2a74df0bb9fdc04e9102dd17640f6f72266f86c4446e870946b09fef2d9a",
+          "canonical": "skills/writing/SKILL.md",
+          "mode": "editor-ru",
+          "arguments": "<draft-path> [--suffix <suffix>]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/write:editor.md": {
+          "sha256": "dcb918bf430ea49b06eeddc8984a85646173180ef73c80d5ff14779d0938a789",
+          "canonical": "skills/writing/SKILL.md",
+          "mode": "editor",
+          "arguments": "<draft-path>",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/write:full.md": {
+          "sha256": "4a31d86ec2095e1905437497e82127685f5a7537a2d63456ea6484f90ea63e7a",
+          "canonical": "skills/writing/SKILL.md",
+          "mode": "full",
+          "arguments": "<topic> [--scope <path>] [--max-rounds <N>]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/write:journalist.md": {
+          "sha256": "f466a92231975116aefe8eb8da999af26fa471a559fc20b3bbedb658ca294f74",
+          "canonical": "skills/writing/SKILL.md",
+          "mode": "journalist",
+          "arguments": "<topic> [--scope <path>]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/write:writer-ivan.md": {
+          "sha256": "4a3133eef3fcbc704afc5a20b86a2832846dc567ae98d7c1f74394c3c145e852",
+          "canonical": "skills/writing/SKILL.md",
+          "mode": "writer-ivan",
+          "arguments": "<brief-or-notes> [--lang ru|en] [--review <review-path>]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/write:writer-ru.md": {
+          "sha256": "a0a72e1fd98c99d928303804fc8d62fab0dc53ddfc277e24cec6427f7a465022",
+          "canonical": "skills/writing/SKILL.md",
+          "mode": "writer-ru",
+          "arguments": "<brief-or-notes> [--review <review-path>]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
+          ]
+        },
+        "commands/write:writer.md": {
+          "sha256": "cbb9cd5011140ac6e9d33bf131c987c405168edaf65c7b5a3299483116c8a6fd",
+          "canonical": "skills/writing/SKILL.md",
+          "mode": "writer",
+          "arguments": "<brief-or-notes> [--style <profile>] [--review <review-path>]",
+          "overlays": [
+            "frontmatter",
+            "invocation"
           ]
         }
       }
@@ -517,7 +737,8 @@
             "install-path"
           ]
         }
-      }
+      },
+      "legacy_entrypoints": {}
     },
     "screenote": {
       "version": "2.0.1",
@@ -651,7 +872,8 @@
             "install-path"
           ]
         }
-      }
+      },
+      "legacy_entrypoints": {}
     }
   }
 }

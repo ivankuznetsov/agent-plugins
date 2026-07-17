@@ -1,0 +1,37 @@
+{
+  "agent-reviewer": {
+    "canonical": "skills/agent-reviewer/SKILL.md",
+    "commands": {
+      "reviewer:extract": ["/reviewer:extract", "/reviewer:extract <login> [<login> ...]"],
+      "reviewer:review": ["/reviewer:review", "/reviewer:review <file-or-PR>", "/reviewer:review --only <login>", "/reviewer:review --passes <N>", "/reviewer:review --min-confidence <0..1>"],
+      "reviewer:update": ["/reviewer:update <login>", "/reviewer:update <login> --add-repo <repo>", "/reviewer:update <login> --since <YYYY-MM-DD>"]
+    }
+  },
+  "agent-seo": {
+    "canonical": "skills/seo/SKILL.md",
+    "commands": {
+      "seo:analyze-existing": ["/seo:analyze-existing [URL or file path]"],
+      "seo:data": ["/seo:data [type] [arguments]"],
+      "seo:fact-check": ["/seo:fact-check [file path or paste text]"],
+      "seo:humanize": ["/seo:humanize [file path or paste text]"],
+      "seo:optimize": ["/seo:optimize [article file]"],
+      "seo:performance-review": ["/seo:performance-review [days]"],
+      "seo:research": ["/seo:research [topic]"],
+      "seo:rewrite": ["/seo:rewrite [topic or analysis file]"],
+      "seo:scrub": ["/seo:scrub [file path]"],
+      "seo:write": ["/seo:write [topic or research brief]"]
+    }
+  },
+  "agent-writing": {
+    "canonical": "skills/writing/SKILL.md",
+    "commands": {
+      "write:editor-ru": ["/write:editor-ru <draft-path> [--suffix <suffix>]"],
+      "write:editor": ["/write:editor <draft-path>"],
+      "write:full": ["/write:full <topic> [--scope <path>] [--max-rounds <N>]"],
+      "write:journalist": ["/write:journalist <topic> [--scope <path>]"],
+      "write:writer-ivan": ["/write:writer-ivan <brief-or-notes> [--lang ru|en] [--review <review-path>]"],
+      "write:writer-ru": ["/write:writer-ru <brief-or-notes> [--review <review-path>]"],
+      "write:writer": ["/write:writer <brief-or-notes> [--style <profile>] [--review <review-path>]"]
+    }
+  }
+}

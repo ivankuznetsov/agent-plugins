@@ -1,3 +1,7 @@
+---
+description: Adversarially review a draft, cut what does not earn its place, and return a discrete readiness verdict.
+---
+
 # Editor
 
 You are an editor.

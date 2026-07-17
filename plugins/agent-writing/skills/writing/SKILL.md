@@ -23,6 +23,20 @@ Use Agent Writing to run the writer-editor cycle on the screenote piece until it
 
 Do not promise Codex-native `/write:*` slash commands. Those command names are the Claude Code interface. When a Codex user mentions `/write:journalist`, `/write:writer`, `/write:editor`, or `/write:full`, run the equivalent workflow from this skill.
 
+## Public Controls and Defaults
+
+Preserve these controls whether the workflow is selected by a Claude command or by a natural-language Codex request:
+
+| Workflow | Public controls and defaults |
+| --- | --- |
+| Journalist | `<topic>` is required. `--scope <path>` limits local research and defaults to the repository root. |
+| Writer | `<brief-or-notes>` is required. `--style <profile>` selects a voice profile from `context/` and defaults to `context/voice.md`; `--review <review-path>` selects the rewrite workflow. |
+| Writer — Russian | `<brief-or-notes>` is required. `--review <review-path>` selects the rewrite workflow; output is always Russian. |
+| Writer — Ivan | `<brief-or-notes>` is required. `--lang ru\|en` selects the base voice and defaults to `ru`; `--review <review-path>` selects the rewrite workflow. |
+| Editor | `<draft-path>` is required. |
+| Editor — Russian | `<draft-path>` is required. Without `--suffix`, the paired review path is overwritten; `--suffix <suffix>` writes `./writing/reviews/<slug>-<date>-v<N>-<suffix>.md` instead. |
+| Full cycle | `<topic>` is required. `--scope <path>` is forwarded to the journalist and defaults to the repository root. `--max-rounds <N>` defaults to 5. There is no language flag: the full cycle uses the default `writer` and `editor` pair. Run `writer-ru` and `editor-ru` manually for an end-to-end Russian cycle. |
+
 ## Shared Ground Rules
 
 - Load available context files from the plugin's `context/` directory before drafting or editing: `voice.md`, `style-guide.md`, `writing-examples.md`, `anti-examples.md`. These hold per-project voice. Treat any section that's still placeholder prose as unfilled rather than authoritative.
@@ -39,21 +53,21 @@ Do not promise Codex-native `/write:*` slash commands. Those command names are t
 
 | User intent | Claude command equivalent | Output |
 | --- | --- | --- |
-| Investigate a topic | `/write:journalist [topic]` | `./writing/investigations/<slug>-<date>.md` (brief with Verification section or honest "couldn't ground this" note) |
-| Draft from a brief (default voice) | `/write:writer [brief]` | `./writing/drafts/<slug>-<date>-v1.md` |
+| Investigate a topic | `/write:journalist [topic] [--scope path]` | `./writing/investigations/<slug>-<date>.md` (brief with Verification section or honest "couldn't ground this" note) |
+| Draft from a brief (default voice) | `/write:writer [brief] [--style profile]` | `./writing/drafts/<slug>-<date>-v1.md` |
 | Draft from a brief (Russian voice) | `/write:writer-ru [brief]` | `./writing/drafts/<slug>-<date>-v1.md` (with `lang: ru`) |
 | Draft from a brief (Ivan's identity) | `/write:writer-ivan [brief] [--lang ru\|en]` | `./writing/drafts/<slug>-<date>-v1.md` (with `lang:` and `author: ivan`) |
 | Rewrite against an editor's review | `/write:writer [brief] --review [review-path]` (or `/write:writer-ru` / `/write:writer-ivan` for the variants) | `./writing/drafts/<slug>-<date>-v<N+1>.md` |
 | Review a draft as an adversary (default) | `/write:editor [draft-path]` | `./writing/reviews/<slug>-<date>-v<N>.md` (verdict: `ready` / `needs another pass` / `start over`) |
-| Review a draft as an adversary (Russian voice) | `/write:editor-ru [draft-path]` | `./writing/reviews/<slug>-<date>-v<N>.md` with `lang: ru` (same verdicts; voice drift counts as a cut) |
-| Run the full pipeline | `/write:full [topic]` | Brief, versioned drafts, versioned reviews; loop ends on `ready` or `--max-rounds` (default 5) |
+| Review a draft as an adversary (Russian voice) | `/write:editor-ru [draft-path] [--suffix suffix]` | `./writing/reviews/<slug>-<date>-v<N>.md` with `lang: ru` (same verdicts; voice drift counts as a cut) |
+| Run the full pipeline | `/write:full [topic] [--scope path] [--max-rounds N]` | Brief, versioned drafts, versioned reviews; loop ends on `ready` or the five-round default cap |
 
 ## Role Summaries
 
 - **Journalist** — `agents/journalist.md`. Reads the project's data the way a working tech journalist would. Files a grounded brief or an honest "I couldn't ground this" note. Verifies every citation against reality before finalizing. The source of truth the writer and editor will fight over.
 - **Writer** *(Generator)* — `agents/writer.md`. Opens with the user's verbatim framing. Thinks in stories. Varies sentence length deliberately. Reads the draft aloud before returning it. Defends the draft against the editor on the merits, takes the cuts they cannot defend.
 - **Writer — Russian** *(Generator, RU voice)* — `agents/writer-ru.md`. Same Generator role as the default writer; same rivalry with the editor. Replaces only the voice: a working engineer's notebook in Russian. Bilingual at the word level (loanwords and native idioms share the same paragraph), monolingual at the syntactic level (no English-rhythm constructions imported into Russian). Use when the brief, sources, or audience is Russian-speaking.
-- **Writer — Ivan** *(Generator, identity layer)* — `agents/writer-ivan.md`. Personal identity layer for Ivan Kuznetsov's writing. Composes with `writer.md` or `writer-ru.md` (selected via `--lang`); declares who is writing (portfolio, recurring themes, authority calibration) on top of the base voice. Universal voice principles live in the base files; this file adds only what is genuinely personal. Also serves as a template — other contributors can fork to `writer-<theirname>.md` for their own identity layer.
+- **Writer — Ivan** *(Generator, identity layer)* — `agents/writer-ivan.md`. Personal identity layer for Ivan Kuznetsov's writing. Composes with `writer.md` or `writer-ru.md` (selected via `--lang`, default `ru`); declares who is writing (portfolio, recurring themes, authority calibration) on top of the base voice. Universal voice principles live in the base files; this file adds only what is genuinely personal. Also serves as a template — other contributors can fork to `writer-<theirname>.md` for their own identity layer.
 - **Editor** *(Adversary)* — `agents/editor.md`. Reads the draft as a skeptic. Cuts what doesn't earn its place. Questions claims. Pushes back on the angle. Does not praise. Does not rewrite for the writer. Returns one of three verdicts: `ready`, `needs another pass`, or `start over`.
 - **Editor — Russian** *(Adversary, RU voice)* — `agents/editor-ru.md`. Same adversarial role as the default editor; same verdict semantics. Adds a second test: does the draft sound like a working engineer's notebook in Russian, or has it drifted into translated journalism? Voice drift counts as a cut. Use to review drafts produced by `/write:writer-ru`, or as a focused follow-up pass when a default-editor review came back `ready` but the Russian still sounds translated.
 
@@ -62,7 +76,7 @@ Do not promise Codex-native `/write:*` slash commands. Those command names are t
 Use this when the user asks to investigate a topic, gather facts about a project area, or produce a research brief.
 
 1. Define the question. Strip the topic to its real shape — what is the user actually asking about?
-2. Read local first: `git log` for history, `ripgrep` for language, `Read` for the files. Check the project's `wiki/` if present.
+2. Read local first within `--scope` when supplied, or the repository root by default: `git log` for history, `ripgrep` for language, `Read` for the files. Check the project's `wiki/` if present and within scope.
 3. If `qmd search` is available (the `llm-wiki` plugin), use it after local reads.
 4. Use web search only for claims that go outside the project. Every URL cited must have resolved during research.
 5. Cross-check. If two sources disagree, name both in the brief.
@@ -76,7 +90,7 @@ Use this when the user asks to investigate a topic, gather facts about a project
 
 Use this when the user asks to write from a brief, or to start from raw notes.
 
-1. Read the brief (or notes) and the context files (`context/voice.md`, `context/style-guide.md`, `context/writing-examples.md`).
+1. Read the brief (or notes) and the context files (`context/voice.md`, `context/style-guide.md`, `context/writing-examples.md`). For the default writer, replace `context/voice.md` with the `--style` profile when supplied; without `--style`, use `context/voice.md`.
 2. Start with a person, scene, or moment — not a definition.
 3. Vary sentence length deliberately. Never let three sentences in a row land the same way.
 4. Refuse template openings, hedging language, corporate words for human things, and conclusions that just summarize.
@@ -99,6 +113,8 @@ Use this when the user gives you a brief AND a prior editor's review (or invokes
 
 Use this when the user asks to edit a draft, or to review a draft adversarially.
 
+Use `agents/editor.md` for the default editor. For a Russian review, use the language-aware `agents/editor-ru.md`, load `agents/writer-ru.md` and any project `context/voice-ru.md`, and hold the draft to both the structural bar and the Russian working-engineer's-notebook voice bar. Voice drift belongs in Cuts, and `ready` requires both bars to pass. The Russian editor is not merely a structural fallback.
+
 1. Read the draft sentence by sentence. For each line, ask: what is this doing here?
 2. Then paragraph by paragraph: what does this add?
 3. Then the whole draft: did the writer commit to the angle, or hedge?
@@ -107,22 +123,24 @@ Use this when the user asks to edit a draft, or to review a draft adversarially.
 6. Surface what's missing — the question the draft didn't answer, the fact in the brief it left on the floor.
 7. Push back on the angle if the writer flinched.
 8. End with a verdict: `ready`, `needs another pass`, or `start over`.
-9. File the review at `./writing/reviews/<slug>-<date>-v<N>.md` with frontmatter `verdict:` and the four sections (Cuts, Questions, Push-back, What's missing). Skip a section if it's empty — don't fill it for the sake of filling it.
+9. File the review at `./writing/reviews/<slug>-<date>-v<N>.md` with frontmatter `verdict:` and the four sections (Cuts, Questions, Push-back, What's missing). Skip a section if it's empty — don't fill it for the sake of filling it. A Russian review overwrites that paired path by default; when `--suffix <suffix>` is supplied, write `./writing/reviews/<slug>-<date>-v<N>-<suffix>.md` instead and include `lang: ru` in frontmatter.
 10. Do not praise. Do not rewrite for the writer. Do not soften the verdict. Cooperation creates sycophancy.
 
 ## Full Cycle Workflow
 
 Use this when the user asks to take a topic from research through to a finished draft (`/write:full`).
 
-1. Run the Investigate Workflow (including verification) on the topic. If the result is an "I couldn't ground this" note, stop here and surface that note as the final response. There is no value in running the writer against an empty brief.
-2. Otherwise, enter the cycle:
+1. Run the Investigate Workflow (including verification) on the topic, applying `--scope` or its repository-root default. If the result is an "I couldn't ground this" note, stop here and surface that note as the final response. There is no value in running the writer against an empty brief.
+2. Accept a brief whose `verification:` is either `passed` or `partial`. Before drafting from a partial brief, explicitly alert the writer to every `[unverified]` claim so it treats those claims as soft rather than established fact.
+3. Enter the cycle with the default `writer` and `editor` pair. The full workflow has no language flag; use the manual Russian writer-editor cycle when Russian output is required:
    - **Round 1:** Run the Draft Workflow on the brief → `./writing/drafts/<slug>-<date>-v1.md`. Run the Review Workflow on that draft → `./writing/reviews/<slug>-<date>-v1.md`.
    - Read the review's `verdict:`.
      - `ready` → exit the loop. Emit the summary.
      - `needs another pass` → continue. Run the Rewrite Workflow with the brief and the prior review → `./writing/drafts/<slug>-<date>-v2.md`. Run the Review Workflow on v2 → `./writing/reviews/<slug>-<date>-v2.md`. Re-check verdict.
      - `start over` → continue, but the writer's next round is a fresh draft from the brief (not a patch). Pass the prior review so the writer can avoid the angle that failed.
+     - Any unexpected verdict → log it and treat it as `needs another pass`.
    - Repeat until verdict is `ready` or the round count reaches the configured maximum (default 5).
-3. If the cap is hit without `ready`, return the final draft, the final review, and an explicit "cycle hit the cap" note so the user can decide whether to keep iterating manually with `/write:writer --review` and `/write:editor`.
-4. Final response: the topic, the brief path, the final draft path, the final review path, the number of rounds run, and the final verdict.
+4. If the cap is hit without `ready`, return the final draft, the final review, and an explicit "cycle hit the cap" note so the user can decide whether to keep iterating manually with `/write:writer --review` and `/write:editor`.
+5. Final response: the topic, the brief path, the final draft path, the final review path, the number of rounds run, and the final verdict.
 
 The orchestrator threads outputs between rounds — the writer's input on round N+1 is the brief plus the editor's round-N review. Neither agent calls the other from inside their own reasoning. The loop lives in the orchestrator.
