@@ -19,6 +19,7 @@ class SemanticParityTests(unittest.TestCase):
         for plugin in contract["plugins"]:
             package_root = REPO_ROOT / plugin["path"]
             entry = lock["plugins"][plugin["name"]]
+            self.assertEqual({"openclaw/index.js"}, set(entry["platform_files"]))
             expected_skills = {skill["path"] for skill in plugin["canonical"]["skills"]}
             self.assertEqual(expected_skills, set(entry["canonical"]))
             for skill in plugin["canonical"]["skills"]:

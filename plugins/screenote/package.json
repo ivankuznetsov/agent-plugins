@@ -1,6 +1,7 @@
 {
   "name": "screenote",
   "version": "2.0.1",
+  "type": "module",
   "description": "Capture pages, publish screenshots, and retrieve visual feedback through the Screenote OAuth CLI.",
   "homepage": "https://screenote.ai",
   "repository": "https://github.com/ivankuznetsov/agent-plugins/tree/main/plugins/screenote",
@@ -14,6 +15,11 @@
   "pi": {
     "skills": [
       "./pi/skills"
+    ]
+  },
+  "openclaw": {
+    "extensions": [
+      "./openclaw/index.js"
     ]
   },
   "x-agent-plugins-generated": "scripts/generate-agent-packages.py"

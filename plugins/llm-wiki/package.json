@@ -1,6 +1,7 @@
 {
   "name": "llm-wiki",
   "version": "0.1.9",
+  "type": "module",
   "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
   "homepage": "https://github.com/ivankuznetsov/llm-wiki",
   "repository": "https://github.com/ivankuznetsov/llm-wiki",
@@ -15,6 +16,11 @@
   "pi": {
     "skills": [
       "./pi/skills"
+    ]
+  },
+  "openclaw": {
+    "extensions": [
+      "./openclaw/index.js"
     ]
   },
   "x-agent-plugins-generated": "scripts/generate-agent-packages.py"

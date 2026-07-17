@@ -1,6 +1,9 @@
 # agent-plugins
 
-This is the toolkit I use when working with coding agents. Five plugins, vendored here so both Claude Code and Codex can install them from a single Git clone. I package it as a marketplace because that's what the agents read.
+This is the toolkit I use when working with coding agents. Five plugins,
+vendored here so Claude Code, Codex, Pi, and OpenClaw can install them from a
+single Git clone. I package it as a marketplace because that's what the agents
+read.
 
 Five tools, five jobs. I picked or built each one to do a thing the others don't.
 
@@ -61,6 +64,9 @@ Validate the catalogs after any edit:
 jq . .claude-plugin/marketplace.json
 jq . .agents/plugins/marketplace.json
 ```
+
+The required package contract, offline security suite, and isolated native-host
+smokes are documented in [Agent compatibility](docs/agent-compatibility.md).
 
 ## The through-line
 

@@ -1,6 +1,7 @@
 {
   "name": "agent-seo",
   "version": "1.1.0",
+  "type": "module",
   "description": "Research, write, fact-check, and optimize long-form SEO content.",
   "homepage": "https://github.com/ivankuznetsov/agent-seo",
   "repository": "https://github.com/ivankuznetsov/agent-seo",
@@ -14,6 +15,11 @@
   "pi": {
     "skills": [
       "./pi/skills"
+    ]
+  },
+  "openclaw": {
+    "extensions": [
+      "./openclaw/index.js"
     ]
   },
   "x-agent-plugins-generated": "scripts/generate-agent-packages.py"

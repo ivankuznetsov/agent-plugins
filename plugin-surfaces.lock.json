@@ -183,6 +183,15 @@
             "invocation"
           ]
         }
+      },
+      "platform_files": {
+        "openclaw/index.js": {
+          "sha256": "b82404051644521359ca3e0930913e5ed7e3d62830de20312d86adcbf9cac41c",
+          "overlays": [
+            "lifecycle",
+            "install-path"
+          ]
+        }
       }
     },
     "agent-seo": {
@@ -432,6 +441,15 @@
             "invocation"
           ]
         }
+      },
+      "platform_files": {
+        "openclaw/index.js": {
+          "sha256": "9376309fe36e5f35aa5f2707983a2c4bab123f44d527ee8dc93c8601aa6943fc",
+          "overlays": [
+            "lifecycle",
+            "install-path"
+          ]
+        }
       }
     },
     "agent-writing": {
@@ -570,6 +588,15 @@
           "overlays": [
             "frontmatter",
             "invocation"
+          ]
+        }
+      },
+      "platform_files": {
+        "openclaw/index.js": {
+          "sha256": "576f12bd7f62414d933174b1e9cdbcb7276d7778391609540a267bc4a8e6adac",
+          "overlays": [
+            "lifecycle",
+            "install-path"
           ]
         }
       }
@@ -738,7 +765,16 @@
           ]
         }
       },
-      "legacy_entrypoints": {}
+      "legacy_entrypoints": {},
+      "platform_files": {
+        "openclaw/index.js": {
+          "sha256": "43c71e8fca1c9c6e4068341d1496eaea54b84e16ca865c1d0d530dc300c63ee9",
+          "overlays": [
+            "lifecycle",
+            "install-path"
+          ]
+        }
+      }
     },
     "screenote": {
       "version": "2.0.1",
@@ -862,7 +898,16 @@
           ]
         }
       },
-      "legacy_entrypoints": {}
+      "legacy_entrypoints": {},
+      "platform_files": {
+        "openclaw/index.js": {
+          "sha256": "b62ce1d60d86da40ab8af9ee16b361ee5ad9912ec06baf15688e8b7db7e9897d",
+          "overlays": [
+            "lifecycle",
+            "install-path"
+          ]
+        }
+      }
     }
   }
 }
