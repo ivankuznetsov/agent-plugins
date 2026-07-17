@@ -24,6 +24,11 @@ All workflows invoke `../../scripts/screenote-cli.sh` with an argv array:
 screenote-cli.sh [--base-url URL] [--project PROJECT] <noun> <verb> [arguments]
 ```
 
+Before the first project preflight, run `screenote-cli.sh --check-contract`.
+This checks only non-secret `--help` surfaces for the approved tuples. A
+`screenote_not_found` or `screenote_contract_incompatible` diagnostic stops the
+flow with the pinned installation/update guidance; it never installs anything.
+
 The launcher forwards stdout, stderr, and exit status without reformatting. It
 accepts only these command tuples:
 

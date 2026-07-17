@@ -744,33 +744,33 @@
       "version": "2.0.1",
       "canonical": {
         "skills/screenote/SKILL.md": {
-          "sha256": "e732464c809972148c51d9a28ffcd5048c76bb6a3ca357e00bf5e8d7355a7438",
-          "semantic_sha256": "0b5bd7bb64a387579321bd2ce58154617c2c8d81e153580e73a12117e61d7336",
+          "sha256": "cc2438df107a896f90a871d13444f086068486226d741d2c16fcc670195d241c",
+          "semantic_sha256": "4a02ad165c51bdd4828e05b90201b17cc169d4f2144b07da40f25e3959babaa0",
           "sections": {
             "1:screenote — one-page visual review": "42142f25649472aaad1b9103a1d60fe63f6610b99a0f16fab426dcd4adf07eff",
             "2:parse the request": "2683013a33c9bf71664bcba6d695b8577a9f96ef06551fff1c835fc6a78f7c3f",
             "2:resolve a safe target": "c3dbbdf761976ebf50940dcaa84370f5795483a2feb6b6779e23c2db44b39f08",
-            "2:establish the cli and project": "b73be27ea49e04593be6fef5d556aa35a7b3c7b288beb2d7d9c5e4ce4fbff5e9",
+            "2:establish the cli and project": "23b2095671faf45875d5acbed283623d3157730b8c0db8443a458d42deb927c9",
             "2:capture and upload serially": "e29c07647b5b989ea776688845b0735efc267495d789e30ac17f833205f45018",
             "2:report and clean up": "e1999c80e834092abaa1e10960ee96724388bb71384f6ce6b1b14499a96957e6"
           }
         },
         "skills/snapshot/SKILL.md": {
-          "sha256": "c29fb7d7ddf0bbabd18a2d5b73a0a4fa4a388ea5cee71bb57758dcfb96b4bfdb",
-          "semantic_sha256": "12c2435889fb212e31dbc26d6610a6bd7bdd88f0bb95edea87219349c65353ca",
+          "sha256": "88efec3179181f42241906e659a607ac8cefe9489c69b431237fe8d13426eda4",
+          "semantic_sha256": "8f6ac459e041c035e9b7f13e2006e1d6facb9f6bfce17a6dffccfb3bfee5c26d",
           "sections": {
             "1:snapshot — multi-page visual review": "ad7220cf83f200cfeb7ef0cf89947c9e48db5d7046448771953b8221886147fd",
-            "2:preflight": "aa3d6fd8dcf48b6437990c12ea913a9805a2e1c00b78f6485592379df781fa0d",
+            "2:preflight": "089c8c90cacb45fe3bb0320e7cc284fe7d3dbb18d3a1b91774b658abea47d279",
             "2:discover and confirm routes": "219ca5b16548cebf0204c299f51946b257eff32eee3c2c8f1bf7b1a55faf75bb",
             "2:capture and publish": "81d60f088f7aeb3e4b7f7e96c50f1e4236ce5fbdea444c3beb243e2a102b06e1"
           }
         },
         "skills/feedback/SKILL.md": {
-          "sha256": "2bf16511eba4e672e3710b574a9b8371a11d128f7844e59aea16fdf3104d4823",
-          "semantic_sha256": "8d4f7ffad7d13909dc19e9c9eb10173812170e4560ce6de49f377a9a9612c035",
+          "sha256": "1d0874e6ad77f32dbda8e0aa76fd5098e98401a774bf7e7a41bd9a938a40a4d5",
+          "semantic_sha256": "7d4f35b40af99236e69366445a660e7368643db491e6f0b5f94ac778e532d926",
           "sections": {
             "1:feedback — retrieve and act on annotations": "a304a2140a93d8b5eadd56dc8b0358708c461e292255e1337136cd2659b10dde",
-            "2:select project, page, and screenshot": "0d985f1fa95e5af0923f7f33674a97dd95a001cc9c845b2d9d9e746a13465ae3",
+            "2:select project, page, and screenshot": "bdc2cb6cb6a4e35e77f31bdd39d5d8b7f891d5e07f961aedcab11e415d5ee58f",
             "2:retrieve annotations": "d647c993372ae6c3d2472a54eb9cd33af44b6e08c408123cc79b2295e954e455",
             "2:fix and comment": "8d894d8430e24a1e7fa13f483e01477bc7fb0b4588025979a7bae09b711873d0"
           }
@@ -779,14 +779,14 @@
       "resources": {
         "references": {
           "exists": true,
-          "sha256": "66b5da7618369c76954d65cfce9e49873cdb6aa0bbf95e18aa886d9897b63f19",
+          "sha256": "edfc7a2bd6c5c57898638ef0f00538f02fd9714b57474fa6d19e4c8d34832fef",
           "files": [
             "references/cli.md"
           ]
         },
         "evals": {
           "exists": true,
-          "sha256": "e7350aed95f0bae79ef58b35d4d728ef3f15d4aaddaf467f4ed6b9dc69838adc",
+          "sha256": "fbef4d61201282b47154ffc71d424e8d213069b59f2d08d50087f741817ea3e8",
           "files": [
             "evals/README.md",
             "evals/lint-skills-test.sh",
@@ -797,14 +797,14 @@
         },
         "scripts/screenote-cli.sh": {
           "exists": true,
-          "sha256": "1d42c1a437fcec5dc574143648ca95beddbd1c1b05c34c7a21ee6e95afbe4a79"
+          "sha256": "b0b5c640f1efaa992afc23bf29a3f1af0f77bbab47de919ccb19ec974b21a244"
         }
       },
       "adapters": {
         "pi/skills/screenote/SKILL.md": {
           "sha256": "d10b4ab8ecfd914c10524ce8171bcf85f88e9e2f5c020000d078ce35545e2af2",
           "canonical": "skills/screenote/SKILL.md",
-          "canonical_semantic_sha256": "0b5bd7bb64a387579321bd2ce58154617c2c8d81e153580e73a12117e61d7336",
+          "canonical_semantic_sha256": "4a02ad165c51bdd4828e05b90201b17cc169d4f2144b07da40f25e3959babaa0",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -814,7 +814,7 @@
         "openclaw/skills/screenote/SKILL.md": {
           "sha256": "3bea1f4277b920c043eb1f32aefff0c763224439a31f75e7976c6f8c709b92e7",
           "canonical": "skills/screenote/SKILL.md",
-          "canonical_semantic_sha256": "0b5bd7bb64a387579321bd2ce58154617c2c8d81e153580e73a12117e61d7336",
+          "canonical_semantic_sha256": "4a02ad165c51bdd4828e05b90201b17cc169d4f2144b07da40f25e3959babaa0",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -824,7 +824,7 @@
         "pi/skills/snapshot/SKILL.md": {
           "sha256": "a7291d9e71b30e440a94b9b2d9d6e2cb001c9ff656fb2bc4e93c659325b4159d",
           "canonical": "skills/snapshot/SKILL.md",
-          "canonical_semantic_sha256": "12c2435889fb212e31dbc26d6610a6bd7bdd88f0bb95edea87219349c65353ca",
+          "canonical_semantic_sha256": "8f6ac459e041c035e9b7f13e2006e1d6facb9f6bfce17a6dffccfb3bfee5c26d",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -834,7 +834,7 @@
         "openclaw/skills/snapshot/SKILL.md": {
           "sha256": "d0bbf6f51de399d7b63fb0cd23ab1f1f097160d4dbe9dca7a0fa11c9e205b763",
           "canonical": "skills/snapshot/SKILL.md",
-          "canonical_semantic_sha256": "12c2435889fb212e31dbc26d6610a6bd7bdd88f0bb95edea87219349c65353ca",
+          "canonical_semantic_sha256": "8f6ac459e041c035e9b7f13e2006e1d6facb9f6bfce17a6dffccfb3bfee5c26d",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -844,7 +844,7 @@
         "pi/skills/feedback/SKILL.md": {
           "sha256": "bfd676c6df7eb855930ce0c311195e1f1884aad91f8e504200adad274caedb5f",
           "canonical": "skills/feedback/SKILL.md",
-          "canonical_semantic_sha256": "8d4f7ffad7d13909dc19e9c9eb10173812170e4560ce6de49f377a9a9612c035",
+          "canonical_semantic_sha256": "7d4f35b40af99236e69366445a660e7368643db491e6f0b5f94ac778e532d926",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -854,7 +854,7 @@
         "openclaw/skills/feedback/SKILL.md": {
           "sha256": "af7d87d2c0920c4190e00e14bb5c93556af8391e2f52385e33c7e967fb1bd480",
           "canonical": "skills/feedback/SKILL.md",
-          "canonical_semantic_sha256": "8d4f7ffad7d13909dc19e9c9eb10173812170e4560ce6de49f377a9a9612c035",
+          "canonical_semantic_sha256": "7d4f35b40af99236e69366445a660e7368643db491e6f0b5f94ac778e532d926",
           "overlays": [
             "frontmatter",
             "invocation",

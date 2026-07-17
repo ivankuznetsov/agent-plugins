@@ -15,6 +15,7 @@ from urllib.parse import unquote
 
 PLATFORMS = ("claude", "codex", "pi", "openclaw")
 DISTRIBUTION_STATES = {"stable", "experimental", "deprecated", "excluded"}
+ALLOWED_OVERLAYS = {"frontmatter", "invocation", "tool-vocabulary", "lifecycle", "install-path"}
 GENERATOR = "scripts/generate-agent-packages.py"
 MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
@@ -458,6 +459,11 @@ def validate_repository(root: Path) -> list[str]:
     declared_global = contract.get("compatibility", {}).get("platforms")
     if declared_global != list(PLATFORMS):
         errors.append(f"compatibility.platforms: expected {list(PLATFORMS)!r}")
+    declared_overlays = contract.get("compatibility", {}).get("allowed_overlays")
+    if not isinstance(declared_overlays, list) or set(declared_overlays) != ALLOWED_OVERLAYS:
+        errors.append(
+            "compatibility.allowed_overlays: only frontmatter, invocation, tool-vocabulary, lifecycle, and install-path are permitted"
+        )
 
     for name, plugin in sorted(contract_plugins.items()):
         label = f"plugins.{name}"

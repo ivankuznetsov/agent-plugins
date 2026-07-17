@@ -28,6 +28,36 @@ for argument in "$@"; do
   fi
 done
 
+if [[ ${1-} == --check-contract ]]; then
+  if (($# != 1)); then
+    json_error "{\"error\":{\"code\":\"invalid_arguments\",\"message\":\"Usage: $usage or screenote-cli.sh --check-contract\"}}"
+    exit 64
+  fi
+  screenote_path=$(type -P screenote 2>/dev/null)
+  if [[ -z $screenote_path ]]; then
+    json_error '{"error":{"code":"screenote_not_found","message":"The Screenote CLI executable was not found on PATH.","action":"Install a compatible Screenote CLI, ensure its bin directory is on PATH, and retry."}}'
+    exit 127
+  fi
+  contract_commands=(
+    'project list'
+    'page list'
+    'screenshot list'
+    'screenshot create'
+    'annotation list'
+    'annotation get'
+    'comment add'
+  )
+  for command in "${contract_commands[@]}"; do
+    read -r noun verb <<<"$command"
+    if ! "$screenote_path" "$noun" "$verb" --help >/dev/null 2>&1; then
+      json_error '{"error":{"code":"screenote_contract_incompatible","message":"The Screenote CLI does not expose every command required by the recorded compatibility baseline.","action":"Install or update to the pinned compatible ref and retry."}}'
+      exit 65
+    fi
+  done
+  printf '%s\n' '{"ok":true,"contract":"screenote-cli-pr-37","merge":"8d64ebb4a5d3d9f98d575da70c97750d15f7ae82"}'
+  exit 0
+fi
+
 screenote_argv=()
 while (($# > 0)); do
   case "$1" in

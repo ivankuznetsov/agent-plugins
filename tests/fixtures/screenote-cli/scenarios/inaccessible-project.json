@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "project list": {"exit": 5, "stderr": {"error": {"code": "inaccessible_project", "message": "The selected project is not accessible."}}}
+  }
+}

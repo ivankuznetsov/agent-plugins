@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Scenario-driven fake Screenote CLI; records argv and never environment values."""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import sys
+
+
+def main() -> int:
+    scenario_path = os.environ.get("SCREENOTE_MOCK_SCENARIO")
+    argv_path = os.environ.get("SCREENOTE_MOCK_ARGV")
+    if not scenario_path:
+        print(json.dumps({"error": {"code": "missing_mock_scenario"}}), file=sys.stderr)
+        return 1
+    arguments = sys.argv[1:]
+    if argv_path:
+        with Path(argv_path).open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(arguments, separators=(",", ":")) + "\n")
+    command_index = 0
+    while command_index < len(arguments) and arguments[command_index] in {"--base-url", "--project"}:
+        command_index += 2
+    command = " ".join(arguments[command_index : command_index + 2])
+    if "--help" in arguments:
+        print(json.dumps({"ok": True, "command": command}, separators=(",", ":")))
+        return 0
+    scenario = json.loads(Path(scenario_path).read_text(encoding="utf-8"))
+    response = scenario.get("commands", {}).get(command, scenario.get("default"))
+    if not isinstance(response, dict):
+        response = {"exit": 1, "stderr": {"error": {"code": "unexpected_command", "command": command}}}
+    exit_code = int(response.get("exit", 0))
+    output = response.get("stdout" if exit_code == 0 else "stderr", {})
+    print(json.dumps(output, separators=(",", ":")), file=sys.stdout if exit_code == 0 else sys.stderr)
+    return exit_code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

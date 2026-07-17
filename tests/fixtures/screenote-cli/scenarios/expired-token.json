@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "project list": {"exit": 3, "stderr": {"error": {"code": "expired_token", "message": "Authentication has expired."}}}
+  }
+}

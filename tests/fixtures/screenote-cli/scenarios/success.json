@@ -1,0 +1,11 @@
+{
+  "commands": {
+    "project list": {"exit": 0, "stdout": {"items": [{"id": "project-7", "name": "demo"}]}},
+    "page list": {"exit": 0, "stdout": {"items": [{"id": "page-1", "name": "login"}], "pagination": {"total": 1}}},
+    "screenshot list": {"exit": 0, "stdout": {"items": [{"id": "screenshot-1", "title": "Login"}], "pagination": {"total": 1}}},
+    "screenshot create": {"exit": 0, "stdout": {"id": "screenshot-1", "review_url": "https://screenote.ai/review/screenshot-1"}},
+    "annotation list": {"exit": 0, "stdout": {"items": [{"id": "annotation-1"}], "pagination": {"total": 1}}},
+    "annotation get": {"exit": 0, "stdout": {"id": "annotation-1", "comment": "Align the heading"}},
+    "comment add": {"exit": 0, "stdout": {"id": "comment-1"}}
+  }
+}

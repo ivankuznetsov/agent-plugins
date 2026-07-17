@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "project list": {"exit": 5, "stderr": {"error": {"code": "rate_limited", "message": "Try again later."}}}
+  }
+}

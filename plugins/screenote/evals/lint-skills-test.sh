@@ -25,7 +25,7 @@ from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
-path.write_text(path.read_text().replace("  'comment add')", "  'comment missing')"))
+path.write_text(path.read_text().replace("'comment add'", "'comment missing'"))
 PY
 if (cd "$allowlist_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
   printf 'FAIL: lint accepted a missing approved command tuple\n' >&2

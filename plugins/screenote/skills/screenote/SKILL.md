@@ -39,8 +39,8 @@ capture merely because a URL appears in context.
 
 ## Establish the CLI and project
 
-Detect `screenote` on `PATH`; never install it. Run the allowlisted `project
-list` preflight. Project precedence is explicit `--project`, then
+Detect `screenote` on `PATH`; never install it. Run the launcher's non-secret
+`--check-contract`, then the allowlisted `project list` preflight. Project precedence is explicit `--project`, then
 `SCREENOTE_PROJECT`, then CLI config. Validate accessibility and never guess an
 ambiguous project.
 

@@ -25,8 +25,8 @@ Require explicit snapshot/upload intent and resolve the base to an HTTP(S) URL
 from the user's input or local server/config evidence. Refuse non-HTTP(S),
 local paths, ambiguous ports, and unexpected origins.
 
-Detect the external CLI without installing it, run `project list`, and apply
-the shared project/error contract. Respect `--project` over
+Detect the external CLI without installing it, run the launcher's non-secret
+`--check-contract`, then `project list`, and apply the shared project/error contract. Respect `--project` over
 `SCREENOTE_PROJECT` over CLI config. Noninteractive execution never prompts or
 opens a browser.
 
