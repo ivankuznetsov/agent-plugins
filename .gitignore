@@ -9,6 +9,8 @@
 /raw/
 /AGENTS.md
 /CLAUDE.md
+__pycache__/
+*.py[cod]
 
 # llm-wiki generated docs (regenerable)
 /wiki/
