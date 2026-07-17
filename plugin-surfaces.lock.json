@@ -1,0 +1,657 @@
+{
+  "lock_version": 1,
+  "contract_version": "1.0.0",
+  "generated_by": "scripts/generate-agent-packages.py",
+  "plugins": {
+    "agent-reviewer": {
+      "version": "0.2.0",
+      "canonical": {
+        "skills/agent-reviewer/SKILL.md": {
+          "sha256": "5e7f7037dedb14658437274773b989ac0ee438a3e880641212645185fb0e33e1",
+          "semantic_sha256": "2719382277413ede73cf413dc0b23e0ab43b4f294e83ad3eca7187bcd84c3313",
+          "sections": {
+            "1:agent reviewer": "c98a51e4a750440157c054275579b6479ebc1c08034ab3462e2b98945562bff3",
+            "2:the pipeline": "0f82ba4ecb24b7558563efb3e1ad54d6a42b69a3a82f37c9aaf3c36c3e424c17",
+            "3:1. pick the reviewers — as a dialog": "48c716b46b975576f902a3fcea363df2dfd6d4fac176f84ee27cefe74d783f63",
+            "3:2. collect the context": "615bee0ecbb6cfe6d972c63f9ba13a8cf2f917c6edb41c9e85e220fbf1c7fae4",
+            "3:3. extract the persona": "9985183510ad8c96ed936150d5e3d1552db05ae8c6e5bece43f2de2c59ce16b7",
+            "3:4. review as a panel": "801cf65a96e49c5bd474fcaeeeee7396362d1718023fdb99001a2b2d39ec3ee2",
+            "2:scope: one repo or many": "d0066170c4a72bf2a9bdc477208f89be9eadeee2fed3e8193442c467b9fa3426",
+            "2:updating a persona": "52ad5ff124b5539a3f4d8adfbeb288ff0bec10eb5119a08ee0d79018b4dcd7f3",
+            "2:claude code commands": "97f6cde59301ddc4fb0e5b6e8ed03ca8a647e9d761ceac749af2b00fb4aba843",
+            "2:compound engineering": "fa55001e7848f2c3add6e449d4dc4574f3a2ca5213aa1d33a440eb5c7c240a63",
+            "2:principles": "dd8f3f4f0adb3ea4472a4b84172682ca6243c74c4fa5fdfbb0b2f63eba9174bb"
+          }
+        }
+      },
+      "resources": {
+        "agents": {
+          "exists": true,
+          "sha256": "790da8e3c5a620505699dac6bb39ff03fd85791a7d36820a88e633acbca7cdbf",
+          "files": [
+            "agents/persona-reviewer.md",
+            "agents/reviewer-profiler.md"
+          ]
+        },
+        "references": {
+          "exists": true,
+          "sha256": "8c2e38998ced5e7ab9ce23a079ae2ed4560d87f79a98badb3cf3c22f83da9aeb",
+          "files": [
+            "references/finding-schema.md"
+          ]
+        },
+        "scripts": {
+          "exists": true,
+          "sha256": "ba5fc5719728a77705aae92903026de3d054deffc1eeb30f9f7e2e905534fcc0",
+          "files": [
+            "scripts/collect-context.sh",
+            "scripts/rank-reviewers.sh"
+          ]
+        },
+        "eval": {
+          "exists": true,
+          "sha256": "ff8468ade4b5ee2d758e54fbd17cbdccb76b35f4c7accccb51fd44e57371594c",
+          "files": [
+            "eval/README.md",
+            "eval/judge-prompt.md",
+            "eval/prep-blind-eval.sh",
+            "eval/run-blind-review.sh",
+            "eval/run-eval.sh",
+            "eval/run-judge.sh",
+            "eval/samples/README.md",
+            "eval/samples/elixir-josevalim/blind/elixir-15216.hunks.jsonl",
+            "eval/samples/elixir-josevalim/blind/elixir-15280.hunks.jsonl",
+            "eval/samples/elixir-josevalim/blind/elixir-15287.hunks.jsonl",
+            "eval/samples/elixir-josevalim/blind/elixir-15329.hunks.jsonl",
+            "eval/samples/elixir-josevalim/blind/elixir-15332.hunks.jsonl",
+            "eval/samples/elixir-josevalim/blind/elixir-15413.hunks.jsonl",
+            "eval/samples/elixir-josevalim/context-josevalim.json",
+            "eval/samples/elixir-josevalim/manifest.json",
+            "eval/samples/elixir-josevalim/truth/elixir-15216.jsonl",
+            "eval/samples/elixir-josevalim/truth/elixir-15280.jsonl",
+            "eval/samples/elixir-josevalim/truth/elixir-15287.jsonl",
+            "eval/samples/elixir-josevalim/truth/elixir-15329.jsonl",
+            "eval/samples/elixir-josevalim/truth/elixir-15332.jsonl",
+            "eval/samples/elixir-josevalim/truth/elixir-15413.jsonl",
+            "eval/samples/kubernetes-thockin/blind/kubernetes-136976.hunks.jsonl",
+            "eval/samples/kubernetes-thockin/blind/kubernetes-136996.hunks.jsonl",
+            "eval/samples/kubernetes-thockin/blind/kubernetes-137120.hunks.jsonl",
+            "eval/samples/kubernetes-thockin/blind/kubernetes-137349.hunks.jsonl",
+            "eval/samples/kubernetes-thockin/blind/kubernetes-137864.hunks.jsonl",
+            "eval/samples/kubernetes-thockin/blind/kubernetes-138657.hunks.jsonl",
+            "eval/samples/kubernetes-thockin/context-thockin.json",
+            "eval/samples/kubernetes-thockin/manifest.json",
+            "eval/samples/kubernetes-thockin/truth/kubernetes-136976.jsonl",
+            "eval/samples/kubernetes-thockin/truth/kubernetes-136996.jsonl",
+            "eval/samples/kubernetes-thockin/truth/kubernetes-137120.jsonl",
+            "eval/samples/kubernetes-thockin/truth/kubernetes-137349.jsonl",
+            "eval/samples/kubernetes-thockin/truth/kubernetes-137864.jsonl",
+            "eval/samples/kubernetes-thockin/truth/kubernetes-138657.jsonl",
+            "eval/samples/rails-dhh/blind/rails-52472.hunks.jsonl",
+            "eval/samples/rails-dhh/blind/rails-52789.hunks.jsonl",
+            "eval/samples/rails-dhh/blind/rails-53726.hunks.jsonl",
+            "eval/samples/rails-dhh/blind/rails-54693.hunks.jsonl",
+            "eval/samples/rails-dhh/blind/rails-56404.hunks.jsonl",
+            "eval/samples/rails-dhh/blind/rails-56471.hunks.jsonl",
+            "eval/samples/rails-dhh/context-dhh.json",
+            "eval/samples/rails-dhh/manifest.json",
+            "eval/samples/rails-dhh/truth/rails-52472.jsonl",
+            "eval/samples/rails-dhh/truth/rails-52789.jsonl",
+            "eval/samples/rails-dhh/truth/rails-53726.jsonl",
+            "eval/samples/rails-dhh/truth/rails-54693.jsonl",
+            "eval/samples/rails-dhh/truth/rails-56404.jsonl",
+            "eval/samples/rails-dhh/truth/rails-56471.jsonl",
+            "eval/samples/rails-rafaelfranca/blind/rails-57335.hunks.jsonl",
+            "eval/samples/rails-rafaelfranca/blind/rails-57345.hunks.jsonl",
+            "eval/samples/rails-rafaelfranca/blind/rails-57406.hunks.jsonl",
+            "eval/samples/rails-rafaelfranca/blind/rails-57431.hunks.jsonl",
+            "eval/samples/rails-rafaelfranca/blind/rails-57467.hunks.jsonl",
+            "eval/samples/rails-rafaelfranca/blind/rails-57477.hunks.jsonl",
+            "eval/samples/rails-rafaelfranca/context-rafaelfranca.json",
+            "eval/samples/rails-rafaelfranca/manifest.json",
+            "eval/samples/rails-rafaelfranca/truth/rails-57335.jsonl",
+            "eval/samples/rails-rafaelfranca/truth/rails-57345.jsonl",
+            "eval/samples/rails-rafaelfranca/truth/rails-57406.jsonl",
+            "eval/samples/rails-rafaelfranca/truth/rails-57431.jsonl",
+            "eval/samples/rails-rafaelfranca/truth/rails-57467.jsonl",
+            "eval/samples/rails-rafaelfranca/truth/rails-57477.jsonl"
+          ]
+        }
+      },
+      "adapters": {
+        "pi/skills/agent-reviewer/SKILL.md": {
+          "sha256": "cbe26a406411e4f256d494e346ae739edd29cc935c6aefe9ef6f067c9b3d89c2",
+          "canonical": "skills/agent-reviewer/SKILL.md",
+          "canonical_semantic_sha256": "2719382277413ede73cf413dc0b23e0ab43b4f294e83ad3eca7187bcd84c3313",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/agent-reviewer/SKILL.md": {
+          "sha256": "b1b1d98ccfef63b8d3cf90f92fd8813debb6a4362a459530e09b3441bae02f6f",
+          "canonical": "skills/agent-reviewer/SKILL.md",
+          "canonical_semantic_sha256": "2719382277413ede73cf413dc0b23e0ab43b4f294e83ad3eca7187bcd84c3313",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        }
+      }
+    },
+    "agent-seo": {
+      "version": "1.1.0",
+      "canonical": {
+        "skills/seo/SKILL.md": {
+          "sha256": "61ed5d288bbf304aafcc4997db4da8782d8dc18acda938e1bf183b9bee682910",
+          "semantic_sha256": "613290053533c963c3b17e1690a9006f2939dc4f36d83c799af9ee72084eb165",
+          "sections": {
+            "1:agent seo": "4677d492eb19143423a901c669664a11e627e5b0f22f19710b8ad44825f9749f",
+            "2:invocation": "2508002cfe4b90623e86772d49c0ca80c9684cc30c9eae48360bc3b9ebe4feba",
+            "2:shared ground rules": "65446474621088c869610662e47e3a1e978f3f6fa32d80c561e6a522493ecd91",
+            "2:workflow map": "76d4e2ceadb3351e1c1ab9427bb56165b0fb094f4c111c1312de5fea9a90086a",
+            "2:research workflow": "c654acd9c2a9af88207bbf3d828ace5bbb6c8994ac527569d427275619226898",
+            "2:writing workflow": "63afccec29dfd1c50123cd8be487cf1b07b91891ed50de344ccabb71a16c7cd7",
+            "2:humanize workflow": "498d56566095b43b459d5c924ae3dbf015e75df6f6b2ac30884f2664de09da6e",
+            "2:fact-check workflow": "fb6f35a48b3c4f9d8b5ad003b8909306c117bb17413bcbcfea9e7a01e74b6f53",
+            "2:optimization workflow": "596bcc3a0c919e52536c0ac744b6731e7fe08c9f24880ff8500c116f58814a7c",
+            "2:analyze existing workflow": "98c58b7ab9b6e313e22dcbc04dfb68733d1144b33a99fee6437d04a711e6562a",
+            "2:rewrite workflow": "da57fb0ff110b5ff700ea67b6681c7a341aad294adcd5fae736c0729c4a5702e",
+            "2:data workflow": "cbefc3d4d22a8f0e4da451c0df08fb53e83f45d5999a9654b0ac6d9d3a6d020c",
+            "2:performance review workflow": "e1cb1cf5d799ece62784965564bc1b86f1b86dae9c47d7d3fabb63ed92f1d1a5",
+            "2:ruby analysis tools": "b3faaef9aab06153e815df38613e836b244c81da339bfd948d52aedbb9df963c",
+            "2:quality targets": "187d77f4733ef740f67ff243acf6058786ea31e23b2d561e301d8ec49cb56a6a"
+          }
+        }
+      },
+      "resources": {
+        "agents": {
+          "exists": true,
+          "sha256": "6386bbbf8a0f00b05f0638c424891d1649f9f3a12d8a287157fca1f16fb529b4",
+          "files": [
+            "agents/content-analyzer.md",
+            "agents/editor.md",
+            "agents/fact-checker.md",
+            "agents/internal-linker.md",
+            "agents/keyword-mapper.md",
+            "agents/meta-creator.md",
+            "agents/performance.md",
+            "agents/search-intent-analyzer.md",
+            "agents/seo-optimizer.md"
+          ]
+        },
+        "context": {
+          "exists": true,
+          "sha256": "2f25399a90669f2e2aa3fbd1f4153d65d105417b9b5bc9f1b36a50b91fe9fda1",
+          "files": [
+            "context/brand-voice.md",
+            "context/competitor-analysis.md",
+            "context/features.md",
+            "context/internal-links-map.md",
+            "context/seo-guidelines.md",
+            "context/style-guide.md",
+            "context/target-keywords.md",
+            "context/writing-examples.md"
+          ]
+        },
+        "data_sources": {
+          "exists": true,
+          "sha256": "be378ec0a7b5ae063d7a8487223dab299ad688ca256f4f1d3962ecd84fa3c7e4",
+          "files": [
+            "data_sources/README.md",
+            "data_sources/cache/.gitkeep",
+            "data_sources/config/.env.example",
+            "data_sources/ruby/Gemfile",
+            "data_sources/ruby/Gemfile.lock",
+            "data_sources/ruby/bin/seo-intent",
+            "data_sources/ruby/bin/seo-keywords",
+            "data_sources/ruby/bin/seo-quality",
+            "data_sources/ruby/bin/seo-readability",
+            "data_sources/ruby/bin/seo-scrub",
+            "data_sources/ruby/lib/agent_seo/ahrefs.rb",
+            "data_sources/ruby/lib/agent_seo/content_length_comparator.rb",
+            "data_sources/ruby/lib/agent_seo/content_scrubber.rb",
+            "data_sources/ruby/lib/agent_seo/data_aggregator.rb",
+            "data_sources/ruby/lib/agent_seo/data_for_seo.rb",
+            "data_sources/ruby/lib/agent_seo/google_analytics.rb",
+            "data_sources/ruby/lib/agent_seo/google_search_console.rb",
+            "data_sources/ruby/lib/agent_seo/helpers.rb",
+            "data_sources/ruby/lib/agent_seo/keyword_analyzer.rb",
+            "data_sources/ruby/lib/agent_seo/readability_scorer.rb",
+            "data_sources/ruby/lib/agent_seo/search_intent_analyzer.rb",
+            "data_sources/ruby/lib/agent_seo/seo_quality_rater.rb",
+            "data_sources/ruby/lib/agent_seo.rb",
+            "data_sources/ruby/test/content_length_comparator_test.rb",
+            "data_sources/ruby/test/content_scrubber_test.rb",
+            "data_sources/ruby/test/data_aggregator_test.rb",
+            "data_sources/ruby/test/data_for_seo_test.rb",
+            "data_sources/ruby/test/fixtures/dataforseo_domain_metrics.json",
+            "data_sources/ruby/test/fixtures/dataforseo_keyword_ideas.json",
+            "data_sources/ruby/test/fixtures/dataforseo_rankings.json",
+            "data_sources/ruby/test/fixtures/dataforseo_serp_data.json",
+            "data_sources/ruby/test/google_analytics_test.rb",
+            "data_sources/ruby/test/google_search_console_test.rb",
+            "data_sources/ruby/test/helpers_test.rb",
+            "data_sources/ruby/test/keyword_analyzer_test.rb",
+            "data_sources/ruby/test/readability_scorer_test.rb",
+            "data_sources/ruby/test/search_intent_analyzer_test.rb",
+            "data_sources/ruby/test/seo_quality_rater_test.rb",
+            "data_sources/ruby/test/test_helper.rb"
+          ]
+        },
+        "hooks": {
+          "exists": true,
+          "sha256": "e303a66c263e288d0ab5b172c60e1d680121fffa5df46342cdb352e913405696",
+          "files": [
+            "hooks/hooks.json"
+          ]
+        },
+        "scripts": {
+          "exists": true,
+          "sha256": "4ec68296beea789e1afccf21cd2ec0eb3771c44259458fd268b451271b645213",
+          "files": [
+            "scripts/ensure-deps.sh"
+          ]
+        },
+        ".env.example": {
+          "exists": true,
+          "sha256": "69e3a6cbe47c254fb2a6def773b21a310c43361c79889a2274c4be1fbda47cf2"
+        },
+        "data-sources-setup.md": {
+          "exists": true,
+          "sha256": "b716f1ace1915441ca829553d253f3ccacb8fc7e29416a0e215ed3c2f11a1dcc"
+        }
+      },
+      "adapters": {
+        "pi/skills/agent-seo/SKILL.md": {
+          "sha256": "ffab02b70c29ab29a517cb4936f05cb0ec57e088eba09d1f3eda804a1751912a",
+          "canonical": "skills/seo/SKILL.md",
+          "canonical_semantic_sha256": "613290053533c963c3b17e1690a9006f2939dc4f36d83c799af9ee72084eb165",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/agent-seo/SKILL.md": {
+          "sha256": "91075d82594fd1b034fbd95dcc40af2fe1a8c89dd630b1b16b66ba3b4d619c0a",
+          "canonical": "skills/seo/SKILL.md",
+          "canonical_semantic_sha256": "613290053533c963c3b17e1690a9006f2939dc4f36d83c799af9ee72084eb165",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        }
+      }
+    },
+    "agent-writing": {
+      "version": "0.4.0",
+      "canonical": {
+        "skills/writing/SKILL.md": {
+          "sha256": "1e57a49b70dff369f80ad2913f6f361cce5f9dd3142db83537bc4de657fcf061",
+          "semantic_sha256": "66e923505425aeed17e861bb93613a8d0f5e3789aad9b0246adef0a4713ecde4",
+          "sections": {
+            "1:agent writing": "8cadbd1a26b6b91e84c8d1904236d7c1fb76ff12cd77863d4c9451134d0ed254",
+            "2:invocation": "bf6121bede0e1c5cf40d08a39dd3e23c26a03e5227a5a1fddd83a260a1e4477f",
+            "2:shared ground rules": "fe84b8d5023d7fb68afd46f65ff43c19cf3336adf6e3982eb88fe52ea8b9c992",
+            "2:workflow map": "aa9837b4b525aa020b34cd08aae79df3773b5ed81857fb88b41abf428943a3b9",
+            "2:role summaries": "b036fabe5066fd7637b0127dcfc636eed512603557b8bb3ec41f9d2c07da66f2",
+            "2:investigate workflow": "071940071a622776a19a6b1cf1083189b065e75560b3bece0aa49ae3531f1f8b",
+            "2:draft workflow": "bc23946591760688c657db2d38f6cee2770f0fc1b44494cef1a8f740a91e47ed",
+            "2:rewrite workflow": "a227fdfa5b04d9fd633b3a3a9b9c69fd9922251737171fe0b00584577fc6b5f5",
+            "2:review workflow": "e8b7b0881643c57264ef4568db7a00c53ff7b852ffbc24cdef3d0b98db8d2d6c",
+            "2:full cycle workflow": "9d7619e832c401fb00fae1bceaaeb1d782b8a4a1c878203db613c500c336dab9"
+          }
+        }
+      },
+      "resources": {
+        "agents": {
+          "exists": true,
+          "sha256": "eb2cb2e549c72c686fa234dd113272ccde86d9b75ed36110f914790a9017557b",
+          "files": [
+            "agents/editor-ru.md",
+            "agents/editor.md",
+            "agents/journalist.md",
+            "agents/writer-ivan.md",
+            "agents/writer-ru.md",
+            "agents/writer.md"
+          ]
+        },
+        "context": {
+          "exists": true,
+          "sha256": "ce130b401ccf90c10f0b462dd7eab53f6c8bbac88240287ec9386cb060b2102b",
+          "files": [
+            "context/anti-examples.md",
+            "context/style-guide.md",
+            "context/voice.md",
+            "context/writing-examples.md"
+          ]
+        }
+      },
+      "adapters": {
+        "pi/skills/agent-writing/SKILL.md": {
+          "sha256": "4d3feda071be005663114ff05852b73913e61dd018ed420279c30b939b7c1878",
+          "canonical": "skills/writing/SKILL.md",
+          "canonical_semantic_sha256": "66e923505425aeed17e861bb93613a8d0f5e3789aad9b0246adef0a4713ecde4",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/agent-writing/SKILL.md": {
+          "sha256": "d7a5b9986bc022bc9a20fb376dbe52c7721091cfd7ae23ed0f21226a089feab9",
+          "canonical": "skills/writing/SKILL.md",
+          "canonical_semantic_sha256": "66e923505425aeed17e861bb93613a8d0f5e3789aad9b0246adef0a4713ecde4",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        }
+      }
+    },
+    "llm-wiki": {
+      "version": "0.1.9",
+      "canonical": {
+        "skills/bootstrap/SKILL.md": {
+          "sha256": "c4465a91d62a01d448e68ff1df4d1674d6c2a52f831f81cd4756826fe3d6f353",
+          "semantic_sha256": "6c88b7c3477f0c1d035699276a09d763124cc452ef0f8e71b78e720aa0d6a3a9",
+          "sections": {
+            "1:bootstrap llm wiki": "774f22f2954bef05dc6cdf5f125c0cf1125903dde6f81336c5ec061447386b9d",
+            "2:preconditions": "82a221777c857eede5e97fddc34ce173709cba496b373154fac6410d2eaff30d",
+            "2:step 1: detect project shape": "1e9de756a0104bbb6256dea669d88553364743908ac7ec55f3b1ddb2a68270c3",
+            "2:step 2: create wiki skeleton": "8f98c7fdedfa2de39d82972fc649b1d6e34e23d1a62b1387656c91714fada572",
+            "2:step 3: generate grounded pages": "a6d3202d7d39be0212a76601602f40fdd9567280452228102ef44a75a3388981",
+            "2:step 4: build gaps and index": "6a5942921ed35813a1cd24d58433830ce1fd0f3bafb47fd9f30e6ebfaada527c",
+            "2:[timestamp] bootstrap": "485c7edd8b497ca6654d20f1c139675f9e27cff72e4cf04f9f494dd44d393632",
+            "2:step 5: add agent instructions": "ed6427b4c846055f4ed19bea8506874d5ee48a44cb713cae58190b782ee9c1d5",
+            "2:wiki": "1eda77f740be21744dbbea6153ed8d7e220fe6944aa55574ccf025fe46d2487e",
+            "2:step 6: hooks, scheduled automation, and qmd": "aae6b9a4542100c7da6dc75b80229299cf2ed87d5c80d724b5dcdde6300d7b11",
+            "1:or": "d0ce4eb2166e22f45b8faf03f2a6c1ba2626fa52a30cb6998a606ccf74a274cc",
+            "2:step 7: report": "ba7d1ffb1bcb38eadba19ca5b596d8f529c83d01402229b516f4061a9e42688d",
+            "2:rules": "6535528b074874edb47973a9bfee3f0f209bebfca01486b8f11d2c59c8bc0092"
+          }
+        },
+        "skills/research/SKILL.md": {
+          "sha256": "d2a68d75769b38919deff099c233e12e4da69455f443803090ed88e617ed1e62",
+          "semantic_sha256": "120fadf7d54d0559875e52c7f54e2f0a5bea442a6335970b091540a1357ba8af",
+          "sections": {
+            "1:wiki research": "9b2acc7aa60ac71ef804c5920508f261e80d4bcbe18c73d23aa9b4c0b1feabd3",
+            "2:step 1: identify context": "23b35b85a2a4705351f18c23ffd97e00178eec25558c945b08106d80ca2e3ab4",
+            "2:step 2: search with the best available tool": "e11ea5db32109085fcd8a450b3e9351c36d3aabc991d9ef9eb0f1651adda8f1e",
+            "3:preferred: qmd mcp": "fa31cb15dbe5a58cedda722a73348de818cf67e4824ae510448913d287cdd004",
+            "3:fallback: qmd cli": "25eb3efa2a89d28f36272b4a019cd2bbf89f5f4f81ebdf623d08583da3bde133",
+            "1:or, if the cross-project wiki is indexed as main:": "234b793358862a9c5884c4a5ea080d9e3ac510b9c139abd007f37d3f6d4ff318",
+            "3:fallback: ripgrep": "f23794eb10badc584487c33da13b3104a8ce8e20192645ec2d903a730fc79c62",
+            "2:step 3: read important pages": "46c5d0b4c63685678aed9f29a9a5fbb5e0d0f925cb924481ed2897d467e7d2ab",
+            "2:step 4: produce past knowledge": "fbc1a6d2609fe33b33f0cb834d3bc1356f2e8bf9422c74eb5a591fee9b1b7ddd",
+            "3:past knowledge": "a26c88d3d1b42c393e91076e24b645267a11a7bd3baf0fd1c6243f1d11cf542b",
+            "2:rules": "7610d9904168daafd9d51b4c49132dd699c1634749aa32b62a99be2e97cd67d4"
+          }
+        },
+        "skills/wiki-plan/SKILL.md": {
+          "sha256": "432fc155e92999c979ee25c6b19b22449ad86fb3ad48ed545a3235ee5e900b6f",
+          "semantic_sha256": "5ea7c167bcd6fd8c76dde25ec13cd73acaef83cbf56d939cf28e772b8a154c84",
+          "sections": {
+            "1:wiki plan": "ba89dfca54630f2ca5416f10702cca56fbbf61bf9b21e37a62b5e6cfb3c8cb97",
+            "2:feature description": "e584c123a2404c3d247ec1021b5137e4e8e1ba70cedb043c43d581afbea7decf",
+            "2:step 1: run wiki research": "bf5d3b2032037daee531c5e7d5df15bd6ac2452930e59a110fbac5f7cc9a9b9d",
+            "3:past knowledge": "a192c3e2f2e83956b3f8bfb129662ec77f6fce36ea8a20b3422fab7772375428",
+            "2:step 2: delegate to compound engineering when available": "4bbfc581158274d1dca49c3a3ea2f81fb55c7c3f8aaa36eb99670e914739782d",
+            "2:step 3: standalone fallback": "bbf16e181acb34618b1a2f4385b5193bd615b24f023e246c5fb2db76fe48a91a",
+            "2:rules": "3d0d037689d4c5fefb833e60a9957dc827de5ba3d55f9dc101481a16092ab18b"
+          }
+        },
+        "skills/status/SKILL.md": {
+          "sha256": "d39af782a55882d772522762d026b2bfbc5345ca9e8cd699ed711e5a07f905fb",
+          "semantic_sha256": "956c5631fb09fcb4d5b783eedbc551adb4f02da333b2c0763c27827551b4c02d",
+          "sections": {
+            "1:llm wiki status": "f9989fefa19a86c9f9506abb9eb10a45865cb92f4d08004f36d81110f05c4cb9",
+            "2:rules": "8ce195a084f7b045f0aa9020b7e4b2724ef69c19851f5976611c749cc40b6abb",
+            "2:claude code": "1fbbfd2a7733774a0c3c615735f422dc8eb260a6fc8565b0e113016e2234da07",
+            "2:codex": "e90a64abb852cb40ba502214447a317b7b76f6ceaf12c3099ec68db88fa62ac1",
+            "2:pi": "844e8f88d82b676786ebaa73016c79bc8b15ec945528b93517e25d61817460d6",
+            "2:report format": "e7d91d1fdc2de349d26c1061962c283b93b8e1f002ba1efe020a0104b850e375"
+          }
+        }
+      },
+      "resources": {
+        "assets": {
+          "exists": true,
+          "sha256": "ffd297be3e8c42ed71a93b69ed5cd803258601f9e5684928cb2cd93f990ca0f7",
+          "files": [
+            "assets/wiki-in-action.svg"
+          ]
+        },
+        "templates": {
+          "exists": true,
+          "sha256": "22c4d6a9bf2c25948316839866a631261bec8ea0c09938994c0aacd9d0669e38",
+          "files": [
+            "templates/compile-log.sh",
+            "templates/post-commit-refresh.sh"
+          ]
+        }
+      },
+      "adapters": {
+        "pi/skills/wiki-bootstrap/SKILL.md": {
+          "sha256": "0d799a677b5dd280fc0480f29748cdf707c07884dfab7d0d176fd25610514dc6",
+          "canonical": "skills/bootstrap/SKILL.md",
+          "canonical_semantic_sha256": "6c88b7c3477f0c1d035699276a09d763124cc452ef0f8e71b78e720aa0d6a3a9",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/wiki-bootstrap/SKILL.md": {
+          "sha256": "f7793f3f98599367cfece524376b9857ac24bab5bebc099ac460de96ae102a78",
+          "canonical": "skills/bootstrap/SKILL.md",
+          "canonical_semantic_sha256": "6c88b7c3477f0c1d035699276a09d763124cc452ef0f8e71b78e720aa0d6a3a9",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "pi/skills/wiki-research/SKILL.md": {
+          "sha256": "cd483ec6c84da73393953c398a451cc885566700d4b329f2f857854046b8c4eb",
+          "canonical": "skills/research/SKILL.md",
+          "canonical_semantic_sha256": "120fadf7d54d0559875e52c7f54e2f0a5bea442a6335970b091540a1357ba8af",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/wiki-research/SKILL.md": {
+          "sha256": "bfbcb0cc6e894bbf7232c1017fb6e584b8a8149bdd8dded9417abf3accbcee1a",
+          "canonical": "skills/research/SKILL.md",
+          "canonical_semantic_sha256": "120fadf7d54d0559875e52c7f54e2f0a5bea442a6335970b091540a1357ba8af",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "pi/skills/wiki-plan/SKILL.md": {
+          "sha256": "80098ca600cd4f085b5b030465bc071ae3bb5744211fa5493c5005eeca5719ca",
+          "canonical": "skills/wiki-plan/SKILL.md",
+          "canonical_semantic_sha256": "5ea7c167bcd6fd8c76dde25ec13cd73acaef83cbf56d939cf28e772b8a154c84",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/wiki-plan/SKILL.md": {
+          "sha256": "593eb067ac0bf92787b4e66d6946dbee28f18d8a047ff111546aee887b8ead3d",
+          "canonical": "skills/wiki-plan/SKILL.md",
+          "canonical_semantic_sha256": "5ea7c167bcd6fd8c76dde25ec13cd73acaef83cbf56d939cf28e772b8a154c84",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "pi/skills/wiki-status/SKILL.md": {
+          "sha256": "ee3e6b21308c4c7194a05e1f1e81e973589e6d1f2953f9e10e8a550c06050ab4",
+          "canonical": "skills/status/SKILL.md",
+          "canonical_semantic_sha256": "956c5631fb09fcb4d5b783eedbc551adb4f02da333b2c0763c27827551b4c02d",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/wiki-status/SKILL.md": {
+          "sha256": "5a527bb4b84eb530587162b146987f9b3053b975902421479acc42823f1b562e",
+          "canonical": "skills/status/SKILL.md",
+          "canonical_semantic_sha256": "956c5631fb09fcb4d5b783eedbc551adb4f02da333b2c0763c27827551b4c02d",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        }
+      }
+    },
+    "screenote": {
+      "version": "2.0.1",
+      "canonical": {
+        "skills/screenote/SKILL.md": {
+          "sha256": "1c9c5fd1da06466a1b8c12bcfdb1964c21112c50a536e06007d47043c4063f00",
+          "semantic_sha256": "6511fe8f961430a7d114d0a11da67541c08f008c5bff808527e18ca3f689b16f",
+          "sections": {
+            "1:screenote — visual feedback loop": "39a0d49ab5207bb40a331e38e0403ef907bce18afea6107dc44bb25b65b1ef37",
+            "2:parse the request": "bb51fd32ead1388baebbbf115a106c3eb3f2ba9795c920f6e2bcc528851365c1",
+            "2:1. establish the cli data plane": "65709cd144ee524ecffd167bb67e2d98c6b882692ce9f6fdb40b53a83dbed729",
+            "2:2. resolve the page": "bce26c5e515daa68c03d930697698229e3d74411f394da06f13271187d4bbe00",
+            "2:3. preflight and capture": "a660e9bd49c8e3a75015728b218c10b4a4b583faed58ce1851429b0ad501ba43",
+            "2:4. build one logical screenshot": "7c686570a2278e5d039db4cd67eb66856ead32fc19628f8dec422bdb479a8bd3",
+            "2:5. publish and report": "bb393f3cb69c7ace0ba66b5a809cb4df428efd9475df49c02a9079ff069d4235"
+          }
+        },
+        "skills/snapshot/SKILL.md": {
+          "sha256": "c68b25ab7c879f62d035779036bcebafc7ee45bef53b6f978ab16fd25b65e6a2",
+          "semantic_sha256": "e275d2457341b77d455f80be35d5c807d88f1f3e6483f7681ec4a7c87012cbdb",
+          "sections": {
+            "1:snapshot — full app visual snapshot": "308c9429f67c8a5a23dd8d72b721d2d14d9db5485337a58fec0a86a9b8c0a876",
+            "2:parse the request": "b38067852de7caedcf28a337e21eda2737f91b656c50a9446bfd9459e99d5a48",
+            "2:1. establish the cli data plane": "f36ffa21826d81c3662b6252c57de85a2ad7137741a96fbb8c714636d65b28db",
+            "2:2. resolve the base url": "a0fd3cbeebd39a03b9c08d738570f27c37b85173951f9508d76a004ac7f4d0cd",
+            "2:3. preflight browser use and discover routes": "18917f8c1ea96cf9bc1396ab8d26be56bd1d96f271edf5945472644220d36c7a",
+            "2:4. authenticate the reviewed app when needed": "f976c282f93afbe64ff2d93f5fdeffb8175137a80c45d053e3966fd8161cf2b9",
+            "2:5. capture the confirmed set": "658c5d4a0143f4614bba83badb4fd4fb0e40addf68f05c4d19246cf23c3c0fc9",
+            "2:6. build one complete manifest": "0ce6f6e50fccd64601908aed89975c739a275d7551077545e1180e4973a8e037",
+            "2:7. publish and summarize": "9096859493e6f5c617643e49ca0965494f65be0b952a6ffeabc90ced153b4296"
+          }
+        },
+        "skills/feedback/SKILL.md": {
+          "sha256": "aefcbfa7ccba9b9bbe5c3bdaf3cf7454cf6eb256a13f34c3c1f1edd17cb080af",
+          "semantic_sha256": "d2808c426d247e3e5fb537e689dee33706f7725ab2091204076579899422bd73",
+          "sections": {
+            "1:feedback — retrieve visual annotations": "f814bc2297408c2be4783880778d1239eb9d17683fd2e6b7cbefa90762936494",
+            "2:parse the request": "6f69d9d8fdac369f5fc60f63557a22214356f6492dedbf851b3201b0286aaaf5",
+            "2:1. preflight and select a project": "66108c826f1f31ba5dfe6118d8ffa17ee4a850b9e31fc1e95d6025fa80a5d4e0",
+            "2:2. select a page and version": "49a43fb6486c74d5738c7a5ddb4d179dfa8853c154e2e4d4d1aec6c7e9309cbe",
+            "2:3. fetch open annotations": "dbac4b358c44b279aa3269559e50e3e44885623c7d9296c44e7422d93623a2b8",
+            "2:4. present feedback": "ab683d640b6e35b4932644ec5aac303dc9b2671e26266c01d7a488994cee61b4",
+            "2:5. fix, comment, and resolve": "d0b0aeeb9ca4855b93cf29f58d872bdfd45686d9a99edd7f53d9aa8ee225f0b3"
+          }
+        }
+      },
+      "resources": {
+        "references": {
+          "exists": true,
+          "sha256": "8627c6efecd79ffa7c354267260db5eb774483800a7fb13cc50cd2e6691c2f0b",
+          "files": [
+            "references/cli.md"
+          ]
+        },
+        "evals": {
+          "exists": true,
+          "sha256": "02a6ab4bc16d553d552c2f610d655f222c412040ba92e227fcbb795f905d26cc",
+          "files": [
+            "evals/README.md",
+            "evals/browser-use-mcp-smoke.sh",
+            "evals/browser-use-mcp-surface.md",
+            "evals/lint-skills-test.sh",
+            "evals/lint-skills.sh",
+            "evals/trigger-eval-set.json",
+            "evals/validate-plugin.py"
+          ]
+        },
+        "scripts/screenote-cli.sh": {
+          "exists": false,
+          "sha256": null
+        }
+      },
+      "adapters": {
+        "pi/skills/screenote/SKILL.md": {
+          "sha256": "be76380b855717ec4b9562157dcb3fd0790f6cb0f5c476a111f781e5da1bb18f",
+          "canonical": "skills/screenote/SKILL.md",
+          "canonical_semantic_sha256": "6511fe8f961430a7d114d0a11da67541c08f008c5bff808527e18ca3f689b16f",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/screenote/SKILL.md": {
+          "sha256": "533fc80886f4c3838aeb7146a3abac3190e99035287d0b91a8510c981dca782e",
+          "canonical": "skills/screenote/SKILL.md",
+          "canonical_semantic_sha256": "6511fe8f961430a7d114d0a11da67541c08f008c5bff808527e18ca3f689b16f",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "pi/skills/snapshot/SKILL.md": {
+          "sha256": "aa21dc2f26063ff553060bbb0f6dbd9f265f7ed41a49c79c46666790b462f0c4",
+          "canonical": "skills/snapshot/SKILL.md",
+          "canonical_semantic_sha256": "e275d2457341b77d455f80be35d5c807d88f1f3e6483f7681ec4a7c87012cbdb",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/snapshot/SKILL.md": {
+          "sha256": "85d27836d10cb7b96b316405133d0fc5e454a4ad9812ae7dbfd4937194f957ba",
+          "canonical": "skills/snapshot/SKILL.md",
+          "canonical_semantic_sha256": "e275d2457341b77d455f80be35d5c807d88f1f3e6483f7681ec4a7c87012cbdb",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "pi/skills/feedback/SKILL.md": {
+          "sha256": "01c360db7c6818834dc01a4270435b7613ebaa46621f8c39f5f8d0d956e68f66",
+          "canonical": "skills/feedback/SKILL.md",
+          "canonical_semantic_sha256": "d2808c426d247e3e5fb537e689dee33706f7725ab2091204076579899422bd73",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        },
+        "openclaw/skills/feedback/SKILL.md": {
+          "sha256": "c4630a87bc2bbc0de39c0af024eab81bf0605b4157eecb3f544fcf8b3245538e",
+          "canonical": "skills/feedback/SKILL.md",
+          "canonical_semantic_sha256": "d2808c426d247e3e5fb537e689dee33706f7725ab2091204076579899422bd73",
+          "overlays": [
+            "frontmatter",
+            "invocation",
+            "install-path"
+          ]
+        }
+      }
+    }
+  }
+}

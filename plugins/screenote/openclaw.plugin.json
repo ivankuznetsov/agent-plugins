@@ -1,0 +1,14 @@
+{
+  "id": "screenote",
+  "name": "Screenote",
+  "description": "Capture pages, publish screenshots, and retrieve visual feedback through the Screenote OAuth CLI.",
+  "version": "2.0.1",
+  "skills": [
+    "./openclaw/skills"
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "agent-seo",
+  "version": "1.1.0",
+  "description": "Research, write, fact-check, and optimize long-form SEO content.",
+  "homepage": "https://github.com/ivankuznetsov/agent-seo",
+  "repository": "https://github.com/ivankuznetsov/agent-seo",
+  "license": "MIT",
+  "keywords": [
+    "agent-seo",
+    "agent-skills",
+    "seo",
+    "content-writing"
+  ],
+  "pi": {
+    "skills": [
+      "./pi/skills"
+    ]
+  },
+  "x-agent-plugins-generated": "scripts/generate-agent-packages.py"
+}

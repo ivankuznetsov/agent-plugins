@@ -1,0 +1,20 @@
+{
+  "name": "agent-reviewer",
+  "version": "0.2.0",
+  "description": "Clone your team's best code reviewers from their PR history and run them as a review panel.",
+  "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+  "repository": "https://github.com/ivankuznetsov/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agent-reviewer",
+    "agent-skills",
+    "code-review",
+    "reviewer-persona"
+  ],
+  "pi": {
+    "skills": [
+      "./pi/skills"
+    ]
+  },
+  "x-agent-plugins-generated": "scripts/generate-agent-packages.py"
+}

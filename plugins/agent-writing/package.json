@@ -1,0 +1,20 @@
+{
+  "name": "agent-writing",
+  "version": "0.4.0",
+  "description": "Investigate, draft, and edit with three writing voices working as a team of rivals.",
+  "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+  "repository": "https://github.com/ivankuznetsov/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agent-writing",
+    "agent-skills",
+    "writing",
+    "editor"
+  ],
+  "pi": {
+    "skills": [
+      "./pi/skills"
+    ]
+  },
+  "x-agent-plugins-generated": "scripts/generate-agent-packages.py"
+}
