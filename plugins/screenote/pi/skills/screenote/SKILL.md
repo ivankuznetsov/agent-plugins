@@ -1,6 +1,6 @@
 ---
 name: screenote
-description: "Capture a page at desktop/tablet/mobile viewports and publish it with the Screenote CLI for human annotation"
+description: "Capture an explicit HTTP(S) page at desktop, tablet, or mobile viewports and publish private local files through the Screenote JSON CLI."
 metadata:
   generated-from: skills/screenote/SKILL.md
   generated-for: pi

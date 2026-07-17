@@ -1,98 +1,62 @@
 ---
 name: feedback
-description: Retrieve and act on visual annotations through the Screenote CLI
+description: Retrieve Screenote pages, screenshots, annotations, and private crops, then comment after applying a fix.
 metadata:
-  argument: "[desktop|tablet|mobile] [page-name or version]"
+  argument: "[desktop|tablet|mobile] [page-name-or-version]"
 ---
 
-# Feedback — Retrieve Visual Annotations
+# Feedback — retrieve and act on annotations
 
-Read open Screenote annotations, inspect their viewport-specific crops, and
-optionally comment and resolve them after fixing the code.
+Read and follow [the shared CLI contract](../../references/cli.md) completely.
+The public grammar remains:
 
-Read and follow [`../../references/cli.md`](../../references/cli.md) completely
-before running this workflow. All Screenote access goes through the OAuth CLI.
+```text
+feedback [desktop|tablet|mobile] [page-name-or-version]
+```
 
-## Parse the request
+Consume an initial viewport as a filter. Treat the remainder as a
+case-insensitive page/version hint, never as a command or local path.
 
-If the first token is exactly `desktop`, `tablet`, or `mobile`, consume it as
-the viewport filter. Treat the remainder as a case-insensitive page/version
-hint. Otherwise use the full argument as the hint with no viewport filter.
+## Select project, page, and screenshot
 
-Never interpret a viewport token as part of a page title.
+Detect the CLI without installing or authenticating automatically. Run
+`project list`; project precedence is `--project`, `SCREENOTE_PROJECT`, then
+CLI config. Apply the shared exit 2 `missing_token` / `missing_project`, exit 3,
+and other nonzero JSON handling. Noninteractive runs never prompt or open a
+browser.
 
-## 1. Preflight and select a project
+Run allowlisted `page list`. Select only one unambiguous hint match; otherwise
+show choices interactively or stop noninteractively. Run paginated `screenshot
+list --page <page-id> --limit 100 --offset <offset>` until the reported total
+is exhausted. An empty page before the total is reached is an error.
 
-Run the shared CLI preflight, OAuth, and project-cache procedure. If the fresh
-project list is empty, tell the user to capture a page with the `screenote`
-skill first.
+## Retrieve annotations
 
-Create a private temporary directory for annotation detail JSON and crop files.
+Create a private `mktemp -d` directory mode `0700`; crop files are mode `0600`
+and must be new paths beneath it. Run paginated `annotation list --screenshot
+<id> --status open --limit 100 --offset <offset>`, adding `--viewport` only
+when requested. Deduplicate ids across pages.
 
-## 2. Select a page and version
+For each result, run allowlisted `annotation get --annotation <id> --crop-file
+<new-private-png>`. Inspect the PNG with the environment's local image viewer;
+never encode it into chat. `crop_unavailable` keeps the annotation metadata
+and continues; any other nonzero result stops.
 
-List pages with the project-scoped `page list` command from the shared
-contract.
+Present feedback grouped by viewport with id, coordinates, author, and the
+user's comment preserved exactly.
 
-- No pages: explain that this project has no captures and stop.
-- One page: select it.
-- Multiple pages: auto-select only one unambiguous hint match; otherwise show
-  names and version counts and ask the user.
+## Fix and comment
 
-List versions with
-`screenshot list --page "<page-id-from-page-list>" --limit 100 --offset 0`,
-replacing the quoted placeholder with the observed page id in that same tool
-call. Follow the shared contract's pagination loop to exhaustion before
-choosing a version.
+Ask whether to fix one, all, reply without a code change, or capture a
+verification image. For every addressed annotation:
 
-- No versions: explain that the page has no captured version and stop.
-- One version: select it.
-- Multiple versions: auto-select only one unambiguous hint match; otherwise
-  show titles and ask the user.
+1. Make and verify the requested code change when applicable.
+2. Run allowlisted `comment add --annotation <id> --body <explanation>` with
+   the body as one argv element. Never put credentials or shell interpolation
+   in the body.
+3. After the comment succeeds, tell the user to resolve the annotation in the
+   Screenote UI. Final resolution is not an approved CLI action in this plugin.
 
-## 3. Fetch open annotations
-
-Run
-`annotation list --screenshot "<screenshot-id-from-screenshot-list>" --status open --limit 100 --offset 0`,
-replacing the quoted placeholder with the observed screenshot id. Add
-`--viewport "<selected-viewport>"` when the request selected a viewport.
-Follow `pagination.total` to exhaustion before deciding that there are no more
-annotations or presenting feedback.
-
-If no annotations are open, return the screenshot's review URL when available
-and stop.
-
-For every annotation, run `annotation get --crop-file` as documented in the
-shared contract. Inspect the resulting PNG with the environment's image viewer.
-Do not place encoded crop data in the conversation. If the command returns the
-exact JSON error code `crop_unavailable`, retain the metadata from `annotation list`
-and mark that annotation's crop as unavailable. Continue with the remaining annotations.
-Any other detail or crop error stops the workflow.
-
-## 4. Present feedback
-
-Use the heading:
-
-`Feedback for <project> — <page> — <version>`
-
-Group annotations by Desktop, Tablet, and Mobile when more than one viewport is
-present. For each annotation show its id, viewport, point/region coordinates,
-author, comment, and cropped image. Preserve the user's wording exactly.
-
-## 5. Fix, comment, and resolve
-
-Ask whether to fix one annotation, all annotations, reply without a code
-change, or capture a verification screenshot.
-
-For every addressed annotation:
-
-1. Make and verify the requested code change when needed.
-2. Post an explanatory reply with `comment add`. Include what changed and the
-   relevant file/location, or explain why the behavior is intentional.
-3. Only after the reply succeeds, run `annotation resolve` with a short
-   resolution note.
-4. Treat `already_resolved` as success. For other failures, follow the shared
-   contract's error rules and never silently resolve without the reply.
-
-Remove the temporary crop directory after success. Preserve it while reporting
-an error only when it helps the user inspect the failed workflow.
+Delete private crops after a successful flow. Preserve and report a crop only
+when it materially helps diagnose a stopped flow. Never hide a failed comment
+or claim the annotation is resolved automatically.

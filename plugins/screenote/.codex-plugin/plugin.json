@@ -21,7 +21,6 @@
     "design-review"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Screenote",
     "shortDescription": "Screenshot, annotate, and fix visual feedback.",

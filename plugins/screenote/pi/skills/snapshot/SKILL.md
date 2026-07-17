@@ -1,6 +1,6 @@
 ---
 name: snapshot
-description: "Discover an app's routes, capture each page at desktop/tablet/mobile, and publish one reviewable batch through the Screenote CLI"
+description: "Discover approved HTTP(S) application routes and publish serial per-route captures through allowlisted screenshot create calls."
 metadata:
   generated-from: skills/snapshot/SKILL.md
   generated-for: pi

@@ -1,6 +1,6 @@
 ---
 name: feedback
-description: "Retrieve and act on visual annotations through the Screenote CLI"
+description: "Retrieve Screenote pages, screenshots, annotations, and private crops, then comment after applying a fix."
 metadata:
   generated-from: skills/feedback/SKILL.md
   generated-for: openclaw
