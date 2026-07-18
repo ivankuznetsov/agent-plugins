@@ -17,6 +17,11 @@ Also inspect project-local wiki configuration when available:
 - `.llm-wiki/refresh-wiki.sh`
 - `.llm-wiki/post-commit-refresh.sh`
 
+When the project is bootstrapped, resolve the canonical upgrade script relative
+to `../upgrade/SKILL.md` and run it with `--check`. Report exit status `10` as
+`upgrade available`, not as an error. Do not apply the project migration unless
+the user explicitly asks to update or upgrade the project-local structure.
+
 ## Rules
 
 - Detect whether the user is running Claude Code, Codex, Pi, or multiple CLIs are present.
@@ -26,18 +31,34 @@ Also inspect project-local wiki configuration when available:
 - Compare semantic versions with `sort -V` when available; otherwise parse major/minor/patch numerically. Do not compare version strings lexicographically.
 - If network access, marketplace metadata, or Pi package metadata is unavailable, report the local version and the command that refreshes the relevant metadata.
 - If `.llm-wiki/config.json` exists, report `headless_agent`, `context_agents`, and `main_wiki_path`.
+- Report project structure as `current`, `upgrade available`, or `unknown` from the bundled upgrade check.
 - Report managed wiki context using the exact `<!-- BEGIN LLM WIKI -->` and `<!-- END LLM WIKI -->` marker pair.
 - Classify `AGENTS.md` and `CLAUDE.md` context as `managed present`, `unmanaged wiki section only`, `missing`, or `unknown`.
 - Report Pi context from `AGENTS.md`; do not require `.pi/SYSTEM.md` or `.pi/APPEND_SYSTEM.md`.
 - Report whether Claude SessionStart context appears configured when `.claude/settings.json` exists.
 - Classify each automation surface as `codex`, `claude`, `pi`, `mixed`, `missing`, `mismatch`, or `unknown`.
-- Scheduler and post-commit ownership are clean only when the configured owner command is present and the non-owner command is absent.
-- `codex` means `codex exec` is present and `claude -p`, `pi -p`, and `pi --print` are absent.
-- `claude` means `claude -p` is present and `codex exec`, `pi -p`, and `pi --print` are absent.
-- `pi` means `pi -p` or `pi --print` is present and `codex exec` and `claude -p` are absent.
-- `mixed` means more than one owner command is present.
-- `mismatch` means exactly one owner command is present but it is not the configured `headless_agent`.
-- Count managed `llm-wiki` hook or scheduler entries when possible; report duplicates as `mixed` or `mismatch` rather than clean.
+- For the scheduler and legacy post-commit scripts, ownership is clean only when
+  the configured owner command is present and the non-owner commands are absent.
+  `codex` means `codex exec` alone is present; `claude` means `claude -p` alone
+  is present; and `pi` means `pi -p` or `pi --print` alone is present. More than
+  one owner command is `mixed`; exactly one command for a different configured
+  owner is `mismatch`.
+- The canonical post-commit template is different by design: it contains all
+  three provider commands behind a runtime `headless_agent` dispatcher. Resolve
+  `../../templates/post-commit-refresh.sh` relative to this SKILL.md. When the
+  project copy is byte-for-byte equal to that bundled template, classify its
+  owner from a validated `.llm-wiki/config.json` value (`codex`, `claude`, or
+  `pi`), not by scanning provider command tokens. An absent or unsupported
+  configured owner is `unknown`. Use the command-token rules only for a
+  non-canonical legacy post-commit script.
+- Count managed `llm-wiki` hook or scheduler entries when possible. The
+  canonical dispatcher is clean only when exactly one managed hook block calls
+  it; report missing or duplicate managed entries instead of treating the
+  dispatcher itself as proof that the hook is healthy.
+- Report exactly one project upgrade command for the active agent surface:
+  `/llm-wiki:upgrade` for Claude Code, `$llm-wiki:upgrade` for Codex, or
+  `/skill:wiki-upgrade` for Pi. If the active surface cannot be determined,
+  report the command as `unknown`; do not list all three alternatives.
 
 ## Claude Code
 
@@ -106,6 +127,7 @@ Pi uses Pi packages instead of the Claude/Codex plugin marketplace. The Pi packa
 
 ```text
 /skill:wiki-bootstrap
+/skill:wiki-upgrade
 /skill:wiki-research
 /skill:wiki-plan
 /skill:wiki-status
@@ -160,6 +182,8 @@ Return:
 - Claude SessionStart context: present | missing | not checked
 - Scheduled refresh owner: claude | codex | pi | mixed | missing | mismatch | unknown
 - Post-commit refresh owner: claude | codex | pi | mixed | missing | mismatch | unknown
+- Project structure: current | upgrade available | unknown
+- Project upgrade command: <active surface's single command> | unknown
 ```
 
 Mention whether the result came from local cache only or from a remote marketplace/package check.
