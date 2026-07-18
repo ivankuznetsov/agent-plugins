@@ -8,3 +8,7 @@ description: Check llm-wiki install status, version freshness, update commands, 
 This is the Pi-safe `llm-wiki` status entrypoint. It uses a prefixed skill name to avoid collisions with other Pi packages.
 
 Before acting, read and follow the canonical status workflow at `../../../skills/status/SKILL.md`.
+
+Pi-specific note: treat Pi as the active agent surface and report only
+`/skill:wiki-upgrade` as the project upgrade command. Do not include the Claude
+Code or Codex forms in the Pi status report.

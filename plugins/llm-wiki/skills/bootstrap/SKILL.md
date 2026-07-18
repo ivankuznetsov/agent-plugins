@@ -290,14 +290,21 @@ Use a stable `<project-slug>` from the repository basename plus a short hash of 
 
 Also install post-commit wiki maintenance automation. Preserve existing hooks; do not overwrite unrelated hook logic. Prefer creating `.llm-wiki/post-commit-refresh.sh` and wiring `.git/hooks/post-commit` to call it.
 
-Install `.llm-wiki/post-commit-refresh.sh` AND `.llm-wiki/compile-log.sh` by copying the reference scripts bundled with this skill at `templates/post-commit-refresh.sh` and `templates/compile-log.sh` (resolve them relative to this SKILL.md), then `chmod +x` both. Copy them verbatim rather than re-deriving them from prose so every project — and every checkout of the same project — runs identical, tested logic. `compile-log.sh` is the single source of truth for the changelog format: it regenerates `wiki/log.md` from the append-only `wiki/log.d/*.md` fragments, and the refresh runs it before committing. (Hive's `Hive::WikiLog` delegates to this same script, so Ruby and shell callers share one implementation.) The bundled script targets `headless_agent: "codex"`; for `headless_agent: "claude"`, copy it and replace the `codex exec` invocation in `run_refresh` with `claude -p "$full_prompt" --allowedTools "Bash,Read,Edit,Write" --add-dir "$wiki_root" --max-budget-usd 0.50` (run from `$committing_tree`), preserving every other behavior below.
+Install `.llm-wiki/post-commit-refresh.sh` AND `.llm-wiki/compile-log.sh` by copying the reference scripts bundled with this skill at `templates/post-commit-refresh.sh` and `templates/compile-log.sh` (resolve them relative to this SKILL.md), then `chmod +x` both. Copy them verbatim rather than re-deriving them from prose so every project — and every checkout of the same project — runs identical, tested logic. `compile-log.sh` is the single source of truth for the changelog format: it regenerates `wiki/log.md` from the append-only `wiki/log.d/*.md` fragments, and the refresh runs it before committing. (Hive's `Hive::WikiLog` delegates here, so Ruby and shell callers share one implementation.) The bundled post-commit script reads `.llm-wiki/config.json` from the committing checkout at runtime and dispatches to the configured `headless_agent`; never customize its provider function per project. Provider and QMD execution requires `timeout` or `gtimeout` so every subscription-consuming command is bounded. When neither is available, the worker must fail before starting the command and retain its queue for retry.
 
-Worktree-safe contract (the bundled script implements all of these; any hand-edit must keep them):
+Transactional refresh contract (the bundled script implements all of these; any hand-edit must keep them):
 
-- **The wiki is global state that lives on the MAIN checkout.** Resolve it as the first entry of `git worktree list --porcelain`. A commit in a *linked* worktree (`git rev-parse --git-dir` differs from `--git-common-dir`) reads the just-committed code in that worktree but reads/writes/commits the wiki ONLY on the main checkout — the linked worktree's own `wiki/` is never touched, so its `git status` stays clean.
-- **Serialize all refreshes on one lock in the shared git dir** (`$(git rev-parse --git-common-dir)/llm-wiki/refresh.lock`), not a per-worktree lock, so N concurrent worktree commits never race the main checkout's index. If the lock is held, exit cleanly. Always release on exit.
-- **Commit the wiki, scoped and guarded.** After refreshing, commit only `wiki/` on the main checkout with the post-commit hook disabled (`HIVE_SKIP_LLM_WIKI_POST_COMMIT=1` and `git -c core.hooksPath=/dev/null`) so the wiki commit cannot re-trigger this hook. **Never `git push`** — an in-progress branch must not be diverged from its remote. Reference the change by its branch/slug, not the raw commit SHA (it may be rebased or squashed).
-- Single-checkout projects behave identically with the main checkout as both the committing tree and the wiki home: the refresh now self-commits instead of leaving residue.
+- **User checkouts are read-only inputs.** Queue each relevant source SHA under `$(git rev-parse --git-common-dir)/llm-wiki/pending/` before attempting the worker lock. Never use the committing checkout or first/main checkout as an agent workspace, log destination, QMD cache, staging area, or commit target.
+- **Use one managed refresh branch and disposable worktree.** Drain queued commits on local branch `llm-wiki/refresh` in `<shared-git-dir>/llm-wiki/refresh-worktree`, based/rebased on the current default branch. The agent inspects source commits with `git show`; it writes only under the managed worktree's `wiki/`.
+- **Serialize and coalesce.** Hold one stale-reclaimable compare-and-swap lock at `refs/llm-wiki/refresh-lock`. Its Git blob records PID, time, process-start identity, and nonce; `git update-ref <ref> <new> <old>` makes stale replacement single-winner, while ownership-checked deletion prevents an old worker from releasing a successor's lock. One worker snapshots all queued SHAs and runs one refresh agent for that batch. A busy worker leaves new queue entries intact for a later worker instead of dropping them.
+- **Receipt completed sources.** Add one exact `LLM-Wiki-Source: <sha>` commit-message paragraph when the batch creates a wiki commit, then atomically update `refs/llm-wiki/receipts/<sha>` for every successful source before queue deletion. Check receipt refs first and commit history as migration fallback before invoking the agent. This makes both changed and no-op batches replay-safe after a crash between completion and acknowledgement.
+- **Recover stale locks safely.** A live owner PID with the recorded process-start identity wins. Dead, PID-reused, or malformed owner blobs are replaceable only through the Git ref's compare-and-swap old-OID guard.
+- **Validate before committing.** Reject any tracked or untracked change outside `wiki/`. Compile `wiki/log.md`, stage only `wiki/`, and commit with both recursion guards (`HIVE_SKIP_LLM_WIKI_POST_COMMIT=1` and `git -c core.hooksPath=/dev/null`). Never push automatically.
+- **Failure is clean and retryable.** If agent execution, wiki-only validation, compilation, staging, or commit fails, retain the queue entries and force-remove the disposable managed worktree. User checkout bytes and branch refs must remain unchanged.
+- **Subscription use is bounded.** Run provider overrides, Codex, Claude Code,
+  Pi, and QMD through `timeout` or `gtimeout`. If no bounded runner is available,
+  fail closed before starting the command and retain the queue.
+- **Keep generated state outside worktrees.** Refresh logs, pending entries, locks, and fallback QMD cache live under `<shared-git-dir>/llm-wiki/`.
 
 Post-commit hook idempotency:
 
@@ -306,20 +313,23 @@ Post-commit hook idempotency:
 - Never add a second managed post-commit block.
 - `.llm-wiki/post-commit-refresh.sh` must sanitize Git hook-local environment variables before launching nested tools. Collect unset arguments from `git rev-parse --local-env-vars` and run `codex exec`, `claude -p`, `pi`, `qmd update`, and `qmd embed` through `env -u ...` so variables such as `GIT_INDEX_FILE`, `GIT_DIR`, and `GIT_WORK_TREE` cannot leak into agent startup, plugin marketplace checkouts, or QMD indexing. Keep local Git commands that inspect the triggering commit, such as `git diff-tree`, in the hook context.
 
-The post-commit script detects changed files and runs focused headless refreshes:
+The post-commit script detects relevant changed files and coalesces them into one focused headless refresh per queued batch:
 
 - Data model changes: schema, migrations, models, entities, Prisma schema.
 - API surface changes: routes, controllers, handlers, endpoints, resolvers.
 - Dependency changes: `Gemfile`, `package.json`, `go.mod`, `Cargo.toml`, `requirements.txt`, `pyproject.toml`, `composer.json`.
 - Plans, todos, docs changes: update roadmap, technical debt, plans/initiatives pages when those pages exist or should exist.
+- Common source, test, template, and config trees: refresh affected behavior and
+  architecture coverage for `app/`, `src/`, `lib/`, `test/`, `tests/`, `spec/`,
+  `templates/`, and `config/` changes.
 
-For `headless_agent: "codex"`, every focused refresh command must use `codex exec -C "$project_root" "<focused prompt>"` in the background. Never use `claude -p`.
+For `headless_agent: "codex"`, the runtime dispatcher must use `codex exec -C "$refresh_root" "$prompt"` and never use `claude -p` or `pi -p`.
 
-For `headless_agent: "claude"`, every focused refresh command must use `claude -p "<focused prompt>" --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50` in the background. Never use `codex exec`.
+For `headless_agent: "claude"`, the runtime dispatcher must use `claude -p "$prompt" --allowedTools "Bash,Read,Edit,Write" --add-dir "$refresh_root" --max-budget-usd 0.50` from the managed worktree and never use `codex exec` or `pi -p`.
 
-For `headless_agent: "pi"`, every focused refresh command must use `pi -p --no-session --tools read,bash,edit,write,grep,find,ls "<focused prompt>"` in the background. Never use `claude -p` or `codex exec`.
+For `headless_agent: "pi"`, the runtime dispatcher must use `pi -p --no-session --tools read,bash,edit,write,grep,find,ls "$prompt"` from the managed worktree and never use `claude -p` or `codex exec`.
 
-After focused refreshes, run `qmd embed` in the background when `qmd` exists, then create `<wikis-root>/.sync-needed/<project-name>` when the configured or detected main wiki root has a `.sync-needed` directory. Use the root containing `.llm-wiki/config.json` `main_wiki_path` first; otherwise use `~/wikis/.sync-needed/<project-name>` for home-based main wikis and `<parent-of-project>/wikis/.sync-needed/<project-name>` for parent-directory main wikis.
+After a queued batch succeeds, run bounded `qmd update` and `qmd embed` from the managed refresh worktree with their cache outside user checkouts, then create `<wikis-root>/.sync-needed/<project-name>` when a supported sync directory exists. Failed batches retain their queue and do not index discarded work.
 
 Check whether QMD is installed with `command -v qmd`.
 

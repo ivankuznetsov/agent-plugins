@@ -4,6 +4,115 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.11] - 2026-07-18
+
+### Added
+
+- **Dedicated project upgrade command.** Existing projects can migrate managed
+  scripts, the post-commit hook block, and the fragment-based changelog layout
+  with `/llm-wiki:upgrade`, `$llm-wiki:upgrade`, or `/skill:wiki-upgrade`,
+  without rerunning broad wiki generation or changing the headless owner.
+- **Deterministic migration checks.** The bundled upgrader supports a read-only
+  `--check` mode, preserves unrelated dirty work and unmarked hook logic, and is
+  byte-for-byte idempotent after a successful migration.
+- **Legacy owner recovery.** Projects that predate `.llm-wiki/config.json` can
+  be upgraded automatically when their managed scripts identify exactly one
+  headless owner. Ambiguous or missing ownership stops before any write.
+
+### Changed
+
+- **One owner-aware refresh template.** Every project now receives the same
+  transactional post-commit script. It reads the preserved `headless_agent` at
+  runtime and dispatches to exactly one of Codex, Claude Code, or Pi from the
+  managed refresh worktree.
+
+### Fixed
+
+- **Subscription-safe execution bounds.** Provider overrides, Codex, Claude
+  Code, Pi, and QMD all require `timeout` or `gtimeout`. If neither is
+  available, the worker starts no provider, retains the queue, and cleans up its
+  lock and disposable worktree.
+- **Lossless migration refusal.** Reversed, nested, duplicated, or unmatched
+  changelog and hook markers now stop the upgrade before any project write;
+  marker-free legacy logs retain both headed entries and unheaded prose.
+- **Checkout-local owner selection.** Runtime dispatch reads the committing
+  checkout's config, so ignored or otherwise untracked config still selects the
+  intended owner without leaking into the managed refresh branch.
+
+### Upgrade existing projects
+
+Updating the `llm-wiki` plugin or Pi package does **not** rewrite files already
+copied into project checkouts. After updating and restarting the agent, run the
+appropriate upgrade command once inside every existing project:
+
+```text
+Claude Code: /llm-wiki:upgrade
+Codex:       $llm-wiki:upgrade
+Pi:          /skill:wiki-upgrade
+```
+
+The command changes only managed llm-wiki structure. It preserves the selected
+headless owner, unrelated hook logic, existing wiki content, and other dirty
+checkout changes; it never runs an LLM or commits the migration.
+
+Post-commit refreshes require `timeout` (normally present on Linux) or
+`gtimeout` (GNU coreutils on macOS). Without one, refresh work remains queued and
+no subscription-backed provider is started.
+
+## [0.1.10] - 2026-07-18
+
+Transactional wiki maintenance that stays completely out of your working
+checkouts. Post-commit refreshes now collect relevant commits in Git-managed
+state, update a dedicated local refresh branch, and leave both the primary
+checkout and feature worktrees exactly as they were.
+
+### Added
+
+- **Dedicated refresh branch and worktree.** Wiki maintenance runs on the local
+  `llm-wiki/refresh` branch in a disposable managed worktree. The branch is
+  intentionally never pushed automatically, so its commits can be inspected,
+  merged, or proposed on the operator's schedule.
+- **Replay-safe source receipts.** Successful batches record
+  `refs/llm-wiki/receipts/<source-sha>` and matching `LLM-Wiki-Source` commit
+  trailers. A crash after committing but before queue cleanup can therefore be
+  replayed without invoking the agent or creating a duplicate refresh commit.
+- **End-to-end transaction coverage.** The new shell integration test exercises
+  dirty-checkout preservation, linked-worktree commits, refresh-branch output,
+  receipt replay, malformed-lock recovery, no-op refreshes, and bounded QMD
+  maintenance. GitHub Actions now runs it for template, test, and release
+  metadata changes.
+
+### Changed
+
+- **Queued, coalesced refreshes.** Relevant post-commit events are written under
+  the repository's shared Git directory before lock acquisition. One worker
+  snapshots and documents the pending sources together; commits arriving while
+  it runs remain queued for the next batch.
+- **Read-only user checkouts.** The triggering checkout and the primary checkout
+  are inputs only. Agent edits, staging, commits, logs, lock state, queue files,
+  and fallback QMD cache data all live in the managed refresh worktree or shared
+  Git directory.
+- **Broader relevance detection.** Common application, library, test, template,
+  and configuration trees now trigger focused wiki maintenance alongside
+  schema, API, dependency, plan, note, and documentation changes.
+
+### Fixed
+
+- **Dirty checkout and branch mutations.** Post-commit refreshes no longer write
+  generated wiki pages into a developer's primary checkout, stage their pending
+  edits, or advance its branch while other work is in progress.
+- **Race-safe lock recovery.** The shared worker lock is now a Git ref updated
+  with compare-and-swap semantics. Dead, PID-reused, and malformed owners can be
+  reclaimed without allowing two workers to win or an old worker to release a
+  successor's lock.
+- **Clean, retryable failures.** Agent, validation, compilation, staging, commit,
+  and receipt failures retain their queue entries and discard the disposable
+  worktree. Any tracked or untracked edit outside `wiki/` is rejected before a
+  refresh can be committed.
+- **ShellCheck-clean cleanup handling.** The EXIT-trap cleanup function is
+  explicitly marked as indirectly invoked, keeping the transactional script
+  clean under ShellCheck without weakening cleanup behavior.
+
 ## [0.1.9] - 2026-06-18
 
 Worktree-safe wiki maintenance and a single shared changelog compiler. The

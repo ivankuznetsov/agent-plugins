@@ -1,6 +1,6 @@
 # llm-wiki
 
-Bootstrap and query LLM-maintained project wikis before planning or implementation.
+Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.
 
 **Supports Claude Code + Codex (GPT-5.5) + Pi.**
 
@@ -10,9 +10,10 @@ Bootstrap and query LLM-maintained project wikis before planning or implementati
 
 It works with my original six-project setup: project-local `wiki/` folders, a main cross-project wiki at `~/wikis/master/wiki/`, `~/wikis/main/wiki/`, or a parent-directory `wikis/` folder, QMD semantic search when available, and ripgrep fallback when it is not.
 
-`llm-wiki` packages four workflows:
+`llm-wiki` packages five workflows:
 
 - `bootstrap` creates a grounded `wiki/` knowledge base for the current project.
+- `upgrade` migrates an existing project's managed scripts, hook, and changelog structure.
 - `research` searches the project wiki and main cross-project wiki before planning or implementation.
 - `wiki-plan` runs wiki research first, then hands the result to Compound Engineering planning when available.
 - `status` checks whether a newer `llm-wiki` release is available and reports the correct update command.
@@ -35,6 +36,7 @@ Then use the installed plugin commands/skills from Claude Code. The key entrypoi
 
 ```text
 /llm-wiki:bootstrap
+/llm-wiki:upgrade
 /llm-wiki:research
 /llm-wiki:wiki-plan
 /llm-wiki:status
@@ -54,6 +56,7 @@ After restarting Codex, invoke the skills using the namespace shown by `/skills`
 
 ```text
 $llm-wiki:bootstrap
+$llm-wiki:upgrade
 $llm-wiki:research
 $llm-wiki:wiki-plan
 $llm-wiki:status
@@ -73,6 +76,7 @@ Then invoke the Pi skills with prefixed names to avoid collisions with other Pi 
 
 ```text
 /skill:wiki-bootstrap
+/skill:wiki-upgrade
 /skill:wiki-research
 /skill:wiki-plan
 /skill:wiki-status
@@ -91,6 +95,20 @@ Bootstrap a wiki in the current project:
 ```text
 $llm-wiki:bootstrap
 ```
+
+Upgrade an already bootstrapped project's managed structure after installing a
+new `llm-wiki` release:
+
+```text
+$llm-wiki:upgrade
+```
+
+Updating the plugin or Pi package does not rewrite project-local `.llm-wiki`
+files automatically. Restart the agent after updating the package, then run the
+upgrade command once in each existing project. The migration preserves the
+configured headless owner and unrelated dirty work; if a legacy project has no
+config, it creates one only when exactly one owner can be inferred. It does not
+regenerate wiki content or invoke an LLM.
 
 Research past project knowledge before coding:
 
@@ -114,6 +132,7 @@ Pi uses the same workflows through `/skill:wiki-*` commands:
 
 ```text
 /skill:wiki-bootstrap
+/skill:wiki-upgrade
 /skill:wiki-research auth flow refactor
 /skill:wiki-plan add billing reminders
 /skill:wiki-status
@@ -148,6 +167,17 @@ Only one agent owns scheduled refresh automation and post-commit wiki maintenanc
 - Pi headless automation uses `pi -p --no-session --tools read,bash,edit,write,grep,find,ls ...`
 - All automation paths search the project wiki and any detected main cross-project wiki.
 - Scheduler and post-commit entries use managed markers and stable project slugs so repeated bootstraps do not create duplicate refresh jobs.
+- Post-commit maintenance never writes into a user checkout. Relevant commits
+  are coalesced in the shared Git directory and refreshed transactionally on the
+  local `llm-wiki/refresh` branch through a disposable managed worktree. Failed
+  refreshes keep their queue entries for retry and discard generated work.
+  Atomic source-SHA receipt refs make changed and no-op acknowledgement replay-safe, and
+  a compare-and-swap Git ref makes stale-lock replacement single-winner.
+- Agent and QMD execution is always time-bounded. The post-commit worker uses
+  `timeout` (Linux) or `gtimeout` (macOS via GNU coreutils); when neither is
+  installed it fails before starting a provider and retains the queue for retry.
+- The refresh branch is intentionally local and is never pushed automatically;
+  operators can inspect, merge, or open a PR from it on their normal schedule.
 
 ## Update Status
 

@@ -12,8 +12,8 @@
     {
       "name": "llm-wiki",
       "source": "./plugins/llm-wiki",
-      "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
-      "version": "0.1.9",
+      "description": "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
+      "version": "0.1.11",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
