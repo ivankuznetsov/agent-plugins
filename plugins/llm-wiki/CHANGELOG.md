@@ -4,6 +4,31 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.14] - 2026-07-18
+
+### Fixed
+
+- **Interrupted-source durability during upgrade.** Project upgrades now pin
+  valid hidden queue records left by an interrupted atomic write, not only
+  visible pending and quarantined records. The migration leaves queue files and
+  circuits untouched, ignores incomplete records, and makes recoverable source
+  commits durable before a future worker promotes them into the visible queue.
+
+### Upgrade existing projects
+
+After updating and restarting the agent, run the matching command once inside
+every existing project:
+
+```text
+Claude Code: /llm-wiki:upgrade
+Codex:       $llm-wiki:upgrade
+Pi:          /skill:wiki-upgrade
+```
+
+The upgrade is deterministic and uses no LLM or subscription tokens. It
+preserves the configured headless owner, wiki content, hook customizations,
+queue files, circuits, and unrelated dirty work.
+
 ## [0.1.13] - 2026-07-18
 
 ### Fixed

@@ -303,7 +303,17 @@ validate_log_markers() {
 
 validate_log_markers
 tmp_dir="$(mktemp -d)"
-trap 'rm -rf "$tmp_dir"' EXIT
+refresh_lock_ref="${LLM_WIKI_LOCK_REF:-refs/llm-wiki/refresh-lock}"
+lock_owner_oid=""
+
+cleanup() {
+  if [ -n "$lock_owner_oid" ]; then
+    git -C "$root" update-ref -d "$refresh_lock_ref" "$lock_owner_oid" \
+      >/dev/null 2>&1 || true
+  fi
+  rm -rf "$tmp_dir"
+}
+trap cleanup EXIT
 rendered_hook="$tmp_dir/post-commit"
 render_hook "$rendered_hook"
 compiled_log="$tmp_dir/log.md"
@@ -344,15 +354,29 @@ render_migrated_log() {
 }
 
 pin_existing_queued_sources() {
-  local path queued_sha queued_branch transaction="$tmp_dir/source-pins"
+  local path name queued_sha queued_branch update_line
+  local updates="$tmp_dir/source-pin-updates" transaction="$tmp_dir/source-pins"
   {
-    printf 'start\n'
     shopt -s nullglob
-    for path in "$shared_state_dir/pending"/* "$shared_state_dir/failed"/*; do
+    for path in \
+      "$shared_state_dir/pending"/* \
+      "$shared_state_dir/failed"/* \
+      "$shared_state_dir/pending"/.[0-9a-fA-F]*.*; do
       [ -f "$path" ] || continue
+      name="$(basename "$path")"
       queued_sha=""
       queued_branch=""
       IFS=$'\t' read -r queued_sha queued_branch <"$path" || true
+      # A pre-upgrade worker may have stopped after writing the atomic temp but
+      # before renaming it into the visible queue. Pin only temps that the
+      # runtime can recover: a strict .<sha>.<pid> name whose record starts with
+      # the same SHA. Leave incomplete and unrecognized files untouched.
+      if [[ "$name" == .* ]]; then
+        if [[ ! "$name" =~ ^\.([0-9a-fA-F]{40,64})\.[0-9]+$ ]] || \
+           [ "$queued_sha" != "${BASH_REMATCH[1]:-}" ]; then
+          continue
+        fi
+      fi
       if [[ "$queued_sha" =~ ^[0-9a-fA-F]{40,64}$ ]] && \
          git -C "$root" cat-file -e "${queued_sha}^{commit}" 2>/dev/null; then
         printf 'update refs/llm-wiki/sources/%s %s\n' "$queued_sha" "$queued_sha"
@@ -362,9 +386,65 @@ pin_existing_queued_sources() {
       fi
     done
     shopt -u nullglob
+  } | LC_ALL=C sort -u >"$updates"
+  {
+    printf 'start\n'
+    while IFS= read -r update_line; do
+      printf '%s\n' "$update_line"
+    done <"$updates"
     printf 'commit\n'
   } >"$transaction"
   git -C "$root" update-ref --stdin <"$transaction"
+}
+
+process_identity() {
+  local pid="$1"
+  if [ -r "/proc/$pid/stat" ]; then
+    awk '{print $22}' "/proc/$pid/stat" 2>/dev/null || true
+  else
+    ps -o lstart= -p "$pid" 2>/dev/null |
+      sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+  fi
+}
+
+lock_owner_stale() {
+  local owner_oid="$1" owner pid identity current_identity
+  owner="$(git -C "$root" cat-file -p "$owner_oid" 2>/dev/null || true)"
+  IFS='|' read -r pid _ identity _ <<<"$owner"
+  if [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null; then
+    current_identity="$(process_identity "$pid")"
+    if [ -z "$identity" ] || [ -z "$current_identity" ] || \
+       [ "$identity" = "$current_identity" ]; then
+      return 1
+    fi
+  fi
+  return 0
+}
+
+acquire_refresh_lock() {
+  local wait_seconds deadline now owner current_oid expected_oid zero_oid
+  wait_seconds="${LLM_WIKI_LOCK_WAIT_SECONDS:-60}"
+  [[ "$wait_seconds" =~ ^[0-9]+$ ]] || wait_seconds=60
+  now="$(date +%s 2>/dev/null || echo 0)"
+  deadline="$((now + wait_seconds))"
+  owner="$$|$now|$(process_identity "$$")|${RANDOM:-0}"
+  lock_owner_oid="$(printf '%s\n' "$owner" | git -C "$root" hash-object -w --stdin)"
+  zero_oid="${lock_owner_oid//?/0}"
+
+  while true; do
+    current_oid="$(git -C "$root" rev-parse --verify --quiet "$refresh_lock_ref" 2>/dev/null || true)"
+    if [ -z "$current_oid" ] || lock_owner_stale "$current_oid"; then
+      expected_oid="${current_oid:-$zero_oid}"
+      if git -C "$root" update-ref \
+           "$refresh_lock_ref" "$lock_owner_oid" "$expected_oid" \
+           2>/dev/null; then
+        return 0
+      fi
+    fi
+    now="$(date +%s 2>/dev/null || echo 0)"
+    [ "$now" -ge "$deadline" ] && return 1
+    sleep 1
+  done
 }
 
 if [ "$config_needs_create" -eq 1 ]; then
@@ -433,6 +513,12 @@ if [ "$mode" = check ]; then
   printf 'llm-wiki: upgrade available: %s\n' "$root"
   printf '  - %s\n' "${changes[@]}"
   exit 10
+fi
+
+mkdir -p "$shared_state_dir"
+if ! acquire_refresh_lock; then
+  printf 'llm-wiki: upgrade deferred; refresh worker lock is busy\n' >&2
+  exit 1
 fi
 
 if ! pin_existing_queued_sources; then
