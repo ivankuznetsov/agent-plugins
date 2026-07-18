@@ -172,23 +172,37 @@ Only one agent owns scheduled refresh automation and post-commit wiki maintenanc
 - Post-commit maintenance never writes into a user checkout. Relevant commits
   are coalesced in the shared Git directory and refreshed transactionally on the
   local `llm-wiki/refresh` branch through a disposable managed worktree. A
-  project-local ignored wiki seeds that branch only when it has no established
+  canonical runner in that shared Git directory serves every linked worktree,
+  with one canonical owner config, so upgrading once cannot leave older branches
+  executing stale local scripts or selecting a stale provider.
+  A project-local ignored wiki seeds that branch only when it has no established
   wiki of its own. Failed refreshes discard generated work. After two consecutive
   failed batches by default, a repository-wide circuit stops provider launches;
   later commits continue queueing and failed records remain under
-  `llm-wiki/failed/`.
+  `llm-wiki/failed/`. A queue above 25 sources also opens the circuit before a
+  provider starts. Each worker runs at most one batch of 10 sources, with
+  bounded changed-path context, so concurrent hooks cannot turn a historical
+  backlog into an unbounded sequence of subscription runs. Override these
+  defaults with `LLM_WIKI_MAX_AUTO_PENDING`, `LLM_WIKI_MAX_BATCH_SOURCES`,
+  `LLM_WIKI_MAX_PATHS_PER_SOURCE`, and `LLM_WIKI_MAX_PATH_BYTES`.
+  Queued commits are pinned under `refs/llm-wiki/sources/` until their durable
+  receipt is written. Sources that arrive outside a running batch open a visible
+  `deferred:<count>` circuit rather than remaining silently pending.
   Atomic source-SHA receipt refs make changed and no-op acknowledgement replay-safe, and
   a compare-and-swap Git ref makes stale-lock replacement single-winner.
 - Agent and QMD execution is always time-bounded. The post-commit worker uses
   `timeout` (Linux) or `gtimeout` (macOS via GNU coreutils); when neither is
-  installed it fails before starting a provider. Set
+  installed it fails before starting a provider. A 10-second forced-kill grace
+  period follows the first timeout signal; set `LLM_WIKI_TIMEOUT_KILL_AFTER` to
+  another positive number of seconds when needed. Set
   `LLM_WIKI_MAX_REFRESH_ATTEMPTS` to a positive integer to change the automatic
   retry bound.
 - After fixing a failed provider or validation issue, run
   `.llm-wiki/post-commit-refresh.sh --retry-failed all` to restore quarantined
-  records and explicitly retry the coalesced queue. A successful retry clears
-  the circuit; a failed retry leaves it open. Pass a full source SHA instead of
-  `all` to restore one quarantined record.
+  records and explicitly retry one bounded queue batch. Rerun it until no queued
+  sources remain; only the final successful batch clears the circuit. A failed
+  retry leaves it open. Pass a full source SHA instead of `all` to restore one
+  quarantined record.
 - The refresh branch is intentionally local and is never pushed automatically;
   operators can inspect, merge, or open a PR from it on their normal schedule.
 
