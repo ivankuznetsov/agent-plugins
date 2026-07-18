@@ -39,14 +39,19 @@ The script upgrades only managed structure:
 
 - `.llm-wiki/post-commit-refresh.sh`
 - `.llm-wiki/compile-log.sh`
+- canonical copies of both scripts under
+  `$(git rev-parse --git-common-dir)/llm-wiki/` for all linked worktrees
+- canonical shared owner config and keepalive refs for existing queued commits
 - a missing `.llm-wiki/config.json` when live or historical evidence identifies
   one unambiguous legacy owner
 - `wiki/log.d/` and the compiled `wiki/log.md` layout
 - the marked `LLM WIKI POST-COMMIT` block in the active Git hook path
 
-The post-commit template is identical in every project. At runtime it reads the
-preserved `headless_agent` and dispatches to exactly one of Codex, Claude Code,
-or Pi from the managed refresh worktree.
+The post-commit template is identical in every project. The shared Git hook
+runner receives the committing worktree through `--project`, reads its preserved
+`headless_agent` from the shared canonical config, and dispatches to exactly one
+of Codex, Claude Code, or Pi from the managed refresh worktree. The
+checkout-local copy remains a manual entrypoint and compatibility fallback.
 
 ## Safety Contract
 

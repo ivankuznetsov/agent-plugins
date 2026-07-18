@@ -16,9 +16,13 @@ Also inspect project-local wiki configuration when available:
 - `.claude/settings.json`
 - `.llm-wiki/refresh-wiki.sh`
 - `.llm-wiki/post-commit-refresh.sh`
+- `$(git rev-parse --git-common-dir)/llm-wiki/post-commit-refresh.sh`
+- `$(git rev-parse --git-common-dir)/llm-wiki/config.json`
 - `$(git rev-parse --git-common-dir)/llm-wiki/refresh-disabled`
 - `$(git rev-parse --git-common-dir)/llm-wiki/consecutive-failures`
+- `$(git rev-parse --git-common-dir)/llm-wiki/pending/`
 - `$(git rev-parse --git-common-dir)/llm-wiki/failed/`
+- `refs/llm-wiki/sources/`
 
 When the project is bootstrapped, resolve the canonical upgrade script relative
 to `../upgrade/SKILL.md` and run it with `--check`. Report exit status `10` as
@@ -35,13 +39,21 @@ the user explicitly asks to update or upgrade the project-local structure.
 - If network access, marketplace metadata, or Pi package metadata is unavailable, report the local version and the command that refreshes the relevant metadata.
 - If `.llm-wiki/config.json` exists, report `headless_agent`, `context_agents`, and `main_wiki_path`.
 - Report project structure as `current`, `upgrade available`, or `unknown` from the bundled upgrade check.
-- Inspect refresh state in the shared Git directory. Always count quarantined
-  source records, even when `refresh-disabled` is absent. Report the circuit as
-  `closed` only when the breaker is absent and that count is zero; otherwise
-  report `open` with the consecutive-failure count, quarantined source count,
-  `post-commit-refresh.log` path, and exact recovery command
+- Inspect refresh state in the shared Git directory. Always count runnable
+  pending records, hidden interrupted queue records, and quarantined source
+  records, even when `refresh-disabled` is absent. Report the breaker reason
+  verbatim when present; `backlog:<n>` means the automatic pending-source bound
+  opened the circuit before a provider launch, while `deferred:<n>` means work
+  arrived outside the last bounded batch and needs an operator-paced retry.
+  Report the circuit as `closed`
+  only when the breaker is absent and the quarantined count is zero; otherwise
+  report `open` with the breaker reason, consecutive-failure count, all three
+  queue counts, queued-source keepalive-ref count, `post-commit-refresh.log`
+  path, and exact recovery command
   `.llm-wiki/post-commit-refresh.sh --retry-failed all`. Do not invoke recovery
-  unless the user explicitly asks to retry.
+  unless the user explicitly asks to retry. Recovery processes one bounded
+  batch per invocation, so say when the command must be rerun for remaining
+  sources.
 - Report managed wiki context using the exact `<!-- BEGIN LLM WIKI -->` and `<!-- END LLM WIKI -->` marker pair.
 - Classify `AGENTS.md` and `CLAUDE.md` context as `managed present`, `unmanaged wiki section only`, `missing`, or `unknown`.
 - Report Pi context from `AGENTS.md`; do not require `.pi/SYSTEM.md` or `.pi/APPEND_SYSTEM.md`.
@@ -61,6 +73,10 @@ the user explicitly asks to update or upgrade the project-local structure.
   `pi`), not by scanning provider command tokens. An absent or unsupported
   configured owner is `unknown`. Use the command-token rules only for a
   non-canonical legacy post-commit script.
+- The managed hook should invoke the canonical runner under the shared Git
+  directory with `--project` and the committing worktree root. Report
+  checkout-local-only invocation as `upgrade available`, because linked
+  worktrees can otherwise retain stale ignored scripts.
 - Count managed `llm-wiki` hook or scheduler entries when possible. The
   canonical dispatcher is clean only when exactly one managed hook block calls
   it; report missing or duplicate managed entries instead of treating the
@@ -194,7 +210,7 @@ Return:
 - Post-commit refresh owner: claude | codex | pi | mixed | missing | mismatch | unknown
 - Project structure: current | upgrade available | unknown
 - Project upgrade command: <active surface's single command> | unknown
-- Refresh circuit: closed | open (failures: <n>, quarantined: <n>) | unknown
+- Refresh circuit: closed | open (reason: <value>, failures: <n>, pending: <n>, interrupted: <n>, quarantined: <n>, pinned: <n>) | unknown
 - Refresh recovery command: .llm-wiki/post-commit-refresh.sh --retry-failed all | not needed | unknown
 - Refresh log: <shared-git-dir>/llm-wiki/post-commit-refresh.log | unknown
 ```

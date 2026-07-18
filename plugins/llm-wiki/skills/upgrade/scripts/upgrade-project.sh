@@ -44,6 +44,28 @@ fi
 
 config_path="$root/.llm-wiki/config.json"
 config_needs_create=0
+config_from_shared=0
+common_dir="$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)"
+shared_state_dir="$common_dir/llm-wiki"
+shared_post_path="$shared_state_dir/post-commit-refresh.sh"
+shared_compile_path="$shared_state_dir/compile-log.sh"
+shared_config_path="$shared_state_dir/config.json"
+hook_path="$(git -C "$root" rev-parse --path-format=absolute --git-path hooks/post-commit)"
+shared_headless_agent=""
+if [ -f "$shared_config_path" ]; then
+  shared_headless_agent="$(
+    sed -nE 's/.*"headless_agent"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
+      "$shared_config_path" | head -n 1
+  )"
+  case "$shared_headless_agent" in
+    codex|claude|pi) ;;
+    *)
+      printf 'llm-wiki: unsupported or missing headless_agent in shared Git config: %s\n' \
+        "$shared_config_path" >&2
+      exit 1
+      ;;
+  esac
+fi
 
 infer_legacy_owner() {
   local file historical_commit historical_owner="" candidate_owner owners=()
@@ -135,8 +157,19 @@ if [ -f "$config_path" ]; then
       ;;
   esac
 else
-  headless_agent="$(infer_legacy_owner)" || exit 1
+  if [ -n "$shared_headless_agent" ]; then
+    headless_agent="$shared_headless_agent"
+    config_from_shared=1
+  else
+    headless_agent="$(infer_legacy_owner)" || exit 1
+  fi
   config_needs_create=1
+fi
+
+if [ -n "$shared_headless_agent" ] && [ "$shared_headless_agent" != "$headless_agent" ]; then
+  printf 'llm-wiki: refusing to replace canonical shared owner %s with branch-local owner %s; reconcile .llm-wiki/config.json from the canonical checkout first\n' \
+    "$shared_headless_agent" "$headless_agent" >&2
+  exit 1
 fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -150,7 +183,6 @@ for template in "$post_template" "$compile_template"; do
   fi
 done
 
-hook_path="$(git -C "$root" rev-parse --path-format=absolute --git-path hooks/post-commit)"
 HOOK_BEGIN='# BEGIN LLM WIKI POST-COMMIT'
 HOOK_END='# END LLM WIKI POST-COMMIT'
 LOG_BEGIN='<!-- BEGIN GENERATED WIKI LOG FRAGMENTS -->'
@@ -159,8 +191,16 @@ LOG_END='<!-- END GENERATED WIKI LOG FRAGMENTS -->'
 managed_hook_block() {
   cat <<'HOOK'
 # BEGIN LLM WIKI POST-COMMIT
-if [ "${HIVE_SKIP_LLM_WIKI_POST_COMMIT:-}" != "1" ] && [ -x ".llm-wiki/post-commit-refresh.sh" ]; then
-  ".llm-wiki/post-commit-refresh.sh" >/dev/null 2>&1 &
+if [ "${HIVE_SKIP_LLM_WIKI_POST_COMMIT:-}" != "1" ]; then
+  llm_wiki_project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  llm_wiki_common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  llm_wiki_shared_runner="$llm_wiki_common_dir/llm-wiki/post-commit-refresh.sh"
+  if [ -x "$llm_wiki_shared_runner" ]; then
+    "$llm_wiki_shared_runner" --project "$llm_wiki_project_root" >/dev/null 2>&1 &
+  elif [ -x ".llm-wiki/post-commit-refresh.sh" ]; then
+    ".llm-wiki/post-commit-refresh.sh" >/dev/null 2>&1 &
+  fi
+  unset llm_wiki_project_root llm_wiki_common_dir llm_wiki_shared_runner
 fi
 # END LLM WIKI POST-COMMIT
 HOOK
@@ -303,9 +343,40 @@ render_migrated_log() {
   [ -z "$legacy" ] || printf '\n%s\n' "$legacy" >>"$output"
 }
 
+pin_existing_queued_sources() {
+  local path queued_sha queued_branch transaction="$tmp_dir/source-pins"
+  {
+    printf 'start\n'
+    shopt -s nullglob
+    for path in "$shared_state_dir/pending"/* "$shared_state_dir/failed"/*; do
+      [ -f "$path" ] || continue
+      queued_sha=""
+      queued_branch=""
+      IFS=$'\t' read -r queued_sha queued_branch <"$path" || true
+      if [[ "$queued_sha" =~ ^[0-9a-fA-F]{40,64}$ ]] && \
+         git -C "$root" cat-file -e "${queued_sha}^{commit}" 2>/dev/null; then
+        printf 'update refs/llm-wiki/sources/%s %s\n' "$queued_sha" "$queued_sha"
+      else
+        printf 'llm-wiki: warning: queued source is not an available commit: %s\n' \
+          "${queued_sha:-unknown}" >&2
+      fi
+    done
+    shopt -u nullglob
+    printf 'commit\n'
+  } >"$transaction"
+  git -C "$root" update-ref --stdin <"$transaction"
+}
+
 if [ "$config_needs_create" -eq 1 ]; then
   rendered_config="$tmp_dir/config.json"
-  render_config >"$rendered_config"
+  if [ "$config_from_shared" -eq 1 ]; then
+    cp "$shared_config_path" "$rendered_config"
+  else
+    render_config >"$rendered_config"
+  fi
+  canonical_config_source="$rendered_config"
+else
+  canonical_config_source="$config_path"
 fi
 if [ "$log_needs_migration" -eq 1 ]; then
   render_migrated_log "$compiled_log"
@@ -326,6 +397,21 @@ if [ ! -x "$root/.llm-wiki/compile-log.sh" ] || \
    ! cmp -s "$compile_template" "$root/.llm-wiki/compile-log.sh"; then
   compile_needs_upgrade=1
   changes+=(".llm-wiki/compile-log.sh")
+fi
+shared_post_needs_upgrade=0
+if [ ! -x "$shared_post_path" ] || ! cmp -s "$post_template" "$shared_post_path"; then
+  shared_post_needs_upgrade=1
+  changes+=("shared Git refresh runner")
+fi
+shared_compile_needs_upgrade=0
+if [ ! -x "$shared_compile_path" ] || ! cmp -s "$compile_template" "$shared_compile_path"; then
+  shared_compile_needs_upgrade=1
+  changes+=("shared Git changelog compiler")
+fi
+shared_config_needs_upgrade=0
+if [ ! -f "$shared_config_path" ] || ! cmp -s "$canonical_config_source" "$shared_config_path"; then
+  shared_config_needs_upgrade=1
+  changes+=("shared Git owner config")
 fi
 if [ ! -d "$root/wiki/log.d" ]; then
   changes+=("wiki/log.d/")
@@ -349,12 +435,17 @@ if [ "$mode" = check ]; then
   exit 10
 fi
 
+if ! pin_existing_queued_sources; then
+  printf 'llm-wiki: could not pin existing queued source commits\n' >&2
+  exit 1
+fi
+
 if [ "${#changes[@]}" -eq 0 ]; then
   printf 'llm-wiki: already current: %s\n' "$root"
   exit 0
 fi
 
-mkdir -p "$root/.llm-wiki" "$root/wiki/log.d" "$(dirname "$hook_path")"
+mkdir -p "$root/.llm-wiki" "$root/wiki/log.d" "$shared_state_dir" "$(dirname "$hook_path")"
 if [ "$config_needs_create" -eq 1 ]; then
   install -m 0644 "$rendered_config" "$config_path"
 fi
@@ -363,6 +454,15 @@ if [ "$post_needs_upgrade" -eq 1 ]; then
 fi
 if [ "$compile_needs_upgrade" -eq 1 ]; then
   install -m 0755 "$compile_template" "$root/.llm-wiki/compile-log.sh"
+fi
+if [ "$shared_post_needs_upgrade" -eq 1 ]; then
+  install -m 0755 "$post_template" "$shared_post_path"
+fi
+if [ "$shared_compile_needs_upgrade" -eq 1 ]; then
+  install -m 0755 "$compile_template" "$shared_compile_path"
+fi
+if [ "$shared_config_needs_upgrade" -eq 1 ]; then
+  install -m 0644 "$canonical_config_source" "$shared_config_path"
 fi
 if [ "$log_needs_migration" -eq 1 ]; then
   install -m 0644 "$compiled_log" "$root/wiki/log.md"

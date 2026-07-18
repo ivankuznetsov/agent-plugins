@@ -4,6 +4,66 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.13] - 2026-07-18
+
+### Fixed
+
+- **Bounded lock contention.** Every unsuccessful refresh-lock iteration now
+  checks its deadline and sleeps, including failed compare-and-swap races
+  against an absent or stale ref. Git ref updates also run under a short
+  timeout, preventing concurrent post-commit hooks from leaving indefinitely
+  spinning shells. Every timeout adds a forced-kill grace period for commands
+  that ignore the initial termination signal.
+- **Interrupted queue writes.** A worker recovers valid hidden source records
+  left between the atomic queue write and rename. Incomplete records remain
+  visible to status checks instead of being mistaken for runnable work.
+- **Stale linked-worktree runners.** The Git hook now invokes one canonical
+  runner stored in the repository's shared Git directory and passes the
+  committing worktree explicitly. The shared state also owns the canonical
+  headless-agent config, so one project upgrade protects old branches whose
+  checkout-local ignored scripts or configs were never refreshed. Upgrades
+  refuse a branch-local owner that conflicts with the established shared owner.
+- **Durable queued sources.** Queue records now pin their commits under
+  `refs/llm-wiki/sources/` until a receipt is written. Upgrades backfill pins for
+  existing queues, and a missing commit fails validation instead of receiving a
+  false no-op receipt.
+
+### Changed
+
+- **Automatic backlog circuit.** More than 25 queued sources now opens the
+  repository circuit before any provider starts. A worker processes at most one
+  batch of 10 sources, lists at most 20 changed paths per source, and caps each
+  displayed path at 200 bytes by default. Tune these bounds with
+  `LLM_WIKI_MAX_AUTO_PENDING`, `LLM_WIKI_MAX_BATCH_SOURCES`,
+  `LLM_WIKI_MAX_PATHS_PER_SOURCE`, and `LLM_WIKI_MAX_PATH_BYTES`.
+- **Operator-paced recovery.** An explicit recovery processes one bounded batch
+  and leaves the circuit open while queued work remains. Rerun the command until
+  status reports a closed circuit:
+
+  ```bash
+  .llm-wiki/post-commit-refresh.sh --retry-failed all
+  ```
+- **Visible concurrent handoff.** Sources arriving outside a running worker's
+  snapshot open a `deferred:<count>` circuit after its successful batch. This
+  prevents a timed-out hook from leaving invisible pending work and keeps the
+  next subscription run operator-paced.
+
+### Upgrade existing projects
+
+Updating the plugin or Pi package does not rewrite the refresh script already
+copied into a project. After updating and restarting the agent, run the matching
+command once inside every existing project:
+
+```text
+Claude Code: /llm-wiki:upgrade
+Codex:       $llm-wiki:upgrade
+Pi:          /skill:wiki-upgrade
+```
+
+The upgrade is deterministic and uses no LLM or subscription tokens. It
+preserves the configured headless owner, wiki content, hook customizations, and
+unrelated dirty work.
+
 ## [0.1.12] - 2026-07-18
 
 ### Fixed

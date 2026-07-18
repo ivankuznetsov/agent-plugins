@@ -9,29 +9,48 @@ set -euo pipefail
 # committing checkout nor the primary checkout is used as an agent workspace,
 # staging area, log destination, or QMD cache.
 
-committing_tree="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$committing_tree"
-
+project_override=""
 retry_selector=""
-case "$#" in
-  0) ;;
-  2)
-    if [ "$1" != "--retry-failed" ]; then
-      printf 'Usage: %s [--retry-failed <sha|all>]\n' "$0" >&2
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --project)
+      [ "$#" -ge 2 ] || {
+        printf 'Usage: %s [--project <path>] [--retry-failed <sha|all>]\n' "$0" >&2
+        exit 2
+      }
+      project_override="$2"
+      shift 2
+      ;;
+    --retry-failed)
+      [ "$#" -ge 2 ] || {
+        printf 'Usage: %s [--project <path>] [--retry-failed <sha|all>]\n' "$0" >&2
+        exit 2
+      }
+      retry_selector="$2"
+      shift 2
+      ;;
+    *)
+      printf 'Usage: %s [--project <path>] [--retry-failed <sha|all>]\n' "$0" >&2
       exit 2
-    fi
-    retry_selector="$2"
-    if [ "$retry_selector" != all ] && \
-       [[ ! "$retry_selector" =~ ^[0-9a-fA-F]{40,64}$ ]]; then
-      printf 'llm-wiki: retry selector must be a full source SHA or all\n' >&2
-      exit 2
-    fi
-    ;;
-  *)
-    printf 'Usage: %s [--retry-failed <sha|all>]\n' "$0" >&2
+      ;;
+  esac
+done
+if [ "$retry_selector" != all ] && [ -n "$retry_selector" ] && \
+   [[ ! "$retry_selector" =~ ^[0-9a-fA-F]{40,64}$ ]]; then
+  printf 'llm-wiki: retry selector must be a full source SHA or all\n' >&2
+  exit 2
+fi
+
+if [ -n "$project_override" ]; then
+  committing_tree="$(git -C "$project_override" rev-parse --show-toplevel 2>/dev/null || true)"
+  if [ -z "$committing_tree" ]; then
+    printf 'llm-wiki: --project must identify a Git worktree\n' >&2
     exit 2
-    ;;
-esac
+  fi
+else
+  committing_tree="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+cd "$committing_tree"
 
 configure_git_tool_environment() {
   GIT_ENV_UNSET_ARGS=()
@@ -50,7 +69,7 @@ run_without_git_env() {
 }
 
 run_with_timeout() {
-  local seconds="$1"
+  local seconds="$1" kill_after
   local timeout_bin
   shift
 
@@ -63,7 +82,9 @@ run_with_timeout() {
     return 125
   fi
 
-  run_without_git_env "$timeout_bin" "$seconds" "$@"
+  kill_after="${LLM_WIKI_TIMEOUT_KILL_AFTER:-10}"
+  [[ "$kill_after" =~ ^[1-9][0-9]*$ ]] || kill_after=10
+  run_without_git_env "$timeout_bin" -k "$kill_after" "$seconds" "$@"
 }
 
 clear_git_tool_environment() {
@@ -82,12 +103,28 @@ pending_dir="$state_dir/pending"
 failed_dir="$state_dir/failed"
 failure_count_file="$state_dir/consecutive-failures"
 breaker_file="$state_dir/refresh-disabled"
+canonical_config="$state_dir/config.json"
 lock_ref="${LLM_WIKI_LOCK_REF:-refs/llm-wiki/refresh-lock}"
+source_ref_prefix="refs/llm-wiki/sources"
 refresh_root="$state_dir/refresh-worktree"
 log_file="$state_dir/post-commit-refresh.log"
 refresh_branch="${LLM_WIKI_REFRESH_BRANCH:-llm-wiki/refresh}"
 lock_owner_oid=""
 mkdir -p "$pending_dir" "$failed_dir"
+
+positive_integer_or_default() {
+  local value="$1" fallback="$2"
+  if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\n' "$value"
+  else
+    printf '%s\n' "$fallback"
+  fi
+}
+
+max_auto_pending="$(positive_integer_or_default "${LLM_WIKI_MAX_AUTO_PENDING:-25}" 25)"
+max_batch_sources="$(positive_integer_or_default "${LLM_WIKI_MAX_BATCH_SOURCES:-10}" 10)"
+max_paths_per_source="$(positive_integer_or_default "${LLM_WIKI_MAX_PATHS_PER_SOURCE:-20}" 20)"
+max_path_bytes="$(positive_integer_or_default "${LLM_WIKI_MAX_PATH_BYTES:-200}" 200)"
 
 log_line() {
   printf '[llm-wiki][%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >>"$log_file" 2>/dev/null || true
@@ -133,8 +170,18 @@ if [ -z "$retry_selector" ]; then
   } >"$queue_tmp"
   mv -f "$queue_tmp" "$pending_dir/$sha"
 
+  if ! run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
+       git update-ref "$source_ref_prefix/$sha" "$sha" \
+       >>"$log_file" 2>&1; then
+    breaker_tmp="$state_dir/.refresh-disabled.$$"
+    printf 'source-pin:%s\n' "$sha" >"$breaker_tmp"
+    mv -f "$breaker_tmp" "$breaker_file"
+    log_line "ERROR: source $sha queued but could not be pinned; automatic refresh disabled"
+    exit 0
+  fi
+
   if [ -f "$breaker_file" ]; then
-    log_line "automatic refresh disabled after consecutive failures; source $sha queued"
+    log_line "automatic refresh circuit is open; source $sha queued"
     exit 0
   fi
 fi
@@ -168,6 +215,7 @@ lock_owner_stale() {
 acquire_lock() {
   local wait_seconds deadline now owner current_oid expected_oid zero_oid
   wait_seconds="${LLM_WIKI_LOCK_WAIT_SECONDS:-60}"
+  [[ "$wait_seconds" =~ ^[0-9]+$ ]] || wait_seconds=60
   now="$(date +%s 2>/dev/null || echo 0)"
   deadline="$((now + wait_seconds))"
   owner="$$|$now|$(process_identity "$$")|${RANDOM:-0}"
@@ -178,17 +226,127 @@ acquire_lock() {
     current_oid="$(git rev-parse --verify --quiet "$lock_ref" 2>/dev/null || true)"
     if [ -z "$current_oid" ] || lock_owner_stale "$current_oid"; then
       expected_oid="${current_oid:-$zero_oid}"
-      if git update-ref "$lock_ref" "$lock_owner_oid" "$expected_oid" 2>/dev/null; then
+      if run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
+           git update-ref "$lock_ref" "$lock_owner_oid" "$expected_oid" \
+           >>"$log_file" 2>&1; then
         [ -n "$current_oid" ] && log_line "reclaimed stale refresh lock"
         return 0
       fi
-      continue
     fi
 
+    # Check the deadline after every unsuccessful iteration. A failed
+    # compare-and-swap can otherwise spin forever while short-lived owners race
+    # to acquire and release an apparently absent or stale ref.
     now="$(date +%s 2>/dev/null || echo 0)"
     [ "$now" -ge "$deadline" ] && return 1
     sleep 1
   done
+}
+
+pending_source_count() {
+  local path count=0
+  shopt -s nullglob
+  for path in "$pending_dir"/*; do
+    [ -f "$path" ] && count=$((count + 1))
+  done
+  shopt -u nullglob
+  printf '%s\n' "$count"
+}
+
+pending_sources_present() {
+  [ "$(pending_source_count)" -gt 0 ]
+}
+
+recover_queue_temps() {
+  local path name queued_sha queued_sha_in_file queued_branch target
+  shopt -s nullglob
+  for path in "$pending_dir"/.[0-9a-fA-F]*.*; do
+    [ -f "$path" ] || continue
+    name="$(basename "$path")"
+    if [[ ! "$name" =~ ^\.([0-9a-fA-F]{40,64})\.[0-9]+$ ]]; then
+      log_line "WARN: unrecognized queue temp retained: $name"
+      continue
+    fi
+    queued_sha="${BASH_REMATCH[1]}"
+    target="$pending_dir/$queued_sha"
+    if [ -f "$target" ]; then
+      rm -f -- "$path"
+      log_line "removed duplicate queue temp for source $queued_sha"
+      continue
+    fi
+    IFS=$'\t' read -r queued_sha_in_file queued_branch <"$path" || true
+    if [ "$queued_sha_in_file" != "$queued_sha" ]; then
+      log_line "WARN: incomplete queue temp retained: $name"
+      continue
+    fi
+    mv -f -- "$path" "$target"
+    log_line "recovered interrupted queue write for source $queued_sha"
+  done
+  shopt -u nullglob
+}
+
+open_backlog_circuit_if_needed() {
+  local count breaker_tmp
+  count="$(pending_source_count)"
+  [ "$count" -gt "$max_auto_pending" ] || return 1
+  breaker_tmp="$state_dir/.refresh-disabled.$$"
+  printf 'backlog:%s\n' "$count" >"$breaker_tmp"
+  mv -f "$breaker_tmp" "$breaker_file"
+  log_line "automatic refresh disabled before provider launch: $count queued sources exceed LLM_WIKI_MAX_AUTO_PENDING=$max_auto_pending; run .llm-wiki/post-commit-refresh.sh --retry-failed all for one bounded batch"
+  return 0
+}
+
+pin_queued_sources() {
+  local path queued_sha queued_branch
+  {
+    printf 'start\n'
+    shopt -s nullglob
+    for path in "$pending_dir"/* "$failed_dir"/*; do
+      [ -f "$path" ] || continue
+      queued_sha=""
+      queued_branch=""
+      IFS=$'\t' read -r queued_sha queued_branch <"$path" || true
+      if [[ "$queued_sha" =~ ^[0-9a-fA-F]{40,64}$ ]] && \
+         git cat-file -e "${queued_sha}^{commit}" 2>/dev/null; then
+        printf 'update %s/%s %s\n' "$source_ref_prefix" "$queued_sha" "$queued_sha"
+      else
+        log_line "ERROR: queued source is not an available commit: $queued_sha"
+      fi
+    done
+    shopt -u nullglob
+    printf 'commit\n'
+  } | run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
+    git update-ref --stdin >>"$log_file" 2>&1
+}
+
+open_source_pin_circuit() {
+  local breaker_tmp="$state_dir/.refresh-disabled.$$"
+  printf 'source-pin:batch\n' >"$breaker_tmp"
+  mv -f "$breaker_tmp" "$breaker_file"
+  log_line "ERROR: could not pin queued source commits; automatic refresh disabled"
+}
+
+reconcile_circuit_after_success() {
+  local pending_count failed_count breaker_tmp
+
+  # Close first, then recount while still holding the worker lock. A hook that
+  # observed the old breaker and exited has already queued its source, while a
+  # hook that arrives after this removal will wait for this lock and perform its
+  # own reconciliation.
+  rm -f -- "$breaker_file"
+  pending_count="$(pending_source_count)"
+  failed_count="$(failed_source_count)"
+  if [ "$failed_count" -gt 0 ]; then
+    breaker_tmp="$state_dir/.refresh-disabled.$$"
+    printf 'quarantined:%s\n' "$failed_count" >"$breaker_tmp"
+    mv -f "$breaker_tmp" "$breaker_file"
+    log_line "refresh succeeded, but $failed_count quarantined source(s) remain; automatic refresh stays disabled"
+  elif [ "$pending_count" -gt 0 ]; then
+    breaker_tmp="$state_dir/.refresh-disabled.$$"
+    printf 'deferred:%s\n' "$pending_count" >"$breaker_tmp"
+    mv -f "$breaker_tmp" "$breaker_file"
+    log_line "automatic refresh deferred: $pending_count source(s) arrived outside the completed bounded batch; run .llm-wiki/post-commit-refresh.sh --retry-failed all"
+  fi
 }
 
 restore_failed_sources() {
@@ -246,6 +404,16 @@ failed_sources_present() {
   return 1
 }
 
+failed_source_count() {
+  local path count=0
+  shopt -s nullglob
+  for path in "$failed_dir"/*; do
+    [ -f "$path" ] && count=$((count + 1))
+  done
+  shopt -u nullglob
+  printf '%s\n' "$count"
+}
+
 if ! acquire_lock; then
   log_line "refresh remains queued; worker lock was busy"
   if [ -n "$retry_selector" ]; then
@@ -267,7 +435,10 @@ cleanup_refresh_worktree() {
 # shellcheck disable=SC2329
 cleanup() {
   cleanup_refresh_worktree
-  [ -n "$lock_owner_oid" ] && git update-ref -d "$lock_ref" "$lock_owner_oid" 2>/dev/null || true
+  [ -n "$lock_owner_oid" ] && \
+    run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
+      git update-ref -d "$lock_ref" "$lock_owner_oid" \
+      >>"$log_file" 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -348,10 +519,12 @@ run_refresh_agent() {
     return $?
   fi
 
-  local headless_agent timeout_seconds
+  local headless_agent timeout_seconds owner_config
+  owner_config="$canonical_config"
+  [ -f "$owner_config" ] || owner_config="$committing_tree/.llm-wiki/config.json"
   headless_agent="$(
     sed -nE 's/.*"headless_agent"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
-      "$committing_tree/.llm-wiki/config.json" | head -n 1
+      "$owner_config" 2>/dev/null | head -n 1 || true
   )"
   case "$headless_agent" in
     codex)
@@ -381,8 +554,14 @@ run_refresh_agent() {
 snapshot_queue() {
   QUEUE_FILES=()
   local path
+  if [ -n "$retry_selector" ] && [ "$retry_selector" != all ] && \
+     [ -f "$pending_dir/$retry_selector" ]; then
+    QUEUE_FILES+=("$pending_dir/$retry_selector")
+  fi
   shopt -s nullglob
   for path in "$pending_dir"/*; do
+    [ "${#QUEUE_FILES[@]}" -ge "$max_batch_sources" ] && break
+    [ "$path" = "$pending_dir/$retry_selector" ] && continue
     [ -f "$path" ] && QUEUE_FILES+=("$path")
   done
   shopt -u nullglob
@@ -404,9 +583,11 @@ write_source_receipts() {
     for file in "${QUEUE_FILES[@]}"; do
       IFS=$'\t' read -r queued_sha queued_branch <"$file"
       printf 'update refs/llm-wiki/receipts/%s %s\n' "$queued_sha" "$refresh_head"
+      printf 'delete %s/%s\n' "$source_ref_prefix" "$queued_sha"
     done
     printf 'commit\n'
-  } | git update-ref --stdin >>"$log_file" 2>&1
+  } | run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
+    git update-ref --stdin >>"$log_file" 2>&1
 }
 
 prune_receipted_queue_files() {
@@ -416,6 +597,9 @@ prune_receipted_queue_files() {
     IFS=$'\t' read -r queued_sha queued_branch <"$file"
     if source_receipted "$queued_sha"; then
       rm -f -- "$file"
+      run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
+        git update-ref -d "$source_ref_prefix/$queued_sha" \
+        >>"$log_file" 2>&1 || true
       log_line "acknowledged previously committed source $queued_sha"
     else
       retained+=("$file")
@@ -434,13 +618,17 @@ record_batch_failure() {
     IFS=$'\t' read -r queued_sha queued_branch <"$file"
     if source_receipted "$queued_sha"; then
       rm -f -- "$file"
+      run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
+        git update-ref -d "$source_ref_prefix/$queued_sha" \
+        >>"$log_file" 2>&1 || true
       log_line "acknowledged committed source $queued_sha after receipt write failure"
       continue
     fi
     remaining=1
   done
   if [ "$remaining" -eq 0 ]; then
-    rm -f -- "$failure_count_file" "$breaker_file"
+    rm -f -- "$failure_count_file"
+    reconcile_circuit_after_success
     return 0
   fi
 
@@ -457,7 +645,7 @@ record_batch_failure() {
       IFS=$'\t' read -r queued_sha queued_branch <"$file"
       mv -f -- "$file" "$failed_dir/$queued_sha"
     done
-    printf '%s\n' "$count" >"$breaker_file"
+    printf 'failures:%s\n' "$count" >"$breaker_file"
     log_line "ERROR: automatic refresh disabled after $count consecutive failed batch(es); run .llm-wiki/post-commit-refresh.sh --retry-failed all"
   else
     log_line "refresh batch failed ($count/$max_attempts consecutive failures); queue retained"
@@ -465,24 +653,38 @@ record_batch_failure() {
 }
 
 process_queue_batch() {
-  local sources="" file queued_sha queued_branch paths prompt short_source
+  local sources="" file queued_sha queued_branch prompt short_source compile_runner
+  local path display_path path_count omitted_paths
+  local LC_ALL=C
   local commit_args=()
   prune_receipted_queue_files
   if [ "${#QUEUE_FILES[@]}" -eq 0 ]; then
     rm -f -- "$failure_count_file"
-    if ! failed_sources_present; then
-      rm -f -- "$breaker_file"
-    fi
     return 0
   fi
   for file in "${QUEUE_FILES[@]}"; do
     IFS=$'\t' read -r queued_sha queued_branch <"$file"
+    if ! git cat-file -e "${queued_sha}^{commit}" 2>/dev/null; then
+      log_line "ERROR: refusing to acknowledge unavailable source commit $queued_sha"
+      return 1
+    fi
     commit_args+=( -m "LLM-Wiki-Source: $queued_sha" )
-    paths="$(sed -n '2,$p' "$file")"
     sources+="- commit ${queued_sha} on branch ${queued_branch}; changed paths:\n"
+    path_count=0
+    omitted_paths=0
     while IFS= read -r path; do
-      [ -n "$path" ] && sources+="  - ${path}\n"
-    done <<<"$paths"
+      [ -n "$path" ] || continue
+      if [ "$path_count" -lt "$max_paths_per_source" ]; then
+        display_path="${path:0:max_path_bytes}"
+        sources+="  - ${display_path}\n"
+        path_count=$((path_count + 1))
+      else
+        omitted_paths=$((omitted_paths + 1))
+      fi
+    done < <(sed -n '2,$p' "$file")
+    if [ "$omitted_paths" -gt 0 ]; then
+      sources+="  - ... ${omitted_paths} additional changed path(s); inspect the commit directly\n"
+    fi
   done
 
   prompt="$(cat <<PROMPT
@@ -513,8 +715,12 @@ PROMPT
   fi
   wiki_only_changes || return 1
 
-  if [ -x "$refresh_root/.llm-wiki/compile-log.sh" ]; then
-    bash "$refresh_root/.llm-wiki/compile-log.sh" "$refresh_root" >>"$log_file" 2>&1 || {
+  compile_runner="$refresh_root/.llm-wiki/compile-log.sh"
+  if [ ! -x "$compile_runner" ] && [ -x "$state_dir/compile-log.sh" ]; then
+    compile_runner="$state_dir/compile-log.sh"
+  fi
+  if [ -x "$compile_runner" ]; then
+    bash "$compile_runner" "$refresh_root" >>"$log_file" 2>&1 || {
       log_line "ERROR: changelog compilation failed; queue retained"
       return 1
     }
@@ -545,17 +751,21 @@ PROMPT
   fi
   rm -f -- "${QUEUE_FILES[@]}"
   rm -f -- "$failure_count_file"
-  if failed_sources_present; then
-    log_line "refresh succeeded, but quarantined sources remain; automatic refresh stays disabled"
-  else
-    rm -f -- "$breaker_file"
-  fi
   ( cd "$refresh_root" && run_qmd update ) >>"$log_file" 2>&1 || true
   ( cd "$refresh_root" && run_qmd embed --max-docs-per-batch 64 --max-batch-mb 64 ) >>"$log_file" 2>&1 || true
   return 0
 }
 
 configure_qmd_environment
+recover_queue_temps
+if ! pin_queued_sources; then
+  open_source_pin_circuit
+  if [ -n "$retry_selector" ]; then
+    printf 'llm-wiki: retry failed while pinning queued source commits\n' >&2
+    exit 1
+  fi
+  exit 0
+fi
 if [ -n "$retry_selector" ]; then
   if ! restore_failed_sources; then
     exit 1
@@ -564,6 +774,8 @@ if [ -n "$retry_selector" ]; then
 # the circuit. Re-check under the lock before any worktree or provider action.
 elif [ -f "$breaker_file" ]; then
   log_line "automatic refresh circuit remains open; queued sources retained"
+  exit 0
+elif open_backlog_circuit_if_needed; then
   exit 0
 fi
 if ! prepare_refresh_worktree; then
@@ -582,7 +794,7 @@ if ! seed_untracked_local_wiki; then
   exit 0
 fi
 
-while snapshot_queue; do
+if snapshot_queue; then
   if ! process_queue_batch; then
     record_batch_failure
     if [ -n "$retry_selector" ]; then
@@ -591,11 +803,19 @@ while snapshot_queue; do
     fi
     exit 0
   fi
-done
+fi
+
+reconcile_circuit_after_success
 
 if [ -n "$retry_selector" ]; then
+  remaining_sources="$(pending_source_count)"
+  remaining_failed="$(failed_source_count)"
   if [ -f "$breaker_file" ]; then
-    printf 'llm-wiki: selected refresh completed; quarantined sources remain, so the circuit stays open\n'
+    printf 'llm-wiki: bounded refresh batch completed; %s queued and %s quarantined source(s) remain, so the circuit stays open\n' \
+      "$remaining_sources" "$remaining_failed"
+    printf 'llm-wiki: rerun .llm-wiki/post-commit-refresh.sh --retry-failed all for the next bounded batch\n'
+  elif [ "$remaining_sources" -gt 0 ]; then
+    printf 'llm-wiki: bounded refresh batch completed; %s source(s) queued during the run\n' "$remaining_sources"
   else
     printf 'llm-wiki: queued refresh completed successfully\n'
   fi
