@@ -36,3 +36,9 @@ collections, pagination, and identifiers before canonical skills act on them.
 LLM Wiki's shared transactional refresh runner dispatches exactly one configured
 owner, including a validated OpenClaw workspace agent, from a disposable refresh
 worktree.
+
+Agent SEO writes new project artifacts by default. Its legacy `scrub` surface
+is a read-only formatting audit, while live analytics access requires an
+explicit data workflow with a declared provider and scope.
+The Ruby audit uses Unicode category `Cf` directly and returns one-based
+line/column findings shared by human-readable and JSON output.

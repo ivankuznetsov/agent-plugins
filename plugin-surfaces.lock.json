@@ -229,35 +229,35 @@
       }
     },
     "agent-seo": {
-      "version": "1.2.0",
+      "version": "2.0.0",
       "canonical": {
         "skills/seo/SKILL.md": {
-          "sha256": "cde17fa5fd3e7061e7742ee786b99edb87ef2ac7d74d5eb823b1fb948315d504",
-          "semantic_sha256": "4dcd8a76ef588507d64091704ff5835d1b5c20717f76b6d59af85d5629f2226b",
+          "sha256": "87306367f68021eee750d7eba911bcd4288e935fa25d5a8be422f2e01478e870",
+          "semantic_sha256": "421b55784fc77bc16e61b02cbe5ee7a15f9c817e738faeaa8de0c3dd97288077",
           "sections": {
-            "1:agent seo": "4677d492eb19143423a901c669664a11e627e5b0f22f19710b8ad44825f9749f",
-            "2:invocation": "fb2f08a6f4b9b9785914057eecddbd24f5698293033c668f8fa8e9f5050d40e3",
-            "2:shared ground rules": "be9ed276f6c67648b749e0fc163762acfe7c98b8af29c65575594ba79de88b0e",
-            "2:workflow map": "5be5e6d44d3ae0efee714536e0b9865ee49e69160240d69fc096b56e9c5ed083",
+            "1:agent seo": "7023077a01501c8d4b56751d40b2298f15d9759231187720728c76cf3d88ac34",
+            "2:invocation": "cdbba93659b811d4a69417eeaf5fbc616cf63d1ef4d1344b4986992c9e882ef0",
+            "2:shared ground rules": "2926440fde18530c1fc16be9378bc85790140a063a7e22b33b188acd76ddd4eb",
+            "2:workflow map": "dc0e2206988338a9f02a12b99aca0239607fa24f0d2fcdcabb423e14ddcccb28",
             "2:research workflow": "bc36fd280cb4f4e002017233080d658c712880ea2420f4edfbd0a8ab658a0bc3",
-            "2:writing workflow": "c5bb2e65203c381e77049a6588a8a23813fd191a4b47c1886b8e312040942245",
-            "2:humanize workflow": "dae63057cad3bf9f6068167415449d9ac4ce577bbbc7796446277847afa5b38b",
+            "2:writing workflow": "9c68a014f6517192e3a90302206b017747d8f3ffbfa08b08174950fc1744c9c3",
+            "2:humanize workflow": "6f55dd7c1fa1ce548c17141832f9fa291b9309169f569cdbda68daa0324014b9",
             "2:fact-check workflow": "68013b8bc8da9b93c9dca04baed3e4b2650d1be02a3138329c0504ac9085d05c",
             "2:optimization workflow": "4a76d65df20f27bbca00a7bb13bd9a4a059d683c1f9e197edda8af7566b7185d",
             "2:analyze existing workflow": "9776893dc0682bb01988d92e4ed6d7e30a4425ee3065c428ecff48d90fc0cf3b",
-            "2:rewrite workflow": "a6b109ad1761c5bba17d3e27f91d814377ef15d343ffd6d9727e9fd148fb758b",
-            "2:scrub workflow": "e156ba04e59486bb452970998fb3a8bf92378533e228d47ce5e2b64b4182058f",
-            "2:data workflow": "0455c8d986bbb500d6488792a48121981f14caf49f42098fd14e69e2fff07eba",
+            "2:rewrite workflow": "027562be504dfafc3139ed2f54ecf93047499d8aeccc38ec67a1370a682597c7",
+            "2:scrub workflow": "11f7b8f2377d3e721985501b0b3c8491c1cb093de137b90c2d5ea48edd698c6b",
+            "2:data workflow": "feaa6558ce69503185ee5472ff474e517d845ca78f2e38470d1b9b0672b64196",
             "2:performance review workflow": "a42211ef32258e3388746144bf28569fef4c569d8d3aa6e09ea52e19c118f847",
-            "2:ruby analysis tools": "b3faaef9aab06153e815df38613e836b244c81da339bfd948d52aedbb9df963c",
-            "2:quality targets": "187d77f4733ef740f67ff243acf6058786ea31e23b2d561e301d8ec49cb56a6a"
+            "2:ruby analysis tools": "10d2eebbda61ebb76ec4c606789eca363e53c77690d69d496d92c436985df8b4",
+            "2:quality targets": "4857711234710255ed39e84b805f90362be45f293652ffe5095465746aaa0009"
           }
         }
       },
       "resources": {
         "agents": {
           "exists": true,
-          "sha256": "f2510a380397b269f3d79448ab76e695041f0b67473465c202ba50aa14d8a8a8",
+          "sha256": "f7116c3952da0cb72370b0fdfc482cca53d0b58bcfd01753ee29fe4b73cc6cdb",
           "files": [
             "agents/content-analyzer.md",
             "agents/editor.md",
@@ -286,11 +286,10 @@
         },
         "data_sources": {
           "exists": true,
-          "sha256": "be378ec0a7b5ae063d7a8487223dab299ad688ca256f4f1d3962ecd84fa3c7e4",
+          "sha256": "f6c1f72e93b90493a419c9366076cb114bdaf9c953c58e2a635ecf1ce5b581c8",
           "files": [
             "data_sources/README.md",
             "data_sources/cache/.gitkeep",
-            "data_sources/config/.env.example",
             "data_sources/ruby/Gemfile",
             "data_sources/ruby/Gemfile.lock",
             "data_sources/ruby/bin/seo-intent",
@@ -326,6 +325,7 @@
             "data_sources/ruby/test/readability_scorer_test.rb",
             "data_sources/ruby/test/search_intent_analyzer_test.rb",
             "data_sources/ruby/test/seo_quality_rater_test.rb",
+            "data_sources/ruby/test/seo_scrub_cli_test.rb",
             "data_sources/ruby/test/test_helper.rb"
           ]
         },
@@ -338,25 +338,25 @@
         },
         "scripts": {
           "exists": true,
-          "sha256": "4ec68296beea789e1afccf21cd2ec0eb3771c44259458fd268b451271b645213",
+          "sha256": "563b3cf64ea61103db632a29352e726aa0acf62523b86086101e772479311782",
           "files": [
             "scripts/ensure-deps.sh"
           ]
         },
         ".env.example": {
           "exists": true,
-          "sha256": "69e3a6cbe47c254fb2a6def773b21a310c43361c79889a2274c4be1fbda47cf2"
+          "sha256": "431b8f1cf410f7a5a5b5fee6ecbb41271dd280ac0787d96b61ca07703f3431f5"
         },
         "data-sources-setup.md": {
           "exists": true,
-          "sha256": "b716f1ace1915441ca829553d253f3ccacb8fc7e29416a0e215ed3c2f11a1dcc"
+          "sha256": "ee7a17af66b5a0fc6cc75f4c45099b6a8c7e1bfed6353c33cce0fe14f3c8c63d"
         }
       },
       "adapters": {
         "pi/skills/agent-seo/SKILL.md": {
-          "sha256": "ffab02b70c29ab29a517cb4936f05cb0ec57e088eba09d1f3eda804a1751912a",
+          "sha256": "1a1e85896e72fa4ef6dbcfb7ec773dc1ba19217507c7a6f73c0f443500bc9355",
           "canonical": "skills/seo/SKILL.md",
-          "canonical_semantic_sha256": "4dcd8a76ef588507d64091704ff5835d1b5c20717f76b6d59af85d5629f2226b",
+          "canonical_semantic_sha256": "421b55784fc77bc16e61b02cbe5ee7a15f9c817e738faeaa8de0c3dd97288077",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -364,9 +364,9 @@
           ]
         },
         "openclaw/skills/agent-seo/SKILL.md": {
-          "sha256": "91075d82594fd1b034fbd95dcc40af2fe1a8c89dd630b1b16b66ba3b4d619c0a",
+          "sha256": "f039f8c77a93476fc4d818530745554d0c4b58b2e5c2b6d3c96eab79b8a1d404",
           "canonical": "skills/seo/SKILL.md",
-          "canonical_semantic_sha256": "4dcd8a76ef588507d64091704ff5835d1b5c20717f76b6d59af85d5629f2226b",
+          "canonical_semantic_sha256": "421b55784fc77bc16e61b02cbe5ee7a15f9c817e738faeaa8de0c3dd97288077",
           "overlays": [
             "frontmatter",
             "invocation",

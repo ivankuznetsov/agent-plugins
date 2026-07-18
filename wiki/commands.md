@@ -24,3 +24,9 @@ hosts: `wiki-bootstrap`, `wiki-upgrade`, `wiki-research`, `wiki-plan`, and
 Generated Claude command wrappers choose one canonical mode and forward
 arguments without reparsing them. `tests/fixtures/entrypoints.json` is the
 compatibility authority for legacy argument grammar.
+
+Agent SEO keeps `/seo:scrub` for compatibility, but it only reports formatting
+controls with one-based line/column locations and never changes the source
+file. The 2.0 CLI rejects non-Markdown paths, symlinks, and the removed
+`--output` mutation surface. `/seo:humanize` writes a new artifact unless the
+user explicitly requests an in-place edit of the exact path.

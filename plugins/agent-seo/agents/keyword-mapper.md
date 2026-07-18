@@ -305,7 +305,7 @@ If all recommendations implemented:
 
 ### Every Recommendation Must:
 1. **Preserve Readability**: Never sacrifice user experience for SEO
-2. **Sound Natural**: Must read like human wrote it conversationally
+2. **Sound Natural**: Must read as clear conversational prose
 3. **Add Value**: Keyword should enhance clarity, not cloud it
 4. **Be Specific**: Exact location and revision text provided
 5. **Be Realistic**: Achievable density without stuffing
