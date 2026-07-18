@@ -12,6 +12,27 @@ set -euo pipefail
 committing_tree="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$committing_tree"
 
+retry_selector=""
+case "$#" in
+  0) ;;
+  2)
+    if [ "$1" != "--retry-failed" ]; then
+      printf 'Usage: %s [--retry-failed <sha|all>]\n' "$0" >&2
+      exit 2
+    fi
+    retry_selector="$2"
+    if [ "$retry_selector" != all ] && \
+       [[ ! "$retry_selector" =~ ^[0-9a-fA-F]{40,64}$ ]]; then
+      printf 'llm-wiki: retry selector must be a full source SHA or all\n' >&2
+      exit 2
+    fi
+    ;;
+  *)
+    printf 'Usage: %s [--retry-failed <sha|all>]\n' "$0" >&2
+    exit 2
+    ;;
+esac
+
 configure_git_tool_environment() {
   GIT_ENV_UNSET_ARGS=()
   GIT_ENV_NAMES=()
@@ -58,12 +79,15 @@ common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null 
 [ -n "$common_dir" ] || exit 0
 state_dir="$common_dir/llm-wiki"
 pending_dir="$state_dir/pending"
+failed_dir="$state_dir/failed"
+failure_count_file="$state_dir/consecutive-failures"
+breaker_file="$state_dir/refresh-disabled"
 lock_ref="${LLM_WIKI_LOCK_REF:-refs/llm-wiki/refresh-lock}"
 refresh_root="$state_dir/refresh-worktree"
 log_file="$state_dir/post-commit-refresh.log"
 refresh_branch="${LLM_WIKI_REFRESH_BRANCH:-llm-wiki/refresh}"
 lock_owner_oid=""
-mkdir -p "$pending_dir"
+mkdir -p "$pending_dir" "$failed_dir"
 
 log_line() {
   printf '[llm-wiki][%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >>"$log_file" 2>/dev/null || true
@@ -86,23 +110,34 @@ run_qmd() {
   run_with_timeout "${LLM_WIKI_QMD_TIMEOUT:-900}" qmd "$@"
 }
 
-changed_files="$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)"
-[ -n "$changed_files" ] || exit 0
-
-if ! printf '%s\n' "$changed_files" | grep -Eq \
-  '(^|/)(schema\.rb|structure\.sql|db/migrate/|migrations/|models/|entities/|prisma/schema\.prisma|routes|controllers|handlers|resolvers|app/|src/|lib/|test/|tests/|spec/|templates/|config/|bin/|README\.md|Gemfile|Gemfile\.lock|package\.json|package-lock\.json|go\.mod|go\.sum|Cargo\.toml|Cargo\.lock|requirements\.txt|pyproject\.toml|poetry\.lock|composer\.json|composer\.lock|docs/|wiki/|raw/notes/|plans/|todos/|CHANGELOG\.md|AGENTS\.md|CLAUDE\.md)'; then
-  exit 0
-fi
-
 sha="$(git rev-parse HEAD 2>/dev/null || true)"
 [ -n "$sha" ] || exit 0
-branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo HEAD)"
-queue_tmp="$pending_dir/.${sha}.$$"
-{
-  printf '%s\t%s\n' "$sha" "$branch"
-  printf '%s\n' "$changed_files"
-} >"$queue_tmp"
-mv -f "$queue_tmp" "$pending_dir/$sha"
+if [ -z "$retry_selector" ]; then
+  changed_files="$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)"
+  [ -n "$changed_files" ] || exit 0
+
+  if ! printf '%s\n' "$changed_files" | grep -Eq \
+    '(^|/)(schema\.rb|structure\.sql|db/migrate/|migrations/|models/|entities/|prisma/schema\.prisma|routes|controllers|handlers|resolvers|app/|src/|lib/|test/|tests/|spec/|templates/|config/|bin/|README\.md|Gemfile|Gemfile\.lock|package\.json|package-lock\.json|go\.mod|go\.sum|Cargo\.toml|Cargo\.lock|requirements\.txt|pyproject\.toml|poetry\.lock|composer\.json|composer\.lock|docs/|wiki/|raw/notes/|plans/|todos/|CHANGELOG\.md|AGENTS\.md|CLAUDE\.md)'; then
+    exit 0
+  fi
+
+  if [ -f "$failed_dir/$sha" ]; then
+    log_line "source $sha remains quarantined; skipping automatic refresh"
+    exit 0
+  fi
+  branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo HEAD)"
+  queue_tmp="$pending_dir/.${sha}.$$"
+  {
+    printf '%s\t%s\n' "$sha" "$branch"
+    printf '%s\n' "$changed_files"
+  } >"$queue_tmp"
+  mv -f "$queue_tmp" "$pending_dir/$sha"
+
+  if [ -f "$breaker_file" ]; then
+    log_line "automatic refresh disabled after consecutive failures; source $sha queued"
+    exit 0
+  fi
+fi
 
 # From this point onward every Git command is nested maintenance work against
 # the managed refresh worktree, not inspection of the triggering hook context.
@@ -156,8 +191,67 @@ acquire_lock() {
   done
 }
 
+restore_failed_sources() {
+  local file restored=0 has_pending=0
+  if [ "$retry_selector" = all ]; then
+    shopt -s nullglob
+    for file in "$failed_dir"/*; do
+      [ -f "$file" ] || continue
+      if ! mv -f -- "$file" "$pending_dir/$(basename "$file")"; then
+        shopt -u nullglob
+        printf 'llm-wiki: could not restore quarantined source %s\n' "$(basename "$file")" >&2
+        return 1
+      fi
+      restored=$((restored + 1))
+    done
+    shopt -u nullglob
+  elif [ -f "$failed_dir/$retry_selector" ]; then
+    if ! mv -f -- "$failed_dir/$retry_selector" "$pending_dir/$retry_selector"; then
+      printf 'llm-wiki: could not restore quarantined source %s\n' "$retry_selector" >&2
+      return 1
+    fi
+    restored=1
+  elif [ -f "$pending_dir/$retry_selector" ]; then
+    restored=0
+  else
+    printf 'llm-wiki: no quarantined source %s\n' "$retry_selector" >&2
+    return 1
+  fi
+
+  shopt -s nullglob
+  for file in "$pending_dir"/*; do
+    if [ -f "$file" ]; then
+      has_pending=1
+      break
+    fi
+  done
+  shopt -u nullglob
+  if [ "$restored" -eq 0 ] && [ "$has_pending" -eq 0 ]; then
+    printf 'llm-wiki: no quarantined or pending sources to retry\n'
+    return 1
+  fi
+  printf 'llm-wiki: retrying %s restored source(s) with queued work\n' "$restored"
+}
+
+failed_sources_present() {
+  local file
+  shopt -s nullglob
+  for file in "$failed_dir"/*; do
+    if [ -f "$file" ]; then
+      shopt -u nullglob
+      return 0
+    fi
+  done
+  shopt -u nullglob
+  return 1
+}
+
 if ! acquire_lock; then
   log_line "refresh remains queued; worker lock was busy"
+  if [ -n "$retry_selector" ]; then
+    printf 'llm-wiki: retry deferred; refresh worker lock is busy\n' >&2
+    exit 1
+  fi
   exit 0
 fi
 
@@ -210,6 +304,24 @@ prepare_refresh_worktree() {
   fi
 }
 
+seed_untracked_local_wiki() {
+  if [ -n "$(git -C "$refresh_root" ls-files -- wiki)" ] || \
+     [ ! -e "$committing_tree/wiki" ]; then
+    return 0
+  fi
+  if [ -L "$committing_tree/wiki" ] || [ ! -d "$committing_tree/wiki" ]; then
+    log_line "ERROR: refusing to seed a non-directory or symlinked local wiki; queue retained"
+    return 1
+  fi
+
+  mkdir -p "$refresh_root/wiki"
+  cp -Rp "$committing_tree/wiki/." "$refresh_root/wiki/" >>"$log_file" 2>&1 || {
+    log_line "ERROR: could not seed untracked local wiki; queue retained"
+    return 1
+  }
+  log_line "seeded refresh branch from untracked local wiki snapshot"
+}
+
 wiki_only_changes() {
   local path
   while IFS= read -r path; do
@@ -222,7 +334,8 @@ wiki_only_changes() {
     {
       git -C "$refresh_root" diff --name-only
       git -C "$refresh_root" diff --cached --name-only
-      git -C "$refresh_root" ls-files --others --exclude-standard
+      git -C "$refresh_root" ls-files --others --exclude-standard --directory
+      git -C "$refresh_root" ls-files --others --ignored --exclude-standard --directory
     } | sort -u
   )
 }
@@ -311,11 +424,57 @@ prune_receipted_queue_files() {
   QUEUE_FILES=("${retained[@]}")
 }
 
+record_batch_failure() {
+  local file queued_sha queued_branch count max_attempts count_tmp remaining=0
+  max_attempts="${LLM_WIKI_MAX_REFRESH_ATTEMPTS:-2}"
+  [[ "$max_attempts" =~ ^[1-9][0-9]*$ ]] || max_attempts=2
+
+  for file in "${QUEUE_FILES[@]}"; do
+    [ -f "$file" ] || continue
+    IFS=$'\t' read -r queued_sha queued_branch <"$file"
+    if source_receipted "$queued_sha"; then
+      rm -f -- "$file"
+      log_line "acknowledged committed source $queued_sha after receipt write failure"
+      continue
+    fi
+    remaining=1
+  done
+  if [ "$remaining" -eq 0 ]; then
+    rm -f -- "$failure_count_file" "$breaker_file"
+    return 0
+  fi
+
+  count="$(sed -n '1p' "$failure_count_file" 2>/dev/null || true)"
+  [[ "$count" =~ ^[0-9]+$ ]] || count=0
+  count="$((count + 1))"
+  count_tmp="$state_dir/.consecutive-failures.$$"
+  printf '%s\n' "$count" >"$count_tmp"
+  mv -f "$count_tmp" "$failure_count_file"
+
+  if [ "$count" -ge "$max_attempts" ]; then
+    for file in "${QUEUE_FILES[@]}"; do
+      [ -f "$file" ] || continue
+      IFS=$'\t' read -r queued_sha queued_branch <"$file"
+      mv -f -- "$file" "$failed_dir/$queued_sha"
+    done
+    printf '%s\n' "$count" >"$breaker_file"
+    log_line "ERROR: automatic refresh disabled after $count consecutive failed batch(es); run .llm-wiki/post-commit-refresh.sh --retry-failed all"
+  else
+    log_line "refresh batch failed ($count/$max_attempts consecutive failures); queue retained"
+  fi
+}
+
 process_queue_batch() {
   local sources="" file queued_sha queued_branch paths prompt short_source
   local commit_args=()
   prune_receipted_queue_files
-  [ "${#QUEUE_FILES[@]}" -gt 0 ] || return 0
+  if [ "${#QUEUE_FILES[@]}" -eq 0 ]; then
+    rm -f -- "$failure_count_file"
+    if ! failed_sources_present; then
+      rm -f -- "$breaker_file"
+    fi
+    return 0
+  fi
   for file in "${QUEUE_FILES[@]}"; do
     IFS=$'\t' read -r queued_sha queued_branch <"$file"
     commit_args+=( -m "LLM-Wiki-Source: $queued_sha" )
@@ -365,7 +524,7 @@ PROMPT
   wiki_only_changes || return 1
 
   if [ -e "$refresh_root/wiki" ] || [ -n "$(git -C "$refresh_root" ls-files -- wiki)" ]; then
-    git -C "$refresh_root" add -A -- wiki >>"$log_file" 2>&1 || return 1
+    git -C "$refresh_root" add -f -A -- wiki >>"$log_file" 2>&1 || return 1
   fi
   wiki_only_changes || return 1
   if ! git -C "$refresh_root" diff --cached --quiet; then
@@ -385,20 +544,62 @@ PROMPT
     return 1
   fi
   rm -f -- "${QUEUE_FILES[@]}"
+  rm -f -- "$failure_count_file"
+  if failed_sources_present; then
+    log_line "refresh succeeded, but quarantined sources remain; automatic refresh stays disabled"
+  else
+    rm -f -- "$breaker_file"
+  fi
   ( cd "$refresh_root" && run_qmd update ) >>"$log_file" 2>&1 || true
   ( cd "$refresh_root" && run_qmd embed --max-docs-per-batch 64 --max-batch-mb 64 ) >>"$log_file" 2>&1 || true
   return 0
 }
 
 configure_qmd_environment
+if [ -n "$retry_selector" ]; then
+  if ! restore_failed_sources; then
+    exit 1
+  fi
+# A worker can pass the pre-lock check and then wait while its predecessor opens
+# the circuit. Re-check under the lock before any worktree or provider action.
+elif [ -f "$breaker_file" ]; then
+  log_line "automatic refresh circuit remains open; queued sources retained"
+  exit 0
+fi
 if ! prepare_refresh_worktree; then
   log_line "ERROR: could not prepare managed refresh worktree; queue retained"
+  if [ -n "$retry_selector" ]; then
+    printf 'llm-wiki: retry failed while preparing the refresh worktree\n' >&2
+    exit 1
+  fi
+  exit 0
+fi
+if ! seed_untracked_local_wiki; then
+  if [ -n "$retry_selector" ]; then
+    printf 'llm-wiki: retry failed while seeding the local wiki snapshot\n' >&2
+    exit 1
+  fi
   exit 0
 fi
 
 while snapshot_queue; do
-  process_queue_batch || exit 0
+  if ! process_queue_batch; then
+    record_batch_failure
+    if [ -n "$retry_selector" ]; then
+      printf 'llm-wiki: retry failed; see %s\n' "$log_file" >&2
+      exit 1
+    fi
+    exit 0
+  fi
 done
+
+if [ -n "$retry_selector" ]; then
+  if [ -f "$breaker_file" ]; then
+    printf 'llm-wiki: selected refresh completed; quarantined sources remain, so the circuit stays open\n'
+  else
+    printf 'llm-wiki: queued refresh completed successfully\n'
+  fi
+fi
 
 main_checkout="$(git worktree list --porcelain 2>/dev/null | awk '/^worktree /{print $2; exit}')"
 project_name="$(basename "${main_checkout:-$committing_tree}")"

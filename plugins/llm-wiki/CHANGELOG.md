@@ -4,6 +4,32 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.12] - 2026-07-18
+
+### Fixed
+
+- **Ignored-wiki refresh persistence.** Projects that intentionally ignore
+  `/wiki/` now seed a new local-only refresh branch from the project's existing
+  wiki snapshot, then force-stage only generated wiki files. Ignored output can
+  no longer be receipted and discarded after a subscription-backed refresh;
+  ignored files outside `wiki/` are still rejected.
+- **Repository-wide refresh circuit breaker.** Automatic provider launches stop
+  after two consecutive failed batches by default, while later source commits
+  continue queueing without consuming subscription runs. Set
+  `LLM_WIKI_MAX_REFRESH_ATTEMPTS` to a positive integer to choose a different
+  bound. After fixing the underlying problem, explicitly restore quarantined
+  sources and retry queued work with:
+
+  ```bash
+  .llm-wiki/post-commit-refresh.sh --retry-failed all
+  ```
+
+  Pass a full source SHA instead of `all` to restore one quarantined record.
+- **Historical owner recovery.** Project upgrades can reconstruct a missing
+  `.llm-wiki/config.json` from the latest valid config in Git history when no
+  live legacy script remains, while still refusing missing or conflicting
+  ownership signals.
+
 ## [0.1.11] - 2026-07-18
 
 ### Added

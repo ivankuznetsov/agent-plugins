@@ -17,9 +17,10 @@ QMD, or reinstall the scheduler.
 - When `.llm-wiki/config.json` exists, read it and report the configured
   `headless_agent`. Preserve the file byte-for-byte.
 - When the config is missing, the script infers the owner only when legacy
-  managed scripts identify exactly one of Codex, Claude Code, or Pi. It creates
-  the config with that owner; zero or multiple candidates stop the migration
-  before any project file is changed.
+  managed scripts and the latest added or modified config in Git history
+  identify exactly one of Codex, Claude Code, or Pi. It creates the config with
+  that owner; zero or multiple candidates stop the migration before any project
+  file is changed.
 
 ## Run the Upgrade
 
@@ -38,7 +39,8 @@ The script upgrades only managed structure:
 
 - `.llm-wiki/post-commit-refresh.sh`
 - `.llm-wiki/compile-log.sh`
-- a missing `.llm-wiki/config.json` when one legacy owner is unambiguous
+- a missing `.llm-wiki/config.json` when live or historical evidence identifies
+  one unambiguous legacy owner
 - `wiki/log.d/` and the compiled `wiki/log.md` layout
 - the marked `LLM WIKI POST-COMMIT` block in the active Git hook path
 

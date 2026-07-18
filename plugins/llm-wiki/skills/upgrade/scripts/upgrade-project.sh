@@ -46,7 +46,7 @@ config_path="$root/.llm-wiki/config.json"
 config_needs_create=0
 
 infer_legacy_owner() {
-  local file owners=()
+  local file historical_commit historical_owner="" candidate_owner owners=()
   local codex_found=0 claude_found=0 pi_found=0
   local legacy_scripts=(
     "$root/.llm-wiki/refresh-wiki.sh"
@@ -55,17 +55,65 @@ infer_legacy_owner() {
 
   for file in "${legacy_scripts[@]}"; do
     [ -f "$file" ] || continue
+    if [ "$file" = "$root/.llm-wiki/post-commit-refresh.sh" ] && \
+       grep -Fq 'case "$headless_agent" in' "$file"; then
+      continue
+    fi
     grep -Eq '(^|[^[:alnum:]_])codex[[:space:]]+exec([[:space:]]|$)' "$file" && codex_found=1
     grep -Eq '(^|[^[:alnum:]_])claude[[:space:]]+-p([[:space:]]|$)' "$file" && claude_found=1
     grep -Eq '(^|[^[:alnum:]_])pi[[:space:]]+(-p|--print)([[:space:]]|$)' "$file" && pi_found=1
   done
+
+  while IFS= read -r historical_commit; do
+    [ -n "$historical_commit" ] || continue
+    candidate_owner="$(
+      git -C "$root" show "$historical_commit:.llm-wiki/config.json" 2>/dev/null |
+        sed -nE 's/.*"headless_agent"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' |
+        head -n 1
+    )"
+    case "$candidate_owner" in
+      codex|claude|pi)
+        historical_owner="$candidate_owner"
+        break
+        ;;
+    esac
+  done < <(
+    git -C "$root" log HEAD --diff-filter=AM --format=%H -- \
+      .llm-wiki/config.json 2>/dev/null || true
+  )
+  if [ -n "$historical_owner" ]; then
+    case "$historical_owner" in
+      codex) codex_found=1 ;;
+      claude) claude_found=1 ;;
+      pi) pi_found=1 ;;
+    esac
+  else
+    # A checkout may sit on a defensive branch that predates bootstrap. Fall
+    # back to all reachable refs, but refuse conflicting historical owners.
+    while IFS= read -r historical_commit; do
+      [ -n "$historical_commit" ] || continue
+      candidate_owner="$(
+        git -C "$root" show "$historical_commit:.llm-wiki/config.json" 2>/dev/null |
+          sed -nE 's/.*"headless_agent"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' |
+          head -n 1
+      )"
+      case "$candidate_owner" in
+        codex) codex_found=1 ;;
+        claude) claude_found=1 ;;
+        pi) pi_found=1 ;;
+      esac
+    done < <(
+      git -C "$root" log --all --diff-filter=AM --format=%H -- \
+        .llm-wiki/config.json 2>/dev/null || true
+    )
+  fi
 
   [ "$codex_found" -eq 0 ] || owners+=(codex)
   [ "$claude_found" -eq 0 ] || owners+=(claude)
   [ "$pi_found" -eq 0 ] || owners+=(pi)
   if [ "${#owners[@]}" -ne 1 ]; then
     if [ "${#owners[@]}" -eq 0 ]; then
-      printf 'llm-wiki: cannot create .llm-wiki/config.json: no headless owner command was found in legacy .llm-wiki scripts; restore the config or choose codex, claude, or pi explicitly\n' >&2
+      printf 'llm-wiki: cannot create .llm-wiki/config.json: no headless owner was found in legacy scripts or config history; restore the config or choose codex, claude, or pi explicitly\n' >&2
     else
       printf 'llm-wiki: cannot create .llm-wiki/config.json: multiple headless owners were found in legacy .llm-wiki scripts (%s); remove the ambiguity or create the config explicitly\n' "${owners[*]}" >&2
     fi

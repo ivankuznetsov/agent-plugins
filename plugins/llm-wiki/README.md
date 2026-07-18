@@ -107,8 +107,8 @@ Updating the plugin or Pi package does not rewrite project-local `.llm-wiki`
 files automatically. Restart the agent after updating the package, then run the
 upgrade command once in each existing project. The migration preserves the
 configured headless owner and unrelated dirty work; if a legacy project has no
-config, it creates one only when exactly one owner can be inferred. It does not
-regenerate wiki content or invoke an LLM.
+config, it creates one only when exactly one owner can be inferred from live
+scripts or Git history. It does not regenerate wiki content or invoke an LLM.
 
 Research past project knowledge before coding:
 
@@ -158,7 +158,9 @@ When present, `llm-wiki` searches a main cross-project wiki before creating or u
 - Pi receives wiki context through `AGENTS.md`.
 - Agent instruction updates are bounded by `<!-- BEGIN LLM WIKI -->` and `<!-- END LLM WIKI -->` markers so existing project instructions are preserved.
 - Re-running `bootstrap` from another agent updates that agent's context without changing the headless maintenance owner.
-- Existing projects from older `llm-wiki` versions keep their inferred headless owner when upgraded, even before `.llm-wiki/config.json` exists.
+- Existing projects from older `llm-wiki` versions keep their inferred headless
+  owner when upgraded, even when `.llm-wiki/config.json` survives only in Git
+  history.
 
 Only one agent owns scheduled refresh automation and post-commit wiki maintenance. The first agent to run `bootstrap` becomes the default headless maintainer, recorded in `.llm-wiki/config.json`.
 
@@ -169,13 +171,24 @@ Only one agent owns scheduled refresh automation and post-commit wiki maintenanc
 - Scheduler and post-commit entries use managed markers and stable project slugs so repeated bootstraps do not create duplicate refresh jobs.
 - Post-commit maintenance never writes into a user checkout. Relevant commits
   are coalesced in the shared Git directory and refreshed transactionally on the
-  local `llm-wiki/refresh` branch through a disposable managed worktree. Failed
-  refreshes keep their queue entries for retry and discard generated work.
+  local `llm-wiki/refresh` branch through a disposable managed worktree. A
+  project-local ignored wiki seeds that branch only when it has no established
+  wiki of its own. Failed refreshes discard generated work. After two consecutive
+  failed batches by default, a repository-wide circuit stops provider launches;
+  later commits continue queueing and failed records remain under
+  `llm-wiki/failed/`.
   Atomic source-SHA receipt refs make changed and no-op acknowledgement replay-safe, and
   a compare-and-swap Git ref makes stale-lock replacement single-winner.
 - Agent and QMD execution is always time-bounded. The post-commit worker uses
   `timeout` (Linux) or `gtimeout` (macOS via GNU coreutils); when neither is
-  installed it fails before starting a provider and retains the queue for retry.
+  installed it fails before starting a provider. Set
+  `LLM_WIKI_MAX_REFRESH_ATTEMPTS` to a positive integer to change the automatic
+  retry bound.
+- After fixing a failed provider or validation issue, run
+  `.llm-wiki/post-commit-refresh.sh --retry-failed all` to restore quarantined
+  records and explicitly retry the coalesced queue. A successful retry clears
+  the circuit; a failed retry leaves it open. Pass a full source SHA instead of
+  `all` to restore one quarantined record.
 - The refresh branch is intentionally local and is never pushed automatically;
   operators can inspect, merge, or open a PR from it on their normal schedule.
 
