@@ -94,5 +94,5 @@ The Screenote plugin is released here, while its external CLI is released from
 [`ivankuznetsov/screenote-cli`](https://github.com/ivankuznetsov/screenote-cli).
 Keep the contract PR, merge SHA, public test ref, and eventual minimum release
 as separate fields in `plugin-surfaces.json`. When a tagged CLI release first
-contains PR 37, update the single `minimum_release` field and compatibility
+contains PR 6, update the single `minimum_release` field and compatibility
 docs, rerun offline/live tests, and do not copy the baseline into skills.

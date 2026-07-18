@@ -7,11 +7,10 @@ and comment operations. There is no MCP transport or compatibility fallback.
 
 ## Compatible CLI baseline
 
-The OAuth-first contract was merged in
-[Screenote CLI PR 37](https://github.com/ivankuznetsov/screenote-cli/pull/37)
-at merge `8d64ebb4a5d3d9f98d575da70c97750d15f7ae82`. No containing release is
-tagged yet, so the repository tests public ref
-`c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b`:
+The OAuth-first contract was merged in the reachable
+[Screenote CLI PR 6](https://github.com/ivankuznetsov/screenote-cli/pull/6)
+at merge `c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b`. No containing release is
+tagged yet, so the repository tests that exact public ref:
 
 ```bash
 go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
@@ -29,7 +28,7 @@ baseline.
 Interactive setup happens outside the skill:
 
 ```bash
-screenote login
+screenote --base-url https://screenote.ai login
 ```
 
 For noninteractive use, provide `SCREENOTE_TOKEN` through the environment and
@@ -40,8 +39,11 @@ export SCREENOTE_PROJECT=my-project
 screenote project list
 ```
 
-Do not put credentials in command arguments, chat, checked-in configuration,
-logs, or diagnostics. Project resolution is:
+For a custom deployment, configure `SCREENOTE_BASE_URL` or trusted CLI config
+outside the agent workflow. The bearer launcher rejects runtime `--base-url`
+and `--config` overrides so prompt-controlled arguments cannot redirect an
+authenticated request. Do not put credentials in command arguments, chat,
+checked-in configuration, logs, or diagnostics. Project resolution is:
 
 1. explicit `--project` supplied for the current request;
 2. `SCREENOTE_PROJECT`;
@@ -55,12 +57,14 @@ not read stdin, prompt, guess, or launch a browser.
 
 | Exit | Error | Behavior |
 | ---: | --- | --- |
-| `2` | `missing_token` | Stop; suggest `screenote login` interactively or `SCREENOTE_TOKEN` noninteractively |
+| `2` | `missing_token` | Stop; suggest hosted `screenote --base-url https://screenote.ai login` interactively or `SCREENOTE_TOKEN` noninteractively |
 | `2` | `missing_project` | Stop; explain flag, environment, and CLI config project sources |
 | `3` | Invalid/expired authentication or authorization | Stop without trying another auth mechanism |
 | Any other nonzero | JSON error code from the CLI | Stop immediately and preserve the machine-readable diagnostic |
 
-Success requires exit zero and valid JSON.
+Success requires exit zero and one complete valid JSON value. Collection keys,
+pagination metadata, and identifiers must match the shipped pinned workflow
+contract; the plugin stops rather than inventing missing IDs.
 
 ## Capture and recovery
 

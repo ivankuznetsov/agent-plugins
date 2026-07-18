@@ -178,17 +178,18 @@
       "stability": "stable",
       "metadata": {
         "display_name": "LLM Wiki",
-        "description": "Bootstrap and query LLM-maintained project wikis before planning or implementation.",
+        "description": "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
         "homepage": "https://github.com/ivankuznetsov/llm-wiki",
         "repository": "https://github.com/ivankuznetsov/llm-wiki",
         "license": "MIT",
         "category": "Coding",
-        "npm_keywords": ["llm-wiki", "agent-skills", "qmd", "knowledge-management", "pi-package"]
+        "npm_keywords": ["llm-wiki", "agent-skills", "qmd", "knowledge-management", "planning", "pi-package"]
       },
       "canonical": {
         "skill_roots": ["skills"],
         "skills": [
           {"name": "bootstrap", "path": "skills/bootstrap/SKILL.md", "aliases": {"pi": "wiki-bootstrap", "openclaw": "wiki-bootstrap"}},
+          {"name": "upgrade", "path": "skills/upgrade/SKILL.md", "aliases": {"pi": "wiki-upgrade", "openclaw": "wiki-upgrade"}},
           {"name": "research", "path": "skills/research/SKILL.md", "aliases": {"pi": "wiki-research", "openclaw": "wiki-research"}},
           {"name": "wiki-plan", "path": "skills/wiki-plan/SKILL.md", "aliases": {"pi": "wiki-plan", "openclaw": "wiki-plan"}},
           {"name": "status", "path": "skills/status/SKILL.md", "aliases": {"pi": "wiki-status", "openclaw": "wiki-status"}}
@@ -197,10 +198,10 @@
       "legacy_entrypoints": [],
       "resources": ["assets", "templates"],
       "platforms": {
-        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "bootstrap, research, wiki-plan, status"}},
+        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "bootstrap, upgrade, research, wiki-plan, status"}},
         "codex": {"support": "supported", "state": "native", "tested_host_version": "0.144.3", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".codex-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "$llm-wiki:<skill>"}},
-        "pi": {"support": "supported", "state": "generated", "tested_host_version": "0.80.10", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "package.json", "skill_roots": ["pi/skills"], "metadata": {"invocation": "wiki-bootstrap, wiki-research, wiki-plan, wiki-status"}},
-        "openclaw": {"support": "supported", "state": "generated", "tested_host_version": "2026.7.1-beta.2", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "openclaw.plugin.json", "skill_roots": ["openclaw/skills"], "metadata": {"invocation": "wiki-bootstrap, wiki-research, wiki-plan, wiki-status"}}
+        "pi": {"support": "supported", "state": "generated", "tested_host_version": "0.80.10", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "package.json", "skill_roots": ["pi/skills"], "metadata": {"invocation": "wiki-bootstrap, wiki-upgrade, wiki-research, wiki-plan, wiki-status"}},
+        "openclaw": {"support": "supported", "state": "generated", "tested_host_version": "2026.7.1-beta.2", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "openclaw.plugin.json", "skill_roots": ["openclaw/skills"], "metadata": {"invocation": "wiki-bootstrap, wiki-upgrade, wiki-research, wiki-plan, wiki-status"}}
       }
     },
     {

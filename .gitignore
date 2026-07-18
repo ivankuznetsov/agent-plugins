@@ -2,6 +2,7 @@
 /.llm-wiki/
 /.hive-state/
 /writing/
+/.worktrees/
 
 # Local agent + experiment state (not versioned)
 /.claude/

@@ -66,7 +66,10 @@ class LegacyEntrypointTests(unittest.TestCase):
         package = json.loads((REPO_ROOT / "plugins/llm-wiki/package.json").read_text())
         self.assertEqual(["./pi/skills"], package["pi"]["skills"])
         names = {path.parent.name for path in (REPO_ROOT / "plugins/llm-wiki/pi/skills").glob("*/SKILL.md")}
-        self.assertEqual({"wiki-bootstrap", "wiki-research", "wiki-plan", "wiki-status"}, names)
+        self.assertEqual(
+            {"wiki-bootstrap", "wiki-upgrade", "wiki-research", "wiki-plan", "wiki-status"},
+            names,
+        )
 
 
 if __name__ == "__main__":

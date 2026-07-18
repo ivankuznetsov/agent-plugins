@@ -10,6 +10,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = REPO_ROOT / "plugins" / "llm-wiki"
 POST_COMMIT_TEMPLATE = PLUGIN_ROOT / "templates" / "post-commit-refresh.sh"
+UPGRADE_SCRIPT = PLUGIN_ROOT / "skills" / "upgrade" / "scripts" / "upgrade-project.sh"
 
 
 class LlmWikiOpenClawTests(unittest.TestCase):
@@ -33,6 +34,11 @@ class LlmWikiOpenClawTests(unittest.TestCase):
         self.assertIn("openclaw plugins update llm-wiki --dry-run", status)
         self.assertIn("openclaw plugins update llm-wiki", status)
         self.assertIn("openclaw gateway restart --safe", status)
+        upgrade = (PLUGIN_ROOT / "skills" / "upgrade" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Codex, Claude Code, Pi, or OpenClaw", upgrade)
+        self.assertIn("openclaw_agent_id", upgrade)
 
     def test_generated_openclaw_skills_keep_native_maintenance_behavior(self):
         bootstrap = (
@@ -48,6 +54,11 @@ class LlmWikiOpenClawTests(unittest.TestCase):
         self.assertIn("generated-from: skills/status/SKILL.md", status)
         self.assertIn("[skills/status/SKILL.md](../../../skills/status/SKILL.md)", status)
         self.assertIn("OpenClaw", status)
+        upgrade = (
+            PLUGIN_ROOT / "openclaw" / "skills" / "wiki-upgrade" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("generated-from: skills/upgrade/SKILL.md", upgrade)
+        self.assertIn("[skills/upgrade/SKILL.md](../../../skills/upgrade/SKILL.md)", upgrade)
 
     def test_post_commit_template_dispatches_non_delivering_openclaw_turn(self):
         result, arguments, _ = self.run_template("openclaw")
@@ -84,23 +95,59 @@ class LlmWikiOpenClawTests(unittest.TestCase):
 
     def test_post_commit_template_rejects_unknown_headless_agent(self):
         result, arguments, log = self.run_template("other-agent")
-        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual([], arguments)
-        self.assertIn("unsupported headless_agent 'other-agent'", log)
+        self.assertIn("unsupported or missing headless_agent", log)
+        self.assertIn("queue retained", log)
 
     def test_post_commit_template_requires_explicit_openclaw_agent_id(self):
         result, arguments, log = self.run_template("openclaw", openclaw_agent_id=None)
-        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual([], arguments)
-        self.assertIn("requires openclaw_agent_id", log)
+        self.assertIn("requires a valid openclaw_agent_id", log)
+        self.assertIn("queue retained", log)
 
     def test_post_commit_template_rejects_flag_shaped_openclaw_agent_id(self):
         result, arguments, log = self.run_template(
             "openclaw", openclaw_agent_id="--deliver"
         )
-        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual([], arguments)
-        self.assertIn("invalid openclaw_agent_id", log)
+        self.assertIn("requires a valid openclaw_agent_id", log)
+        self.assertIn("queue retained", log)
+
+    def test_project_upgrade_accepts_preserved_openclaw_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "project"
+            root.mkdir()
+            (root / ".llm-wiki").mkdir()
+            (root / "wiki").mkdir()
+            (root / ".llm-wiki" / "config.json").write_text(
+                json.dumps(
+                    {
+                        "headless_agent": "openclaw",
+                        "context_agents": ["claude", "codex", "pi", "openclaw"],
+                        "openclaw_agent_id": "project-agent",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (root / "wiki" / "index.md").write_text("# Wiki\n", encoding="utf-8")
+            self.run_git(root, "init", "-b", "main")
+            self.run_git(root, "config", "user.email", "llm-wiki-test@example.com")
+            self.run_git(root, "config", "user.name", "LLM Wiki Test")
+            self.run_git(root, "add", ".")
+            self.run_git(root, "commit", "-m", "initial")
+
+            result = subprocess.run(
+                [str(UPGRADE_SCRIPT), "--check", "--project", str(root)],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(10, result.returncode, result.stdout + result.stderr)
+            self.assertIn("upgrade available", result.stdout)
 
     def run_template(self, headless_agent, openclaw_agent_id="main"):
         with tempfile.TemporaryDirectory() as directory:
@@ -171,7 +218,7 @@ class LlmWikiOpenClawTests(unittest.TestCase):
                     for item in capture.read_bytes().split(b"\0")
                     if item
                 ]
-            log_path = root / ".llm-wiki" / "post-commit-refresh.log"
+            log_path = root / ".git" / "llm-wiki" / "post-commit-refresh.log"
             log = log_path.read_text(encoding="utf-8") if log_path.exists() else ""
             return result, arguments, log
 

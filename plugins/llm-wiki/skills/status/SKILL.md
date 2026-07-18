@@ -16,6 +16,18 @@ Also inspect project-local wiki configuration when available:
 - `.claude/settings.json`
 - `.llm-wiki/refresh-wiki.sh`
 - `.llm-wiki/post-commit-refresh.sh`
+- `$(git rev-parse --git-common-dir)/llm-wiki/post-commit-refresh.sh`
+- `$(git rev-parse --git-common-dir)/llm-wiki/config.json`
+- `$(git rev-parse --git-common-dir)/llm-wiki/refresh-disabled`
+- `$(git rev-parse --git-common-dir)/llm-wiki/consecutive-failures`
+- `$(git rev-parse --git-common-dir)/llm-wiki/pending/`
+- `$(git rev-parse --git-common-dir)/llm-wiki/failed/`
+- `refs/llm-wiki/sources/`
+
+When the project is bootstrapped, resolve the canonical upgrade script relative
+to `../upgrade/SKILL.md` and run it with `--check`. Report exit status `10` as
+`upgrade available`, not as an error. Do not apply the project migration unless
+the user explicitly asks to update or upgrade the project-local structure.
 
 ## Rules
 
@@ -26,20 +38,59 @@ Also inspect project-local wiki configuration when available:
 - Compare semantic versions with `sort -V` when available; otherwise parse major/minor/patch numerically. Do not compare version strings lexicographically.
 - If network access, marketplace metadata, or package metadata is unavailable, report the local version and the command that refreshes the relevant metadata.
 - If `.llm-wiki/config.json` exists, report `headless_agent`, `context_agents`, and `main_wiki_path`.
+- Report project structure as `current`, `upgrade available`, or `unknown` from the bundled upgrade check.
+- Inspect refresh state in the shared Git directory. Always count runnable
+  pending records, hidden interrupted queue records, and quarantined source
+  records, even when `refresh-disabled` is absent. Report the breaker reason
+  verbatim when present; `backlog:<n>` means the automatic pending-source bound
+  opened the circuit before a provider launch, while `deferred:<n>` means work
+  arrived outside the last bounded batch and needs an operator-paced retry.
+  Report the circuit as `closed`
+  only when the breaker is absent and the quarantined count is zero; otherwise
+  report `open` with the breaker reason, consecutive-failure count, all three
+  queue counts, queued-source keepalive-ref count, `post-commit-refresh.log`
+  path, and exact recovery command
+  `.llm-wiki/post-commit-refresh.sh --retry-failed all`. Do not invoke recovery
+  unless the user explicitly asks to retry. Recovery processes one bounded
+  batch per invocation, so say when the command must be rerun for remaining
+  sources.
 - Report managed wiki context using the exact `<!-- BEGIN LLM WIKI -->` and `<!-- END LLM WIKI -->` marker pair.
 - Classify `AGENTS.md` and `CLAUDE.md` context as `managed present`, `unmanaged wiki section only`, `missing`, or `unknown`.
 - Report Pi context from `AGENTS.md`; do not require `.pi/SYSTEM.md` or `.pi/APPEND_SYSTEM.md`.
 - Report whether Claude SessionStart context appears configured when `.claude/settings.json` exists.
 - Report OpenClaw context from the configured workspace's `AGENTS.md` and confirm that the project root matches that workspace before calling it present.
 - Classify each automation surface as `codex`, `claude`, `pi`, `openclaw`, `mixed`, `missing`, `mismatch`, or `unknown`.
-- Scheduler and post-commit ownership are clean only when the configured owner command is present and the non-owner command is absent.
-- `codex` means `codex exec` is present and `claude -p`, `pi -p`, `pi --print`, and `openclaw agent --local` are absent.
-- `claude` means `claude -p` is present and `codex exec`, `pi -p`, `pi --print`, and `openclaw agent --local` are absent.
-- `pi` means `pi -p` or `pi --print` is present and `codex exec`, `claude -p`, and `openclaw agent --local` are absent.
-- `openclaw` means `openclaw agent --local --agent <openclaw_agent_id>` is present and `codex exec`, `claude -p`, `pi -p`, and `pi --print` are absent. A valid maintenance command must use the configured project-workspace agent ID and omit `--deliver` and all channel, reply, and recipient flags.
-- `mixed` means more than one owner command is present.
-- `mismatch` means exactly one owner command is present but it is not the configured `headless_agent`.
-- Count managed `llm-wiki` hook or scheduler entries when possible; report duplicates as `mixed` or `mismatch` rather than clean.
+- For the scheduler and legacy post-commit scripts, ownership is clean only when
+  the configured owner command is present and the non-owner commands are absent.
+  `codex` means `codex exec` alone is present; `claude` means `claude -p` alone
+  is present; `pi` means `pi -p` or `pi --print` alone is present; and
+  `openclaw` means `openclaw agent --local --agent <openclaw_agent_id>` alone is
+  present. The OpenClaw command must use the configured project-workspace agent
+  ID and omit `--deliver` plus all channel, reply, and recipient flags. More
+  than one owner command is `mixed`; exactly one command for a different
+  configured owner is `mismatch`.
+- The canonical post-commit template is different by design: it contains all
+  four provider commands behind a runtime `headless_agent` dispatcher. Resolve
+  `../../templates/post-commit-refresh.sh` relative to this SKILL.md. When the
+  project copy is byte-for-byte equal to that bundled template, classify its
+  owner from a validated `.llm-wiki/config.json` value (`codex`, `claude`, `pi`,
+  or `openclaw`), not by scanning provider command tokens. For OpenClaw also
+  require a valid `openclaw_agent_id`. An absent or unsupported configured owner
+  is `unknown`. Use the command-token rules only for a non-canonical legacy
+  post-commit script.
+- The managed hook should invoke the canonical runner under the shared Git
+  directory with `--project` and the committing worktree root. Report
+  checkout-local-only invocation as `upgrade available`, because linked
+  worktrees can otherwise retain stale ignored scripts.
+- Count managed `llm-wiki` hook or scheduler entries when possible. The
+  canonical dispatcher is clean only when exactly one managed hook block calls
+  it; report missing or duplicate managed entries instead of treating the
+  dispatcher itself as proof that the hook is healthy.
+- Report exactly one project upgrade command for the active agent surface:
+  `/llm-wiki:upgrade` for Claude Code, `$llm-wiki:upgrade` for Codex, or
+  `/skill:wiki-upgrade` for Pi, or `wiki-upgrade` for OpenClaw. If the active
+  surface cannot be determined, report the command as `unknown`; do not list
+  all four alternatives.
 
 ## Claude Code
 
@@ -108,6 +159,7 @@ Pi uses Pi packages instead of the Claude/Codex plugin marketplace. The Pi packa
 
 ```text
 /skill:wiki-bootstrap
+/skill:wiki-upgrade
 /skill:wiki-research
 /skill:wiki-plan
 /skill:wiki-status
@@ -145,7 +197,7 @@ If Pi reports the package under a different installed source, use that exact sou
 
 ## OpenClaw
 
-OpenClaw discovers this package through its Claude-compatible marketplace support and exposes the collision-safe `wiki-bootstrap`, `wiki-research`, `wiki-plan`, and `wiki-status` skills.
+OpenClaw discovers this package through its Claude-compatible marketplace support and exposes the collision-safe `wiki-bootstrap`, `wiki-upgrade`, `wiki-research`, `wiki-plan`, and `wiki-status` skills.
 
 Useful commands:
 
@@ -210,6 +262,11 @@ Return:
 - Claude SessionStart context: present | missing | not checked
 - Scheduled refresh owner: claude | codex | pi | openclaw | mixed | missing | mismatch | unknown
 - Post-commit refresh owner: claude | codex | pi | openclaw | mixed | missing | mismatch | unknown
+- Project structure: current | upgrade available | unknown
+- Project upgrade command: <active surface's single command> | unknown
+- Refresh circuit: closed | open (reason: <value>, failures: <n>, pending: <n>, interrupted: <n>, quarantined: <n>, pinned: <n>) | unknown
+- Refresh recovery command: .llm-wiki/post-commit-refresh.sh --retry-failed all | not needed | unknown
+- Refresh log: <shared-git-dir>/llm-wiki/post-commit-refresh.log | unknown
 ```
 
 Mention whether the result came from local cache only or from a remote marketplace/package check.
