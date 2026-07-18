@@ -2,7 +2,7 @@
 
 Real lines cut from shipped drafts, with the fix that replaced each one. These are not hypotheticals — every "before" survived a writer draft and at least one editor pass before the author caught it. The writer and editor load this file alongside `voice.md`; concrete negatives steer better than abstract rules.
 
-When the editor finds a new instance of a banned shape in a shipped draft, the cut line and its fix get appended here.
+When the editor finds a new instance of a banned shape in a shipped draft, the cut line and its fix are reported as a candidate in the review. This bundled file is read-only by default and is updated only when the user explicitly opts in to persisting the candidate here.
 
 ## Fake accents
 

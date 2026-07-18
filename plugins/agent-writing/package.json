@@ -1,6 +1,6 @@
 {
   "name": "agent-writing",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "description": "Investigate, draft, and edit with three writing voices working as a team of rivals.",
   "homepage": "https://github.com/ivankuznetsov/agent-plugins",

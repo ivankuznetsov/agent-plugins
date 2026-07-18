@@ -487,16 +487,16 @@
       }
     },
     "agent-writing": {
-      "version": "0.5.0",
+      "version": "0.5.1",
       "canonical": {
         "skills/writing/SKILL.md": {
-          "sha256": "6722d1a13c1a9a69b66ddc132c7b818df688293c6514728672fe5ac539f61d0a",
-          "semantic_sha256": "aca29c5fcec3c5e54f60d89f31d12caee0e23f70bbfe2d4da9e6bd5f4f500341",
+          "sha256": "33ec1dfc95c6e0e66668ce7cde04997b03bc29a1db3955bebe78ded0f03cc953",
+          "semantic_sha256": "d5a46f938977d2900dc25a161366ff530d78d0cc5e96f8ae7c94452a10adab77",
           "sections": {
             "1:agent writing": "8cadbd1a26b6b91e84c8d1904236d7c1fb76ff12cd77863d4c9451134d0ed254",
             "2:invocation": "bf6121bede0e1c5cf40d08a39dd3e23c26a03e5227a5a1fddd83a260a1e4477f",
             "2:public controls and defaults": "46d736d57c1ae447fa7fd6f85cfabf496bd8fab72c28bf224f64441a6dfc07aa",
-            "2:shared ground rules": "fe84b8d5023d7fb68afd46f65ff43c19cf3336adf6e3982eb88fe52ea8b9c992",
+            "2:shared ground rules": "49eac870095abfa25ceb4223437e63c422bcebd6e2f401191316235dc60c65b7",
             "2:workflow map": "04e3f101222ce2e273f9456325faafab07ec72e31ab314dc23f39710634171ac",
             "2:role summaries": "3a0bc3482530cffcac760a9c57fef4c03daeaafe7c22e6b19247b4e5aa37d9f3",
             "2:investigate workflow": "db965c1e767af425c48f8bfd0b4334d871f5d2427f2012fbcb7e08f429a21280",
@@ -510,7 +510,7 @@
       "resources": {
         "agents": {
           "exists": true,
-          "sha256": "2426143771e755de9683e7178f533d3bf8ccdd154bc1ac97e1ba313f820590eb",
+          "sha256": "16f67da6c5f9c60fa9857ea4aec52a8b7133819bf28dae7c4d83dda01c0acd1e",
           "files": [
             "agents/editor-ru.md",
             "agents/editor.md",
@@ -522,7 +522,7 @@
         },
         "context": {
           "exists": true,
-          "sha256": "ce130b401ccf90c10f0b462dd7eab53f6c8bbac88240287ec9386cb060b2102b",
+          "sha256": "ffa1f75250b8f8deae2155120892612e82b40498a81d84938fb6f9c5424dcf47",
           "files": [
             "context/anti-examples.md",
             "context/style-guide.md",
@@ -535,7 +535,7 @@
         "pi/skills/agent-writing/SKILL.md": {
           "sha256": "4d3feda071be005663114ff05852b73913e61dd018ed420279c30b939b7c1878",
           "canonical": "skills/writing/SKILL.md",
-          "canonical_semantic_sha256": "aca29c5fcec3c5e54f60d89f31d12caee0e23f70bbfe2d4da9e6bd5f4f500341",
+          "canonical_semantic_sha256": "d5a46f938977d2900dc25a161366ff530d78d0cc5e96f8ae7c94452a10adab77",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -545,7 +545,7 @@
         "openclaw/skills/agent-writing/SKILL.md": {
           "sha256": "d7a5b9986bc022bc9a20fb376dbe52c7721091cfd7ae23ed0f21226a089feab9",
           "canonical": "skills/writing/SKILL.md",
-          "canonical_semantic_sha256": "aca29c5fcec3c5e54f60d89f31d12caee0e23f70bbfe2d4da9e6bd5f4f500341",
+          "canonical_semantic_sha256": "d5a46f938977d2900dc25a161366ff530d78d0cc5e96f8ae7c94452a10adab77",
           "overlays": [
             "frontmatter",
             "invocation",

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1] - 2026-07-18
+
+### Fixed
+
+- Bundled voice and anti-example context is read-only by default. Editors report
+  candidate anti-examples in their review and persist them only with explicit
+  user opt-in.
+
 ## [0.5.0] - 2026-07-17
 
 ### Added

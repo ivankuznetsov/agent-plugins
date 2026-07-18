@@ -2,7 +2,7 @@
   "id": "agent-writing",
   "name": "Agent Writing",
   "description": "Investigate, draft, and edit with three writing voices working as a team of rivals.",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "skills": [
     "./openclaw/skills"
   ],

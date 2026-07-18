@@ -40,6 +40,7 @@ Preserve these controls whether the workflow is selected by a Claude command or 
 ## Shared Ground Rules
 
 - Load available context files from the plugin's `context/` directory before drafting or editing: `voice.md`, `style-guide.md`, `writing-examples.md`, `anti-examples.md`. These hold per-project voice. Treat any section that's still placeholder prose as unfilled rather than authoritative.
+- Treat the plugin's bundled `context/` directory as **read-only by default**. New anti-example candidates belong in the editor review as a before/fix pair. Modify bundled context only when the user explicitly asks or opts in to persist that candidate; otherwise leave every plugin file unchanged.
 - **Output goes to the user's project working directory, not inside the plugin.** Save journalist briefs to `./writing/investigations/<slug>-<date>.md`, writer drafts to `./writing/drafts/<slug>-<date>-v<N>.md`, and editor reviews to `./writing/reviews/<slug>-<date>-v<N>.md`. The `./writing/` tree is created on demand. Users who don't want artifacts versioned can add `/writing/` to their project's `.gitignore`.
 - Use lowercase hyphenated slugs and ISO dates in generated filenames: `screenote-annotation-flow-2026-05-26`.
 - Each round of the writer-editor cycle gets a `-vN` suffix: `./writing/drafts/<slug>-<date>-v1.md`, `./writing/drafts/<slug>-<date>-v2.md`, with `./writing/reviews/<slug>-<date>-v<N>.md` reviewing the matching draft.
