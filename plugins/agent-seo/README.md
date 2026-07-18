@@ -2,7 +2,10 @@
 
 Existing Claude Code installs that use `ivankuznetsov/claude-seo` remain supported. New installs should use the shared `ivankuznetsov/agent-plugins` marketplace.
 
-Agent SEO is a Claude Code and Codex plugin for creating, analyzing, and optimizing SEO content. Use it to research topics, write long-form articles, humanize AI-assisted content, fact-check claims, analyze existing pages, and review performance data.
+Agent SEO is a Claude Code, Codex, Pi, and OpenClaw plugin for creating,
+analyzing, and optimizing SEO content. Use it to research topics, write
+long-form articles, humanize AI-assisted content, fact-check claims, analyze
+existing pages, and review performance data.
 
 ## Installation
 
@@ -40,9 +43,21 @@ Use Agent SEO to write an article from research/brief-podcast-monetization-2026-
 Use Agent SEO to audit drafts/podcast-monetization.md for SEO gaps and factual claims.
 ```
 
+### Pi and OpenClaw
+
+Install the self-contained package directory from a clone:
+
+```bash
+pi install /path/to/agent-plugins/plugins/agent-seo
+openclaw plugins install /path/to/agent-plugins/plugins/agent-seo
+```
+
+Both hosts expose `agent-seo`, with the same ten modes and artifact paths as
+Claude Code and Codex.
+
 ### Requirements
 
-- Claude Code or Codex
+- Claude Code, Codex, Pi, or OpenClaw
 - Ruby 3.0+ with Bundler, optional and only needed for local analysis tools
 
 Core prompt-driven workflows work without Ruby: research, write, humanize, fact-check, optimize, rewrite, and analyze existing content.

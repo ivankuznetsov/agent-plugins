@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""Scenario-driven fake Screenote CLI; records argv and never environment values."""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import sys
+
+
+def main() -> int:
+    scenario_path = os.environ.get("SCREENOTE_MOCK_SCENARIO")
+    argv_path = os.environ.get("SCREENOTE_MOCK_ARGV")
+    if not scenario_path:
+        print(json.dumps({"error": {"code": "missing_mock_scenario"}}), file=sys.stderr)
+        return 1
+    arguments = sys.argv[1:]
+    prior_records = []
+    if argv_path and Path(argv_path).exists():
+        prior_records = [json.loads(line) for line in Path(argv_path).read_text(encoding="utf-8").splitlines()]
+    if argv_path:
+        with Path(argv_path).open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(arguments, separators=(",", ":")) + "\n")
+    command_index = 0
+    while command_index < len(arguments) and arguments[command_index] in {"--base-url", "--project"}:
+        command_index += 2
+    command = " ".join(arguments[command_index : command_index + 2])
+    if arguments == ["--help"]:
+        print("Usage: screenote [--base-url URL] [--project PROJECT] [--config PATH]")
+        return 0
+    if "--help" in arguments:
+        flags = {
+            "project list": [],
+            "page list": [],
+            "screenshot list": ["--page", "--status", "--limit", "--offset"],
+            "screenshot create": ["--title", "--page", "--file"],
+            "annotation list": ["--screenshot", "--status", "--viewport", "--limit", "--offset"],
+            "annotation get": ["--annotation", "--crop-file"],
+            "comment add": ["--annotation", "--body"],
+        }
+        if command not in flags:
+            return 2
+        print("Usage: screenote " + command + " " + " ".join(flags[command]))
+        return 0
+    scenario = json.loads(Path(scenario_path).read_text(encoding="utf-8"))
+    response = scenario.get("commands", {}).get(command, scenario.get("default"))
+    if isinstance(response, dict) and isinstance(response.get("responses"), list):
+        prior_count = 0
+        for record in prior_records:
+            index = 0
+            while index < len(record) and record[index] == "--project":
+                index += 2
+            if " ".join(record[index : index + 2]) == command and "--help" not in record:
+                prior_count += 1
+        responses = response["responses"]
+        response = responses[prior_count] if prior_count < len(responses) else None
+    if not isinstance(response, dict):
+        response = {"exit": 1, "stderr": {"code": "unexpected_command", "error": command}}
+    exit_code = int(response.get("exit", 0))
+    stream_name = "stdout" if exit_code == 0 else "stderr"
+    raw_output = response.get(stream_name + "_raw")
+    if raw_output is not None:
+        print(str(raw_output), file=sys.stdout if exit_code == 0 else sys.stderr)
+    else:
+        output = response.get(stream_name, {})
+        print(json.dumps(output, separators=(",", ":")), file=sys.stdout if exit_code == 0 else sys.stderr)
+    return exit_code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

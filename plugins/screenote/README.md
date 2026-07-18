@@ -1,194 +1,114 @@
 # Screenote
 
-Give your AI coding agent eyes. Capture a page or your whole app, publish it to
-Screenote, annotate visually, and let Claude Code or Codex retrieve the
-feedback from the terminal.
+Give an AI coding agent a visual feedback loop: capture a page or a route set,
+publish private PNGs through the external Screenote JSON CLI, retrieve visual
+annotations, and comment after applying a fix.
 
-Screenote account operations use the public `screenote` CLI and OAuth. A
-bundled, pinned Browser Use adapter is used only to create local PNG files; it
-never talks to the Screenote API.
+The plugin ships the same `screenote`, `snapshot`, and `feedback` workflows for
+Claude Code, Codex, Pi, and OpenClaw. It detects the `screenote` executable but
+never installs it or starts authentication automatically.
 
-**Supports Claude Code and Codex.**
+## Install
 
-## Quick start
+Claude Code and Codex use the shared marketplaces:
 
-### 1. Install the plugin
-
-Claude Code:
-
-```bash
+```text
 /plugin marketplace add ivankuznetsov/agent-plugins
 /plugin install screenote@aikuznetsov-marketplace
 ```
 
-Codex:
-
 ```bash
 codex plugin marketplace add ivankuznetsov/agent-plugins
+codex plugin add screenote@aikuznetsov-marketplace
 ```
 
-Then open `/plugins` and install **Screenote** from **AI Kuznetsov**.
-
-### 2. Install the Screenote CLI
+Pi and OpenClaw install the self-contained package directory from a clone:
 
 ```bash
-go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@latest
+pi install /path/to/agent-plugins/plugins/screenote
+openclaw plugins install /path/to/agent-plugins/plugins/screenote
 ```
 
-This requires Go 1.26 or newer and the Go bin directory on `PATH`. The skills
-check the required CLI commands and offer this install when it is missing or
-outdated.
+## Prerequisite
 
-### 3. Install capture prerequisites
+Until a tagged Screenote CLI release contains the OAuth-first command contract,
+install the recorded public baseline:
 
-The plugin launches a bundled adapter around
-[Browser Use](https://github.com/browser-use/browser-use) `0.13.4`. Install
-[uv](https://github.com/astral-sh/uv), Python 3.11+, and Chromium or Chrome.
-The local `.mcp.json` pins Browser Use and MCP runtime versions and starts the
-adapter on demand.
+```bash
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
+```
 
-The adapter verifies exact viewport sizes, writes bounded screenshots directly
-to private temporary files, and uses an ephemeral Chromium profile. It defaults
-to `BROWSER_USE_HEADLESS=false`, so application login can happen safely in a
-visible browser window. The profile is deleted when capture finishes.
-
-### 4. Connect with OAuth
-
-On a machine with a browser:
+For an interactive machine using the hosted service, authenticate separately
+from the agent workflow with:
 
 ```bash
 screenote --base-url https://screenote.ai login
 ```
 
-For SSH, tmux, containers, and other headless sessions:
+For a custom deployment, set `SCREENOTE_BASE_URL` or a trusted Screenote CLI
+config before login and before invoking the plugin. The bundled bearer launcher
+deliberately rejects runtime `--base-url` and `--config` overrides so untrusted
+prompt content cannot redirect an authenticated request. For automation,
+provide `SCREENOTE_TOKEN` through the CLI environment contract and select a
+project explicitly or with `SCREENOTE_PROJECT`. Project selection uses explicit
+`--project`, then `SCREENOTE_PROJECT`, then CLI config.
 
-```bash
-screenote --base-url https://screenote.ai login --device
-```
+## Workflows
 
-Open the displayed authorization URL, approve the short code, and return to
-the terminal. The CLI stores and refreshes OAuth credentials. The plugin never
-asks you to paste a token into chat or copy one into a project.
+Claude Code examples use slash commands; other hosts discover the same skill
+names through their native plugin surface.
 
-### 5. Capture and review
-
-```bash
-/screenote http://localhost:3000/login
-```
-
-Open the returned Screenote link, draw annotations, and leave comments. Then:
-
-```bash
-/feedback
-```
-
-For a whole application:
-
-```bash
-/snapshot http://localhost:3000
-```
-
-## Architecture
+Capture one page at all canonical viewports:
 
 ```text
-page ── Browser Use adapter ── local PNG files
-                                    │
-                                    ▼
-                         screenote snapshot (OAuth CLI)
-                                    │
-                                    ▼
-                       Screenote review and annotations
-                                    │
-                                    ▼
-                   screenote annotation/comment (OAuth CLI)
+/screenote https://example.test/login
 ```
 
-The boundary is deliberate:
+Capture one viewport:
 
-- Browser Use MCP: local navigation, sizing, scrolling, and file capture only.
-- Screenote CLI: project selection, snapshot publication, annotations,
-  comments, and resolution.
-- No Screenote HTTP MCP server, API key, or token-based workflow is used.
-
-## Usage
-
-Claude Code examples use slash commands. In Codex, invoke the same shared
-skills through the plugin namespace, such as `$screenote:screenote`,
-`$screenote:snapshot`, and `$screenote:feedback`.
-
-### Screenshot one page
-
-```bash
-/screenote https://myapp.com/dashboard
+```text
+/screenote mobile https://example.test/login
 ```
 
-The default captures desktop (1280×800), tablet (768×1024), and mobile
-(390×844) as variants of one logical screenshot. Device tabs in Screenote
-switch between those variants.
+Discover, confirm, and capture an application route set:
 
-Each variant is a full-page capture. The agent traverses lazy-loaded content
-for at most 10 downward scrolls and caps output at 5000 px, so infinite pages
-finish predictably. Captures are file-backed; the adapter does not return a
-large base64 screenshot or stitch overlapping tiles.
-
-Capture one viewport by prefixing it:
-
-```bash
-/screenote desktop https://myapp.com/dashboard
-/screenote tablet  https://myapp.com/dashboard
-/screenote mobile  https://myapp.com/dashboard
+```text
+/snapshot https://example.test
 ```
 
-Natural-language targets also work:
+Retrieve feedback, apply a fix, and add a comment:
 
-```bash
-/screenote the signup page
-```
-
-### Snapshot the entire app
-
-```bash
-/snapshot http://localhost:3000
-```
-
-The snapshot workflow discovers routes from code and the running app, confirms
-the route set, handles application authentication in one ephemeral browser
-session, captures serially, and publishes one resumable manifest through the
-CLI. Date and Git commit metadata identify the batch.
-
-Select one viewport when the complete route matrix would be too large:
-
-```bash
-/snapshot mobile http://localhost:3000
-```
-
-### Read and resolve feedback
-
-```bash
-/feedback
-/feedback desktop
+```text
 /feedback mobile login
 ```
 
-The agent refreshes the project list through the CLI, selects a screenshot,
-downloads private annotation crops, and can comment and resolve after making
-the requested changes. Paginated versions and annotations are exhausted rather
-than silently stopping at the first page.
+After the comment succeeds, resolve the item in the Screenote UI. The plugin
+does not perform the final resolution mutation.
 
-### Project matching
+## Safety and failure behavior
 
-The plugin validates a repo-local project cache against a fresh CLI project
-list and otherwise matches the working-directory name. If no match exists, it
-asks you to choose or offers to create a project through the CLI.
+- Navigation is limited to user-specified or locally discovered HTTP(S) URLs.
+- Native browser automation captures serially to a unique mode-`0700`
+  directory with mode-`0600` files.
+- `scripts/screenote-cli.sh` accepts only project/page/screenshot/annotation
+  reads, screenshot creation, and comment creation; endpoint/config overrides
+  are forbidden and arguments remain separate argv elements.
+- Credentials stay in the CLI's environment or config channels, never command
+  arguments, generated files, or diagnostics.
+- Exit 2 reports missing authentication/project setup, exit 3 reports rejected
+  authentication, and every other nonzero result stops the flow.
+- Successful temporary captures are removed unless retention was requested.
+  Failed captures remain private and their exact recovery path is reported.
+
+See [the shared CLI contract](references/cli.md) for the complete allowlist,
+error mapping, project precedence, capture boundary, cleanup rules, and the
+2.x setup migration.
 
 ## Requirements
 
-- A [Screenote](https://screenote.ai) account
-- Claude Code or Codex
-- The [Screenote CLI](https://github.com/ivankuznetsov/screenote-cli), installed
-  with Go 1.26+
-- OAuth completed with `screenote login` or `screenote login --device`
-- Python 3.11+, `uv`, and Chromium/Chrome for local Browser Use capture
+- A compatible `screenote` executable on `PATH`
+- A Screenote account and an accessible project
+- A supported agent host with native browser automation for capture workflows
 
 ## License
 

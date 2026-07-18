@@ -4,6 +4,32 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-07-18
+
+### Added
+
+- Native OpenClaw packaging and discovery alongside Claude Code, Codex, and Pi.
+- Generated, self-contained host adapters and deterministic package isolation
+  validation.
+- OpenClaw project context and headless wiki maintenance through workspace
+  `AGENTS.md` plus non-delivering `openclaw agent --local` automation.
+- OpenClaw installed/remote version checks, tracked plugin updates, and safe
+  Gateway restart guidance in `wiki-status`.
+
+### Changed
+
+- The established Pi names (`wiki-bootstrap`, `wiki-research`, `wiki-plan`,
+  and `wiki-status`) are also used by OpenClaw to avoid host skill collisions.
+- The bundled post-commit refresh template now validates and dispatches the
+  configured Claude Code, Codex, Pi, or OpenClaw owner instead of being
+  hardwired to Codex.
+- The four-host package retains the 0.1.14 transactional queue, source pins,
+  bounded refresh batches, circuit breaker, and deterministic project upgrade
+  path; `wiki-upgrade` now preserves OpenClaw ownership and agent identity.
+
+Publish and tag `v0.2.0` in the upstream LLM Wiki repository before vendoring
+that release and creating `llm-wiki-v0.2.0` here.
+
 ## [0.1.14] - 2026-07-18
 
 ### Fixed

@@ -1,0 +1,14 @@
+{
+  "id": "agent-reviewer",
+  "name": "Agent Reviewer",
+  "description": "Clone your team's best code reviewers from their PR history and run them as a review panel.",
+  "version": "0.3.0",
+  "skills": [
+    "./openclaw/skills"
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

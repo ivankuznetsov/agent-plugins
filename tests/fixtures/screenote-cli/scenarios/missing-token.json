@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "project list": {"exit": 2, "stderr": {"code": "missing_token", "error": "Authentication is required."}}
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "project list": {"exit": 0, "stdout_raw": "Project 7 is ready"}
+  }
+}

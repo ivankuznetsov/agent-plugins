@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Bootstrap an LLM-maintained wiki for the current project. Use when a user asks to create, initialize, or refresh a project wiki, LLM wiki, QMD wiki, or codebase knowledge base for Claude Code, Codex, or Pi.
+description: Bootstrap an LLM-maintained wiki for the current project. Use when a user asks to create, initialize, or refresh a project wiki, LLM wiki, QMD wiki, or codebase knowledge base for Claude Code, Codex, Pi, or OpenClaw.
 ---
 
 # Bootstrap LLM Wiki
@@ -133,8 +133,9 @@ Config shape:
 
 ```json
 {
-  "headless_agent": "<claude-or-codex-or-pi>",
-  "context_agents": ["claude", "codex", "pi"],
+  "headless_agent": "<claude-or-codex-or-pi-or-openclaw>",
+  "context_agents": ["claude", "codex", "pi", "openclaw"],
+  "openclaw_agent_id": "<configured-agent-id-or-null>",
   "main_wiki_path": "<detected-or-provided-main-wiki-path>",
   "created_by": "<current-tool>"
 }
@@ -142,12 +143,15 @@ Config shape:
 
 Rules:
 
-- `context_agents` is the supported context list and should include `claude`, `codex`, and `pi`.
+- `headless_agent` must be exactly one of `claude`, `codex`, `pi`, or `openclaw`. Reject any other value instead of silently falling back to a different agent.
+- `context_agents` is the supported context list and should include `claude`, `codex`, `pi`, and `openclaw`.
+- When OpenClaw is the headless owner, run `openclaw agents list --json`, select the single agent whose `workspace` resolves to the project root, and persist its `id` as `openclaw_agent_id`. Do not guess `main`; agent IDs and the default agent can be customized.
+- When OpenClaw is not the headless owner, preserve an existing `openclaw_agent_id` or write `null` when no matching project-workspace agent is known.
 - If `.llm-wiki/config.json` is missing, first check for legacy automation from older `llm-wiki` versions before treating this as a first bootstrap.
-- Infer legacy ownership by searching `.llm-wiki/refresh-wiki.sh`, `.llm-wiki/post-commit-refresh.sh`, `.git/hooks/post-commit`, known `llm-wiki-<project-slug>` systemd or launchd scheduler files, and existing cron entries for `codex exec`, `claude -p`, `pi -p`, or `pi --print`.
+- Infer legacy ownership by searching `.llm-wiki/refresh-wiki.sh`, `.llm-wiki/post-commit-refresh.sh`, `.git/hooks/post-commit`, known `llm-wiki-<project-slug>` systemd or launchd scheduler files, and existing cron entries for `codex exec`, `claude -p`, `pi -p`, `pi --print`, or `openclaw agent --local`.
 - If exactly one legacy owner is found, preserve it as `headless_agent` and record it in `.llm-wiki/config.json`.
 - If more than one owner command is found, or no owner can be inferred from existing automation, ask the user which agent should own headless maintenance before installing or rewriting automation.
-- On true first bootstrap with no existing automation, set `headless_agent` to the current tool: `claude` for Claude Code, `codex` for Codex, or `pi` for Pi.
+- On true first bootstrap with no existing automation, set `headless_agent` to the current tool: `claude` for Claude Code, `codex` for Codex, `pi` for Pi, or `openclaw` for OpenClaw.
 - On later bootstrap runs, preserve the existing `headless_agent` unless the user explicitly asks to switch it.
 - If the current tool differs from `headless_agent`, still update wiki context for the current tool, but do not change scheduler or post-commit ownership.
 - Scheduled refresh and post-commit refresh must use only `headless_agent`.
@@ -158,9 +162,10 @@ Add a wiki section to all agents listed in `context_agents`:
 - Claude Code: `CLAUDE.md`
 - Codex: `AGENTS.md`
 - Pi: `AGENTS.md`
+- OpenClaw: `AGENTS.md` in the configured OpenClaw agent workspace
 
 Create files if absent. Append or replace only the managed wiki section between the markers below. Do not replace unrelated instructions or any unmarked user-authored `## Wiki` section.
-When both Codex and Pi are listed, update `AGENTS.md` once; do not duplicate the managed wiki block.
+When any of Codex, Pi, and OpenClaw share the same project workspace, update `AGENTS.md` once; do not duplicate the managed wiki block.
 
 Legacy migration:
 
@@ -229,6 +234,12 @@ Pi context:
 - Do not create `.pi/SYSTEM.md` because it replaces Pi's default system prompt.
 - Do not create `.pi/APPEND_SYSTEM.md` by default. Use `AGENTS.md` unless the user explicitly asks for Pi-specific system prompt customization.
 
+OpenClaw context:
+
+- Ensure `AGENTS.md` contains the wiki section from Step 5. OpenClaw auto-injects the `AGENTS.md` in its configured agent workspace at the start of every session.
+- Confirm the project root is the active OpenClaw agent workspace before selecting `openclaw` as `headless_agent`. If it is not, report the workspace mismatch instead of claiming the project `AGENTS.md` will be injected.
+- Do not add channel-delivery flags to wiki maintenance commands. Scheduled and post-commit refreshes are local automation, not chat replies.
+
 Always ensure scheduled wiki refresh automation exists for the configured `headless_agent`. Do not ask whether to add it.
 
 If the current tool is not the configured `headless_agent`, update session context for the current tool and validate/report the existing automation owner. Do not rewrite scheduler or post-commit ownership unless automation is missing, unsafe, or the user asks to repair or switch ownership.
@@ -240,12 +251,15 @@ Create `.llm-wiki/refresh-wiki.sh` and make it executable. It should run the con
 - `headless_agent: "codex"`: use `codex exec -C "<project-root>" "<refresh prompt>"`.
 - `headless_agent: "claude"`: use `claude -p "<refresh prompt>"` with the same refresh intent.
 - `headless_agent: "pi"`: use `pi -p --no-session --tools read,bash,edit,write,grep,find,ls "<refresh prompt>"` with the same refresh intent.
+- `headless_agent: "openclaw"`: use `openclaw agent --local --agent "<openclaw_agent_id>" --message "<refresh prompt>" --json --timeout 1800` from the configured OpenClaw project workspace. The explicit agent selector is required by the CLI and binds the turn to the verified project workspace. Omit `--deliver`, `--channel`, `--reply-channel`, `--reply-to`, and `--to` so automation cannot send the result to a channel.
 
 For Codex-owned headless automation, never write automation that shells out to `claude` or `claude -p`. Do not fall back from Codex automation to Claude if `codex` is missing; report the missing `codex` CLI instead.
 
 For Claude-owned headless automation, never write automation that shells out to `codex exec`. Do not fall back from Claude automation to Codex if `claude` is missing; report the missing `claude` CLI instead.
 
 For Pi-owned headless automation, never write automation that shells out to `codex exec` or `claude -p`. Do not fall back from Pi automation to Claude or Codex if `pi` is missing; report the missing `pi` CLI instead.
+
+For OpenClaw-owned headless automation, never write automation that shells out to `codex exec`, `claude -p`, or `pi`. Do not fall back from OpenClaw automation to another agent if `openclaw` is missing; report the missing `openclaw` CLI or project-workspace mismatch instead.
 
 Codex refresh script shape:
 
@@ -280,6 +294,17 @@ cd "$project_root"
 pi -p --no-session --tools read,bash,edit,write,grep,find,ls "Refresh this project's LLM wiki. Read .llm-wiki/config.json, AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
 ```
 
+OpenClaw refresh script shape:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$project_root"
+
+openclaw agent --local --agent "<openclaw_agent_id>" --message "Refresh this project's LLM wiki. Read .llm-wiki/config.json, AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, add a wiki/log.d/<timestamp>-<slug>.md fragment without editing compiled wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --json --timeout 1800
+```
+
 Install the best available scheduler without prompting:
 
 - Linux with systemd user services: create `~/.config/systemd/user/llm-wiki-<project-slug>.service` and `.timer`, then run `systemctl --user daemon-reload` and `systemctl --user enable --now llm-wiki-<project-slug>.timer`.
@@ -291,6 +316,10 @@ Use a stable `<project-slug>` from the repository basename plus a short hash of 
 Also install post-commit wiki maintenance automation. Preserve existing hooks; do not overwrite unrelated hook logic. Install the canonical runtime in the shared Git directory and wire the common `post-commit` hook to pass the committing worktree explicitly.
 
 Install `.llm-wiki/post-commit-refresh.sh` AND `.llm-wiki/compile-log.sh` by copying the reference scripts bundled with this skill at `templates/post-commit-refresh.sh` and `templates/compile-log.sh` (resolve them relative to this SKILL.md), then `chmod +x` both. Also copy the same files verbatim to `$(git rev-parse --git-common-dir)/llm-wiki/post-commit-refresh.sh` and `compile-log.sh`, and copy the validated project config there as `config.json`. The hook must invoke that shared runner as `post-commit-refresh.sh --project "$(git rev-parse --show-toplevel)"`, falling back to the checkout-local runner only when the shared copy is absent. This makes one bootstrap or upgrade authoritative for every linked worktree, including older branches with stale ignored `.llm-wiki` files or config. `compile-log.sh` is the single source of truth for the changelog format: it regenerates `wiki/log.md` from the append-only `wiki/log.d/*.md` fragments, and the refresh runs it before committing. (Hive's `Hive::WikiLog` delegates here, so Ruby and shell callers share one implementation.) The bundled post-commit script reads the canonical shared `headless_agent` and dispatches to exactly one provider; never customize its provider function per project. Provider, QMD, and Git ref execution requires `timeout` or `gtimeout` so every potentially stuck command is bounded. When neither is available, the worker must fail before starting a provider. A repository-wide circuit stops automatic provider launches after two consecutive failed batches or when more than 25 sources are pending by default. A worker handles at most one batch of 10 sources with bounded path context; sources arriving outside that snapshot open a `deferred:<count>` circuit. New sources continue queueing until an operator explicitly runs `.llm-wiki/post-commit-refresh.sh --retry-failed <sha|all>` once per bounded batch.
+The supported provider set is Claude Code, Codex, Pi, and OpenClaw. The copied
+config must preserve `openclaw_agent_id` when OpenClaw owns maintenance; the
+runtime rejects an unsupported owner or a missing/invalid OpenClaw agent ID
+instead of falling back to another provider.
 
 Transactional refresh contract (the bundled script implements all of these; any hand-edit must keep them):
 
@@ -318,7 +347,7 @@ Post-commit hook idempotency:
 - Add or replace only a managed `.git/hooks/post-commit` block marked `# BEGIN LLM WIKI POST-COMMIT` and `# END LLM WIKI POST-COMMIT`. The block honors `HIVE_SKIP_LLM_WIKI_POST_COMMIT` so the script's own wiki commit cannot recurse.
 - Remove or replace older direct calls to `.llm-wiki/post-commit-refresh.sh` only when they are clearly attributable to `llm-wiki`.
 - Never add a second managed post-commit block.
-- `.llm-wiki/post-commit-refresh.sh` must sanitize Git hook-local environment variables before launching nested tools. Collect unset arguments from `git rev-parse --local-env-vars` and run `codex exec`, `claude -p`, `pi`, `qmd update`, and `qmd embed` through `env -u ...` so variables such as `GIT_INDEX_FILE`, `GIT_DIR`, and `GIT_WORK_TREE` cannot leak into agent startup, plugin marketplace checkouts, or QMD indexing. Keep local Git commands that inspect the triggering commit, such as `git diff-tree`, in the hook context.
+- `.llm-wiki/post-commit-refresh.sh` must sanitize Git hook-local environment variables before launching nested tools. Collect unset arguments from `git rev-parse --local-env-vars` and run `codex exec`, `claude -p`, `pi`, `openclaw agent`, `qmd update`, and `qmd embed` through `env -u ...` so variables such as `GIT_INDEX_FILE`, `GIT_DIR`, and `GIT_WORK_TREE` cannot leak into agent startup, plugin marketplace checkouts, or QMD indexing. Keep local Git commands that inspect the triggering commit, such as `git diff-tree`, in the hook context.
 
 The post-commit script detects relevant changed files and coalesces them into one focused headless refresh per queued batch:
 
@@ -330,11 +359,13 @@ The post-commit script detects relevant changed files and coalesces them into on
   architecture coverage for `app/`, `src/`, `lib/`, `test/`, `tests/`, `spec/`,
   `templates/`, and `config/` changes.
 
-For `headless_agent: "codex"`, the runtime dispatcher must use `codex exec -C "$refresh_root" "$prompt"` and never use `claude -p` or `pi -p`.
+For `headless_agent: "codex"`, the runtime dispatcher must use `codex exec -C "$refresh_root" "$prompt"` and never use `claude -p`, `pi -p`, or `openclaw agent`.
 
-For `headless_agent: "claude"`, the runtime dispatcher must use `claude -p "$prompt" --allowedTools "Bash,Read,Edit,Write" --add-dir "$refresh_root" --max-budget-usd 0.50` from the managed worktree and never use `codex exec` or `pi -p`.
+For `headless_agent: "claude"`, the runtime dispatcher must use `claude -p "$prompt" --allowedTools "Bash,Read,Edit,Write" --add-dir "$refresh_root" --max-budget-usd 0.50` from the managed worktree and never use `codex exec`, `pi -p`, or `openclaw agent`.
 
-For `headless_agent: "pi"`, the runtime dispatcher must use `pi -p --no-session --tools read,bash,edit,write,grep,find,ls "$prompt"` from the managed worktree and never use `claude -p` or `codex exec`.
+For `headless_agent: "pi"`, the runtime dispatcher must use `pi -p --no-session --tools read,bash,edit,write,grep,find,ls "$prompt"` from the managed worktree and never use `claude -p`, `codex exec`, or `openclaw agent`.
+
+For `headless_agent: "openclaw"`, the runtime dispatcher must use `openclaw agent --local --agent "<openclaw_agent_id>" --message "$prompt" --json --timeout 1800` from the managed worktree without any delivery, channel, reply, or recipient flag. Never use `claude -p`, `codex exec`, or `pi`.
 
 After a queued batch succeeds, run bounded `qmd update` and `qmd embed` from the managed refresh worktree with their cache outside user checkouts, then create `<wikis-root>/.sync-needed/<project-name>` when a supported sync directory exists. Failed batches retain their queue and do not index discarded work.
 

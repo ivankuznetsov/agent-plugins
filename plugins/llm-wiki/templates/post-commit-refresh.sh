@@ -519,7 +519,7 @@ run_refresh_agent() {
     return $?
   fi
 
-  local headless_agent timeout_seconds owner_config
+  local headless_agent timeout_seconds owner_config openclaw_agent_id
   owner_config="$canonical_config"
   [ -f "$owner_config" ] || owner_config="$committing_tree/.llm-wiki/config.json"
   headless_agent="$(
@@ -544,8 +544,23 @@ run_refresh_agent() {
         pi -p --no-session --tools read,bash,edit,write,grep,find,ls \
         "$prompt") >>"$log_file" 2>&1
       ;;
+    openclaw)
+      openclaw_agent_id="$(
+        sed -nE 's/.*"openclaw_agent_id"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
+          "$owner_config" 2>/dev/null | head -n 1 || true
+      )"
+      if [[ ! "$openclaw_agent_id" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$ ]]; then
+        log_line "ERROR: openclaw headless ownership requires a valid openclaw_agent_id in .llm-wiki/config.json"
+        return 1
+      fi
+      timeout_seconds="${LLM_WIKI_OPENCLAW_OUTER_TIMEOUT:-1860}"
+      (cd "$refresh_root" && run_with_timeout "$timeout_seconds" \
+        openclaw agent --local --agent "$openclaw_agent_id" \
+        --message "$prompt" --json \
+        --timeout "${LLM_WIKI_OPENCLAW_TIMEOUT:-1800}") >>"$log_file" 2>&1
+      ;;
     *)
-      log_line "ERROR: unsupported or missing headless_agent in .llm-wiki/config.json"
+      log_line "ERROR: unsupported or missing headless_agent in .llm-wiki/config.json; expected codex, claude, pi, or openclaw"
       return 1
       ;;
   esac

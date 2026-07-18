@@ -13,7 +13,7 @@
       "name": "llm-wiki",
       "source": "./plugins/llm-wiki",
       "description": "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
-      "version": "0.1.14",
+      "version": "0.2.0",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
@@ -42,7 +42,7 @@
       "name": "screenote",
       "source": "./plugins/screenote",
       "description": "Capture pages, publish OAuth-authenticated snapshots with the Screenote CLI, and retrieve visual feedback from Claude Code or Codex.",
-      "version": "2.0.1",
+      "version": "3.0.0",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
@@ -72,7 +72,7 @@
       "name": "agent-seo",
       "source": "./plugins/agent-seo",
       "description": "SEO content workflow for researching, writing, humanizing, fact-checking, and optimizing long-form content.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
@@ -103,7 +103,7 @@
       "name": "agent-writing",
       "source": "./plugins/agent-writing",
       "description": "A team of three writing voices — journalist, writer, editor — that work together as a continuous write-edit cycle. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals.",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
@@ -134,7 +134,7 @@
       "name": "agent-reviewer",
       "source": "./plugins/agent-reviewer",
       "description": "Clone your team's best code reviewers from their PR history (across one or more repos) and run them as a review panel. Extracts a persona per reviewer — what they care about, what they catch, how they sound — not a rule list.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"

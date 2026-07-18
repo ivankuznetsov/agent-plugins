@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ivankuznetsov/agent-plugins/schemas/plugin-surfaces.schema.json",
+  "title": "Agent plugin surface contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "contract_version", "compatibility", "screenote_cli", "plugins"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "contract_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "compatibility": {
+      "type": "object",
+      "required": ["platforms", "allowed_overlays"],
+      "properties": {
+        "platforms": {"const": ["claude", "codex", "pi", "openclaw"]},
+        "allowed_overlays": {
+          "type": "array",
+          "items": {"enum": ["frontmatter", "invocation", "tool-vocabulary", "lifecycle", "install-path"]},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "screenote_cli": {
+      "type": "object",
+      "required": ["contract_pr", "contract_merge_sha", "public_repository", "public_test_ref", "minimum_release", "approved_commands"],
+      "properties": {
+        "contract_pr": {"type": "string", "format": "uri"},
+        "contract_merge_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "public_repository": {"type": "string", "format": "uri"},
+        "public_test_ref": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "minimum_release": {"type": ["string", "null"]},
+        "approved_commands": {"type": "array", "items": {"type": "array", "items": {"type": "string"}, "minItems": 2}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    },
+    "plugins": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/plugin"}
+    }
+  },
+  "$defs": {
+    "approval": {
+      "type": "object",
+      "required": ["reason", "owner", "review_condition"],
+      "properties": {"reason": {"type": "string", "minLength": 1}, "owner": {"type": "string", "minLength": 1}, "review_condition": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    },
+    "surface": {
+      "type": "object",
+      "required": ["support", "state", "tested_host_version", "minimum_host_version", "minimum_evidence", "manifest", "skill_roots", "metadata"],
+      "properties": {
+        "support": {"enum": ["supported", "unsupported"]},
+        "state": {"enum": ["native", "generated", "declared"]},
+        "tested_host_version": {"type": ["string", "null"]},
+        "minimum_host_version": {"type": ["string", "null"]},
+        "minimum_evidence": {"type": "string", "minLength": 1},
+        "manifest": {"type": ["string", "null"]},
+        "skill_roots": {"type": "array", "items": {"type": "string"}},
+        "metadata": {"type": "object"},
+        "approval": {"$ref": "#/$defs/approval"}
+      },
+      "additionalProperties": false
+    },
+    "plugin": {
+      "type": "object",
+      "required": ["name", "path", "version", "stability", "metadata", "canonical", "legacy_entrypoints", "resources", "platforms"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+        "path": {"type": "string"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "stability": {"enum": ["stable", "experimental", "deprecated", "excluded"]},
+        "metadata": {"type": "object"},
+        "approval": {"$ref": "#/$defs/approval"},
+        "canonical": {
+          "type": "object",
+          "required": ["skill_roots", "skills"],
+          "properties": {
+            "skill_roots": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+            "skills": {"type": "array", "items": {"type": "object", "required": ["name", "path"], "properties": {"name": {"type": "string"}, "path": {"type": "string"}, "aliases": {"type": "object", "additionalProperties": {"type": "string"}}}, "additionalProperties": false}, "minItems": 1}
+          },
+          "additionalProperties": false
+        },
+        "legacy_entrypoints": {"type": "array", "items": {"type": "object"}},
+        "resources": {"type": "array", "items": {"oneOf": [{"type": "string"}, {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}, "required": {"type": "boolean"}}, "additionalProperties": false}]}},
+        "platforms": {
+          "type": "object",
+          "required": ["claude", "codex", "pi", "openclaw"],
+          "properties": {"claude": {"$ref": "#/$defs/surface"}, "codex": {"$ref": "#/$defs/surface"}, "pi": {"$ref": "#/$defs/surface"}, "openclaw": {"$ref": "#/$defs/surface"}},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,248 @@
+{
+  "$schema": "./schemas/plugin-surfaces.schema.json",
+  "contract_version": "1.0.0",
+  "compatibility": {
+    "platforms": [
+      "claude",
+      "codex",
+      "pi",
+      "openclaw"
+    ],
+    "allowed_overlays": [
+      "frontmatter",
+      "invocation",
+      "tool-vocabulary",
+      "lifecycle",
+      "install-path"
+    ]
+  },
+  "screenote_cli": {
+    "contract_pr": "https://github.com/ivankuznetsov/screenote-cli/pull/6",
+    "contract_merge_sha": "c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b",
+    "public_repository": "https://github.com/ivankuznetsov/screenote-cli",
+    "public_test_ref": "c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b",
+    "minimum_release": null,
+    "approved_commands": [
+      ["project", "list"],
+      ["page", "list"],
+      ["screenshot", "list"],
+      ["screenshot", "create"],
+      ["annotation", "list"],
+      ["annotation", "get"],
+      ["comment", "add"]
+    ]
+  },
+  "plugins": [
+    {
+      "name": "agent-reviewer",
+      "path": "plugins/agent-reviewer",
+      "version": "0.3.0",
+      "stability": "stable",
+      "metadata": {
+        "display_name": "Agent Reviewer",
+        "description": "Clone your team's best code reviewers from their PR history and run them as a review panel.",
+        "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+        "repository": "https://github.com/ivankuznetsov/agent-plugins",
+        "license": "MIT",
+        "category": "Coding",
+        "npm_keywords": ["agent-reviewer", "agent-skills", "code-review", "reviewer-persona"]
+      },
+      "canonical": {
+        "skill_roots": ["skills"],
+        "skills": [
+          {
+            "name": "agent-reviewer",
+            "path": "skills/agent-reviewer/SKILL.md"
+          }
+        ]
+      },
+      "legacy_entrypoints": [
+        {
+          "platform": "claude",
+          "name": "reviewer:extract",
+          "path": "commands/reviewer:extract.md",
+          "mode": "extract",
+          "usage": ["/reviewer:extract", "/reviewer:extract <login> [<login> ...]"],
+          "arguments": "[<login> ...]",
+          "pass_arguments": true
+        },
+        {
+          "platform": "claude",
+          "name": "reviewer:review",
+          "path": "commands/reviewer:review.md",
+          "mode": "review",
+          "usage": ["/reviewer:review", "/reviewer:review <file-or-PR>", "/reviewer:review --only <login>", "/reviewer:review --passes <N>", "/reviewer:review --min-confidence <0..1>"],
+          "arguments": "[<file-or-PR>] [--only <login>] [--passes <N>] [--min-confidence <0..1>]",
+          "defaults": {"passes": 2, "min_confidence": 0.5},
+          "pass_arguments": true
+        },
+        {
+          "platform": "claude",
+          "name": "reviewer:update",
+          "path": "commands/reviewer:update.md",
+          "mode": "update",
+          "usage": ["/reviewer:update <login>", "/reviewer:update <login> --add-repo <repo>", "/reviewer:update <login> --since <YYYY-MM-DD>"],
+          "arguments": "<login> [--add-repo <repo>] [--since <YYYY-MM-DD>]",
+          "pass_arguments": true
+        }
+      ],
+      "resources": ["agents", "references", "scripts", "eval"],
+      "platforms": {
+        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "/reviewer:* and agent-reviewer skill"}},
+        "codex": {"support": "supported", "state": "native", "tested_host_version": "0.144.3", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".codex-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "$agent-reviewer:agent-reviewer"}},
+        "pi": {"support": "supported", "state": "generated", "tested_host_version": "0.80.10", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "package.json", "skill_roots": ["pi/skills"], "metadata": {"invocation": "agent-reviewer"}},
+        "openclaw": {"support": "supported", "state": "generated", "tested_host_version": "2026.7.1-beta.2", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "openclaw.plugin.json", "skill_roots": ["openclaw/skills"], "metadata": {"invocation": "agent-reviewer"}}
+      }
+    },
+    {
+      "name": "agent-seo",
+      "path": "plugins/agent-seo",
+      "version": "1.2.0",
+      "stability": "stable",
+      "metadata": {
+        "display_name": "Agent SEO",
+        "description": "Research, write, fact-check, and optimize long-form SEO content.",
+        "homepage": "https://github.com/ivankuznetsov/agent-seo",
+        "repository": "https://github.com/ivankuznetsov/agent-seo",
+        "license": "MIT",
+        "category": "Productivity",
+        "npm_keywords": ["agent-seo", "agent-skills", "seo", "content-writing"]
+      },
+      "canonical": {
+        "skill_roots": ["skills"],
+        "skills": [
+          {"name": "agent-seo", "path": "skills/seo/SKILL.md"}
+        ]
+      },
+      "legacy_entrypoints": [
+        {"platform": "claude", "name": "seo:analyze-existing", "path": "commands/seo:analyze-existing.md", "mode": "analyze-existing", "usage": ["/seo:analyze-existing [URL or file path]"], "arguments": "[URL or file path]", "pass_arguments": true},
+        {"platform": "claude", "name": "seo:data", "path": "commands/seo:data.md", "mode": "data", "usage": ["/seo:data [type] [arguments]"], "arguments": "[type] [arguments]", "pass_arguments": true},
+        {"platform": "claude", "name": "seo:fact-check", "path": "commands/seo:fact-check.md", "mode": "fact-check", "usage": ["/seo:fact-check [file path or paste text]"], "arguments": "[file path or paste text]", "pass_arguments": true},
+        {"platform": "claude", "name": "seo:humanize", "path": "commands/seo:humanize.md", "mode": "humanize", "usage": ["/seo:humanize [file path or paste text]"], "arguments": "[file path or paste text]", "pass_arguments": true},
+        {"platform": "claude", "name": "seo:optimize", "path": "commands/seo:optimize.md", "mode": "optimize", "usage": ["/seo:optimize [article file]"], "arguments": "[article file]", "pass_arguments": true},
+        {"platform": "claude", "name": "seo:performance-review", "path": "commands/seo:performance-review.md", "mode": "performance-review", "usage": ["/seo:performance-review [days]"], "arguments": "[days]", "defaults": {"days": 30}, "pass_arguments": true},
+        {"platform": "claude", "name": "seo:research", "path": "commands/seo:research.md", "mode": "research", "usage": ["/seo:research [topic]"], "arguments": "[topic]", "pass_arguments": true},
+        {"platform": "claude", "name": "seo:rewrite", "path": "commands/seo:rewrite.md", "mode": "rewrite", "usage": ["/seo:rewrite [topic or analysis file]"], "arguments": "[topic or analysis file]", "pass_arguments": true},
+        {"platform": "claude", "name": "seo:scrub", "path": "commands/seo:scrub.md", "mode": "scrub", "usage": ["/seo:scrub [file path]"], "arguments": "[file path]", "pass_arguments": true},
+        {"platform": "claude", "name": "seo:write", "path": "commands/seo:write.md", "mode": "write", "usage": ["/seo:write [topic or research brief]"], "arguments": "[topic or research brief]", "pass_arguments": true}
+      ],
+      "resources": ["agents", "context", "data_sources", "hooks", "scripts", ".env.example", "data-sources-setup.md"],
+      "platforms": {
+        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "/seo:* and agent-seo skill"}},
+        "codex": {"support": "supported", "state": "native", "tested_host_version": "0.144.3", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".codex-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "$agent-seo:agent-seo"}},
+        "pi": {"support": "supported", "state": "generated", "tested_host_version": "0.80.10", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "package.json", "skill_roots": ["pi/skills"], "metadata": {"invocation": "agent-seo"}},
+        "openclaw": {"support": "supported", "state": "generated", "tested_host_version": "2026.7.1-beta.2", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "openclaw.plugin.json", "skill_roots": ["openclaw/skills"], "metadata": {"invocation": "agent-seo"}}
+      }
+    },
+    {
+      "name": "agent-writing",
+      "path": "plugins/agent-writing",
+      "version": "0.5.0",
+      "stability": "stable",
+      "metadata": {
+        "display_name": "Agent Writing",
+        "description": "Investigate, draft, and edit with three writing voices working as a team of rivals.",
+        "homepage": "https://github.com/ivankuznetsov/agent-plugins",
+        "repository": "https://github.com/ivankuznetsov/agent-plugins",
+        "license": "MIT",
+        "category": "Productivity",
+        "npm_keywords": ["agent-writing", "agent-skills", "writing", "editor"]
+      },
+      "canonical": {
+        "skill_roots": ["skills"],
+        "skills": [
+          {"name": "agent-writing", "path": "skills/writing/SKILL.md"}
+        ]
+      },
+      "legacy_entrypoints": [
+        {"platform": "claude", "name": "write:editor-ru", "path": "commands/write:editor-ru.md", "mode": "editor-ru", "usage": ["/write:editor-ru <draft-path> [--suffix <suffix>]"], "arguments": "<draft-path> [--suffix <suffix>]", "pass_arguments": true},
+        {"platform": "claude", "name": "write:editor", "path": "commands/write:editor.md", "mode": "editor", "usage": ["/write:editor <draft-path>"], "arguments": "<draft-path>", "pass_arguments": true},
+        {"platform": "claude", "name": "write:full", "path": "commands/write:full.md", "mode": "full", "usage": ["/write:full <topic> [--scope <path>] [--max-rounds <N>]"], "arguments": "<topic> [--scope <path>] [--max-rounds <N>]", "defaults": {"scope": "repository root", "max_rounds": 5}, "pass_arguments": true},
+        {"platform": "claude", "name": "write:journalist", "path": "commands/write:journalist.md", "mode": "journalist", "usage": ["/write:journalist <topic> [--scope <path>]"], "arguments": "<topic> [--scope <path>]", "defaults": {"scope": "repository root"}, "pass_arguments": true},
+        {"platform": "claude", "name": "write:writer-ivan", "path": "commands/write:writer-ivan.md", "mode": "writer-ivan", "usage": ["/write:writer-ivan <brief-or-notes> [--lang ru|en] [--review <review-path>]"], "arguments": "<brief-or-notes> [--lang ru|en] [--review <review-path>]", "defaults": {"lang": "ru"}, "pass_arguments": true},
+        {"platform": "claude", "name": "write:writer-ru", "path": "commands/write:writer-ru.md", "mode": "writer-ru", "usage": ["/write:writer-ru <brief-or-notes> [--review <review-path>]"], "arguments": "<brief-or-notes> [--review <review-path>]", "pass_arguments": true},
+        {"platform": "claude", "name": "write:writer", "path": "commands/write:writer.md", "mode": "writer", "usage": ["/write:writer <brief-or-notes> [--style <profile>] [--review <review-path>]"], "arguments": "<brief-or-notes> [--style <profile>] [--review <review-path>]", "defaults": {"style": "context/voice.md"}, "pass_arguments": true}
+      ],
+      "resources": ["agents", "context"],
+      "platforms": {
+        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "/write:* and agent-writing skill"}},
+        "codex": {"support": "supported", "state": "native", "tested_host_version": "0.144.3", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".codex-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "$agent-writing:agent-writing"}},
+        "pi": {"support": "supported", "state": "generated", "tested_host_version": "0.80.10", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "package.json", "skill_roots": ["pi/skills"], "metadata": {"invocation": "agent-writing"}},
+        "openclaw": {"support": "supported", "state": "generated", "tested_host_version": "2026.7.1-beta.2", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "openclaw.plugin.json", "skill_roots": ["openclaw/skills"], "metadata": {"invocation": "agent-writing"}}
+      }
+    },
+    {
+      "name": "llm-wiki",
+      "path": "plugins/llm-wiki",
+      "version": "0.2.0",
+      "stability": "stable",
+      "metadata": {
+        "display_name": "LLM Wiki",
+        "description": "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
+        "homepage": "https://github.com/ivankuznetsov/llm-wiki",
+        "repository": "https://github.com/ivankuznetsov/llm-wiki",
+        "license": "MIT",
+        "category": "Coding",
+        "npm_keywords": ["llm-wiki", "agent-skills", "qmd", "knowledge-management", "planning", "pi-package"]
+      },
+      "canonical": {
+        "skill_roots": ["skills"],
+        "skills": [
+          {"name": "bootstrap", "path": "skills/bootstrap/SKILL.md", "aliases": {"pi": "wiki-bootstrap", "openclaw": "wiki-bootstrap"}},
+          {"name": "upgrade", "path": "skills/upgrade/SKILL.md", "aliases": {"pi": "wiki-upgrade", "openclaw": "wiki-upgrade"}},
+          {"name": "research", "path": "skills/research/SKILL.md", "aliases": {"pi": "wiki-research", "openclaw": "wiki-research"}},
+          {"name": "wiki-plan", "path": "skills/wiki-plan/SKILL.md", "aliases": {"pi": "wiki-plan", "openclaw": "wiki-plan"}},
+          {"name": "status", "path": "skills/status/SKILL.md", "aliases": {"pi": "wiki-status", "openclaw": "wiki-status"}}
+        ]
+      },
+      "legacy_entrypoints": [],
+      "resources": ["assets", "templates"],
+      "platforms": {
+        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "bootstrap, upgrade, research, wiki-plan, status"}},
+        "codex": {"support": "supported", "state": "native", "tested_host_version": "0.144.3", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".codex-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "$llm-wiki:<skill>"}},
+        "pi": {"support": "supported", "state": "generated", "tested_host_version": "0.80.10", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "package.json", "skill_roots": ["pi/skills"], "metadata": {"invocation": "wiki-bootstrap, wiki-upgrade, wiki-research, wiki-plan, wiki-status"}},
+        "openclaw": {"support": "supported", "state": "generated", "tested_host_version": "2026.7.1-beta.2", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "openclaw.plugin.json", "skill_roots": ["openclaw/skills"], "metadata": {"invocation": "wiki-bootstrap, wiki-upgrade, wiki-research, wiki-plan, wiki-status"}}
+      }
+    },
+    {
+      "name": "screenote",
+      "path": "plugins/screenote",
+      "version": "3.0.0",
+      "stability": "stable",
+      "metadata": {
+        "display_name": "Screenote",
+        "description": "Capture pages, publish screenshots, and retrieve visual feedback through the Screenote OAuth CLI.",
+        "homepage": "https://screenote.ai",
+        "repository": "https://github.com/ivankuznetsov/agent-plugins/tree/main/plugins/screenote",
+        "license": "MIT",
+        "category": "Coding",
+        "npm_keywords": ["screenote", "agent-skills", "screenshot", "visual-feedback"]
+      },
+      "canonical": {
+        "skill_roots": ["skills"],
+        "skills": [
+          {"name": "screenote", "path": "skills/screenote/SKILL.md"},
+          {"name": "snapshot", "path": "skills/snapshot/SKILL.md"},
+          {"name": "feedback", "path": "skills/feedback/SKILL.md"}
+        ]
+      },
+      "legacy_entrypoints": [
+        {"platform": "claude", "name": "screenote", "path": "skills/screenote/SKILL.md", "mode": "screenote", "usage": ["screenote [desktop|tablet|mobile] <URL-or-page>"], "arguments": "[desktop|tablet|mobile] <URL-or-page>", "pass_arguments": true},
+        {"platform": "claude", "name": "snapshot", "path": "skills/snapshot/SKILL.md", "mode": "snapshot", "usage": ["snapshot [desktop|tablet|mobile] <base-URL>"], "arguments": "[desktop|tablet|mobile] <base-URL>", "pass_arguments": true},
+        {"platform": "claude", "name": "feedback", "path": "skills/feedback/SKILL.md", "mode": "feedback", "usage": ["feedback [desktop|tablet|mobile] [filter]"], "arguments": "[desktop|tablet|mobile] [filter]", "pass_arguments": true}
+      ],
+      "resources": [
+        "references",
+        "evals",
+        {"path": "scripts/screenote-cli.sh", "required": true},
+        {"path": "scripts/screenote_flow.py", "required": true}
+      ],
+      "platforms": {
+        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "screenote, snapshot, feedback"}},
+        "codex": {"support": "supported", "state": "native", "tested_host_version": "0.144.3", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".codex-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "$screenote:<skill>"}},
+        "pi": {"support": "supported", "state": "generated", "tested_host_version": "0.80.10", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "package.json", "skill_roots": ["pi/skills"], "metadata": {"invocation": "screenote, snapshot, feedback"}},
+        "openclaw": {"support": "supported", "state": "generated", "tested_host_version": "2026.7.1-beta.2", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "openclaw.plugin.json", "skill_roots": ["openclaw/skills"], "metadata": {"invocation": "screenote, snapshot, feedback"}}
+      }
+    }
+  ]
+}

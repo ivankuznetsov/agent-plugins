@@ -1,0 +1,14 @@
+{
+  "id": "agent-seo",
+  "name": "Agent SEO",
+  "description": "Research, write, fact-check, and optimize long-form SEO content.",
+  "version": "1.2.0",
+  "skills": [
+    "./openclaw/skills"
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

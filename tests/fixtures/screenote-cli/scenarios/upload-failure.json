@@ -1,0 +1,6 @@
+{
+  "commands": {
+    "project list": {"exit": 0, "stdout": {"projects": [{"id": 7, "name": "demo", "role": "owner"}]}},
+    "screenshot create": {"exit": 1, "stderr": {"code": "upload_failed", "error": "The capture was not uploaded."}}
+  }
+}

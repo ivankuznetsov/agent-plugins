@@ -1,0 +1,66 @@
+{
+  "contract_version": 1,
+  "provenance": {
+    "pull_request": "https://github.com/ivankuznetsov/screenote-cli/pull/6",
+    "merge_sha": "c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b"
+  },
+  "success": {
+    "exit_code": 0,
+    "output": "one complete JSON value on stdout"
+  },
+  "commands": {
+    "project list": {
+      "collection": "projects",
+      "required_flags": [],
+      "paginated": false
+    },
+    "page list": {
+      "collection": "pages",
+      "required_flags": [],
+      "paginated": false
+    },
+    "screenshot list": {
+      "collection": "screenshots",
+      "required_flags": ["--page", "--status", "--limit", "--offset"],
+      "paginated": true
+    },
+    "screenshot create": {
+      "required_flags": ["--title", "--page", "--file"],
+      "paginated": false
+    },
+    "annotation list": {
+      "collection": "annotations",
+      "required_flags": ["--screenshot", "--status", "--viewport", "--limit", "--offset"],
+      "paginated": true
+    },
+    "annotation get": {
+      "required_flags": ["--annotation", "--crop-file"],
+      "paginated": false
+    },
+    "comment add": {
+      "required_flags": ["--annotation", "--body"],
+      "paginated": false
+    }
+  },
+  "workflows": {
+    "screenote": {
+      "skill": "skills/screenote/SKILL.md",
+      "ordered_commands": ["project list", "screenshot create"]
+    },
+    "snapshot": {
+      "skill": "skills/snapshot/SKILL.md",
+      "ordered_commands": ["project list", "screenshot create"]
+    },
+    "feedback": {
+      "skill": "skills/feedback/SKILL.md",
+      "ordered_commands": [
+        "project list",
+        "page list",
+        "screenshot list",
+        "annotation list",
+        "annotation get",
+        "comment add"
+      ]
+    }
+  }
+}

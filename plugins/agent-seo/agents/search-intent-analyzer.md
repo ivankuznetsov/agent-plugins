@@ -1,3 +1,7 @@
+---
+description: Classify keyword search intent and recommend a matching content format and angle.
+---
+
 # Search Intent Analyzer Agent
 
 An LLM-based agent for analyzing the search intent of keywords and queries. Uses AI reasoning to classify intent more accurately than pattern matching.

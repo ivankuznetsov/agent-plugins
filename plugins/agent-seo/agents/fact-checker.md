@@ -1,3 +1,7 @@
+---
+description: Extract and verify factual claims in SEO content using authoritative current sources.
+---
+
 # Fact-Checker Agent
 
 An LLM-based agent for extracting and verifying factual claims in content. Uses Haiku 4.5 for fast, cost-effective analysis.

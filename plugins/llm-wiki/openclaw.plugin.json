@@ -1,0 +1,14 @@
+{
+  "id": "llm-wiki",
+  "name": "LLM Wiki",
+  "description": "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
+  "version": "0.2.0",
+  "skills": [
+    "./openclaw/skills"
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

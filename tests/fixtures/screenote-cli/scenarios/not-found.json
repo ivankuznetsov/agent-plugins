@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "project list": {"exit": 4, "stderr": {"code": "not_found", "error": "The requested resource was not found."}}
+  }
+}

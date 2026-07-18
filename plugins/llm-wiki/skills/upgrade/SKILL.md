@@ -18,9 +18,10 @@ QMD, or reinstall the scheduler.
   `headless_agent`. Preserve the file byte-for-byte.
 - When the config is missing, the script infers the owner only when legacy
   managed scripts and the latest added or modified config in Git history
-  identify exactly one of Codex, Claude Code, or Pi. It creates the config with
-  that owner; zero or multiple candidates stop the migration before any project
-  file is changed.
+  identify exactly one of Codex, Claude Code, or Pi. An OpenClaw-owned project
+  must retain or restore its config because the verified `openclaw_agent_id`
+  cannot be guessed safely. Zero or multiple candidates stop the migration
+  before any project file is changed.
 
 ## Run the Upgrade
 
@@ -50,7 +51,8 @@ The script upgrades only managed structure:
 The post-commit template is identical in every project. The shared Git hook
 runner receives the committing worktree through `--project`, reads its preserved
 `headless_agent` from the shared canonical config, and dispatches to exactly one
-of Codex, Claude Code, or Pi from the managed refresh worktree. The
+of Codex, Claude Code, Pi, or OpenClaw from the managed refresh worktree. An
+OpenClaw owner also requires its preserved, validated `openclaw_agent_id`. The
 checkout-local copy remains a manual entrypoint and compatibility fallback.
 
 ## Safety Contract

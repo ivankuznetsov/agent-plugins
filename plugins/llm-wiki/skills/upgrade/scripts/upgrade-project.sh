@@ -52,6 +52,7 @@ shared_compile_path="$shared_state_dir/compile-log.sh"
 shared_config_path="$shared_state_dir/config.json"
 hook_path="$(git -C "$root" rev-parse --path-format=absolute --git-path hooks/post-commit)"
 shared_headless_agent=""
+shared_openclaw_agent_id=""
 if [ -f "$shared_config_path" ]; then
   shared_headless_agent="$(
     sed -nE 's/.*"headless_agent"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
@@ -59,6 +60,17 @@ if [ -f "$shared_config_path" ]; then
   )"
   case "$shared_headless_agent" in
     codex|claude|pi) ;;
+    openclaw)
+      shared_openclaw_agent_id="$(
+        sed -nE 's/.*"openclaw_agent_id"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
+          "$shared_config_path" | head -n 1
+      )"
+      if [[ ! "$shared_openclaw_agent_id" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$ ]]; then
+        printf 'llm-wiki: openclaw shared Git config requires a valid openclaw_agent_id: %s\n' \
+          "$shared_config_path" >&2
+        exit 1
+      fi
+      ;;
     *)
       printf 'llm-wiki: unsupported or missing headless_agent in shared Git config: %s\n' \
         "$shared_config_path" >&2
@@ -151,6 +163,16 @@ if [ -f "$config_path" ]; then
   )"
   case "$headless_agent" in
     codex|claude|pi) ;;
+    openclaw)
+      openclaw_agent_id="$(
+        sed -nE 's/.*"openclaw_agent_id"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
+          "$config_path" | head -n 1
+      )"
+      if [[ ! "$openclaw_agent_id" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$ ]]; then
+        printf 'llm-wiki: openclaw config requires a valid openclaw_agent_id in .llm-wiki/config.json\n' >&2
+        exit 1
+      fi
+      ;;
     *)
       printf 'llm-wiki: unsupported or missing headless_agent in .llm-wiki/config.json\n' >&2
       exit 1
@@ -322,7 +344,8 @@ render_config() {
   cat <<JSON
 {
   "headless_agent": "$headless_agent",
-  "context_agents": ["claude", "codex", "pi"],
+  "context_agents": ["claude", "codex", "pi", "openclaw"],
+  "openclaw_agent_id": null,
   "main_wiki_path": null,
   "created_by": "$headless_agent"
 }

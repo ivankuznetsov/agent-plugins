@@ -1,0 +1,147 @@
+name: Agent platform packages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_screenote_live:
+        description: Run the protected Screenote integration against its disposable fixture
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  fast:
+    name: Contract, generation, and offline behavior
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate inventory and isolated packages
+        run: python3 scripts/validate-agent-packages.py --inventory
+      - name: Check deterministic generation
+        run: python3 scripts/generate-agent-packages.py --check
+      - name: Run offline contract and security tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Validate JSON and shell syntax
+        run: |
+          python3 -m json.tool plugin-surfaces.json >/dev/null
+          python3 -m json.tool plugin-surfaces.lock.json >/dev/null
+          python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
+          python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
+          bash -n scripts/smoke-agent-packages.sh
+          bash -n plugins/screenote/scripts/screenote-cli.sh
+          bash plugins/screenote/evals/lint-skills.sh
+          bash plugins/screenote/evals/lint-skills-test.sh
+
+  native:
+    name: Native discovery (${{ matrix.platform }})
+    needs: fast
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: claude
+            package: "@anthropic-ai/claude-code@2.1.179"
+          - platform: codex
+            package: "@openai/codex@0.144.3"
+          - platform: pi
+            package: "@earendil-works/pi-coding-agent@0.80.10"
+          - platform: openclaw
+            package: "openclaw@2026.7.1-beta.2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned host CLI
+        run: npm install --global "${{ matrix.package }}"
+      - name: Discover copied packages and skills in an isolated home
+        env:
+          REQUIRE_AGENT_CLI: "1"
+        run: bash scripts/smoke-agent-packages.sh "${{ matrix.platform }}"
+
+  screenote-live:
+    name: Protected Screenote integration
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.run_screenote_live == true &&
+      github.repository == 'ivankuznetsov/agent-plugins'
+    needs: fast
+    runs-on: ubuntu-latest
+    environment: screenote-integration
+    env:
+      SCREENOTE_TOKEN: ${{ secrets.SCREENOTE_TOKEN }}
+      SCREENOTE_PROJECT: ${{ secrets.SCREENOTE_PROJECT }}
+      SCREENOTE_TEST_PAGE_ID: ${{ secrets.SCREENOTE_TEST_PAGE_ID }}
+      SCREENOTE_TEST_SCREENSHOT_ID: ${{ secrets.SCREENOTE_TEST_SCREENSHOT_ID }}
+      SCREENOTE_TEST_ANNOTATION_ID: ${{ secrets.SCREENOTE_TEST_ANNOTATION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+      - name: Install the recorded public Screenote CLI baseline
+        run: >-
+          go install
+          github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
+      - name: Exercise noninteractive project, capture, and feedback commands
+        shell: bash
+        run: |
+          set -euo pipefail
+          for required in SCREENOTE_TOKEN SCREENOTE_PROJECT SCREENOTE_TEST_PAGE_ID SCREENOTE_TEST_SCREENSHOT_ID SCREENOTE_TEST_ANNOTATION_ID; do
+            [[ -n ${!required:-} ]] || { printf 'Missing protected integration setting: %s\n' "$required" >&2; exit 1; }
+          done
+          integration_dir=$(mktemp -d "${RUNNER_TEMP}/screenote-live-XXXXXX")
+          chmod 700 "$integration_dir"
+          trap 'rm -rf "$integration_dir"' EXIT
+          python3 - "$integration_dir/capture.png" <<'PY'
+          import base64
+          from pathlib import Path
+          import sys
+
+          Path(sys.argv[1]).write_bytes(base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nWQAAAAASUVORK5CYII="))
+          Path(sys.argv[1]).chmod(0o600)
+          PY
+          launcher=plugins/screenote/scripts/screenote-cli.sh
+          "$launcher" --check-contract >"$integration_dir/contract.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" project list >"$integration_dir/projects.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" screenshot create \
+            --title "Agent plugin release probe" --page "ci-release-probe" \
+            --file "$integration_dir/capture.png" >"$integration_dir/capture.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" page list --limit 100 --offset 0 >"$integration_dir/pages.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" screenshot list \
+            --page "$SCREENOTE_TEST_PAGE_ID" --limit 100 --offset 0 >"$integration_dir/screenshots.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" annotation list \
+            --screenshot "$SCREENOTE_TEST_SCREENSHOT_ID" --limit 100 --offset 0 >"$integration_dir/annotations.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" annotation get \
+            --annotation "$SCREENOTE_TEST_ANNOTATION_ID" --crop-file "$integration_dir/crop.png" \
+            >"$integration_dir/annotation.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" comment add \
+            --annotation "$SCREENOTE_TEST_ANNOTATION_ID" \
+            --body "Automated release compatibility probe completed." >"$integration_dir/comment.json"
+          python3 - "$integration_dir" <<'PY'
+          import os
+          from pathlib import Path
+          import sys
+
+          root = Path(sys.argv[1])
+          sentinel = os.environ["SCREENOTE_TOKEN"].encode()
+          contaminated = []
+          for path in root.rglob("*"):
+              if path.is_file() and sentinel in path.read_bytes():
+                  contaminated.append(str(path.relative_to(root)))
+          if contaminated:
+              raise SystemExit("Screenote credential appeared in integration artifacts: " + ", ".join(sorted(contaminated)))
+          PY
