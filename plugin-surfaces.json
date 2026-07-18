@@ -137,7 +137,7 @@
     {
       "name": "agent-writing",
       "path": "plugins/agent-writing",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "stability": "stable",
       "metadata": {
         "display_name": "Agent Writing",

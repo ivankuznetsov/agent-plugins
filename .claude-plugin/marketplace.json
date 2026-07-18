@@ -103,7 +103,7 @@
       "name": "agent-writing",
       "source": "./plugins/agent-writing",
       "description": "A team of three writing voices — journalist, writer, editor — that work together as a continuous write-edit cycle. Cooperation creates sycophancy, so the writer and editor are deliberately set up as rivals.",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"

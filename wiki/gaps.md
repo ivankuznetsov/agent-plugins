@@ -12,6 +12,10 @@
 - LLM Wiki 0.2.0 release/tag publication remains a release-management step;
   this repository carries the four-host package plus the 0.1.14 transactional
   durability fixes in the meantime.
+- ClawHub's package inspector reports a P2 compatibility-metadata warning for
+  these bundle plugins because OpenClaw's formal minimum supported version is
+  still unspecified. The contract records the tested host version without
+  inventing a minimum.
 
 The former Agent Reviewer host-parity gap is closed: every host now defaults to
 two independent review passes, unions their findings, and applies the same
