@@ -61,6 +61,8 @@ def validate_skills() -> None:
             fail(f"invalid frontmatter for {name}")
         if "../../references/cli.md" not in text:
             fail(f"{name} does not load the shared CLI contract")
+        if "../../references/workflows.json" not in text:
+            fail(f"{name} does not load the shipped workflow contract")
         for platform in ("pi", "openclaw"):
             adapter = PLUGIN_ROOT / platform / "skills" / name / "SKILL.md"
             if not adapter.is_file():
@@ -74,6 +76,16 @@ def validate_assets() -> None:
     launcher = PLUGIN_ROOT / "scripts" / "screenote-cli.sh"
     if not launcher.is_file() or not os.access(launcher, os.X_OK):
         fail("scripts/screenote-cli.sh must exist and be executable")
+    for relative in (
+        "scripts/screenote-approved-commands.sh",
+        "scripts/screenote_flow.py",
+        "references/workflows.json",
+    ):
+        if not (PLUGIN_ROOT / relative).is_file():
+            fail(f"missing {relative}")
+    workflows = load_json("references/workflows.json")
+    if set(workflows.get("workflows", {})) != {"screenote", "snapshot", "feedback"}:
+        fail("workflow contract must cover every canonical Screenote skill")
     if (PLUGIN_ROOT / ".mcp.json").exists():
         fail("retired transport configuration must be removed")
     triggers = json.loads((PLUGIN_ROOT / "evals" / "trigger-eval-set.json").read_text())

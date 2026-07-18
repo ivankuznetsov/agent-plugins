@@ -4,7 +4,7 @@
 set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-TMP_DIR=$(mktemp -d /tmp/screenote-lint-test-XXXXXX)
+TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/screenote-lint-test-XXXXXX")
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 make_case() {
@@ -20,12 +20,16 @@ clean_case=$(make_case clean)
 printf 'PASS: clean isolated package passes lint\n'
 
 allowlist_case=$(make_case allowlist)
-python3 - "$allowlist_case/scripts/screenote-cli.sh" <<'PY'
+python3 - "$allowlist_case/scripts/screenote-approved-commands.sh" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
-path.write_text(path.read_text().replace("'comment add'", "'comment missing'"))
+body = path.read_text()
+changed = body.replace("  comment\n  add\n", "  comment\n  missing\n")
+if changed == body:
+    raise SystemExit("allowlist mutation did not match")
+path.write_text(changed)
 PY
 if (cd "$allowlist_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
   printf 'FAIL: lint accepted a missing approved command tuple\n' >&2

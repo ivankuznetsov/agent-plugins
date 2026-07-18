@@ -155,6 +155,35 @@ class PluginInventoryTests(unittest.TestCase):
                 errors = validate_repository(root)
                 self.assertTrue(any(expected in error for error in errors), errors)
 
+    def test_malformed_path_containers_return_validation_errors(self):
+        scenarios = {
+            "canonical": ("canonical: must be an object", lambda plugin, value: plugin.__setitem__("canonical", value)),
+            "canonical.skills": (
+                "canonical.skills: must be an array",
+                lambda plugin, value: plugin["canonical"].__setitem__("skills", value),
+            ),
+            "resources": ("resources: must be an array", lambda plugin, value: plugin.__setitem__("resources", value)),
+            "platforms": ("platforms: must be an object", lambda plugin, value: plugin.__setitem__("platforms", value)),
+            "platforms.claude.skill_roots": (
+                "platforms.claude.skill_roots: must be an array",
+                lambda plugin, value: plugin["platforms"]["claude"].__setitem__("skill_roots", value),
+            ),
+        }
+        for scenario, (expected, mutate) in scenarios.items():
+            malformed_values = (
+                (None, "invalid", ["invalid"])
+                if scenario in {"canonical", "platforms"}
+                else (None, "invalid", {"invalid": True})
+            )
+            for value in malformed_values:
+                with self.subTest(scenario=scenario, value=value), tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    contract = make_fixture(root)
+                    mutate(contract["plugins"][0], value)
+                    write_json(root / "plugin-surfaces.json", contract)
+                    errors = validate_repository(root)
+                    self.assertTrue(any(expected in error for error in errors), errors)
+
     @staticmethod
     def _add_catalog_plugin(root, name):
         for path in (

@@ -71,6 +71,37 @@ log_line() {
   printf '[llm-wiki][%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >>"$log_file" 2>/dev/null || true
 }
 
+config_file="$wiki_root/.llm-wiki/config.json"
+headless_agent=""
+if [ -f "$config_file" ]; then
+  headless_agent="$(sed -n 's/.*"headless_agent"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$config_file" | head -n 1)"
+fi
+
+case "$headless_agent" in
+  claude|codex|pi|openclaw) ;;
+  "")
+    log_line "ERROR: missing headless_agent in $config_file; expected claude, codex, pi, or openclaw"
+    exit 1
+    ;;
+  *)
+    log_line "ERROR: unsupported headless_agent '$headless_agent' in $config_file; expected claude, codex, pi, or openclaw"
+    exit 1
+    ;;
+esac
+
+openclaw_agent_id=""
+if [ "$headless_agent" = "openclaw" ]; then
+  openclaw_agent_id="$(sed -n 's/.*"openclaw_agent_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$config_file" | head -n 1)"
+  if [ -z "$openclaw_agent_id" ]; then
+    log_line "ERROR: openclaw headless ownership requires openclaw_agent_id in $config_file"
+    exit 1
+  fi
+  if [[ ! "$openclaw_agent_id" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$ ]]; then
+    log_line "ERROR: invalid openclaw_agent_id '$openclaw_agent_id' in $config_file"
+    exit 1
+  fi
+fi
+
 # --- Serialize ALL refreshes/commits across every worktree on one lock in the
 #     shared git dir, so N concurrent worktree commits never race the main index.
 #     The lock records its owner PID + start time so a crash/SIGKILL/reboot that
@@ -154,15 +185,39 @@ run_refresh() {
     return 0
   fi
 
-  local add_dir_args=( --add-dir "$LLM_WIKI_QMD_CACHE_DIR" )
-  [ "$linked" -eq 1 ] && add_dir_args+=( --add-dir "$wiki_root" )
+  local agent_executable="$headless_agent"
+  local agent_timeout="${LLM_WIKI_AGENT_TIMEOUT:-${LLM_WIKI_CODEX_TIMEOUT:-1860}}"
+  local -a agent_command
+  case "$headless_agent" in
+    codex)
+      local codex_add_dir_args=( --add-dir "$LLM_WIKI_QMD_CACHE_DIR" )
+      [ "$linked" -eq 1 ] && codex_add_dir_args+=( --add-dir "$wiki_root" )
+      agent_command=( codex exec "${codex_add_dir_args[@]}" -C "$committing_tree" "$full_prompt" )
+      ;;
+    claude)
+      local claude_add_dir_args=( --add-dir "$LLM_WIKI_QMD_CACHE_DIR" )
+      [ "$linked" -eq 1 ] && claude_add_dir_args+=( --add-dir "$wiki_root" )
+      agent_command=( claude -p "$full_prompt" --allowedTools "Bash,Read,Edit,Write" "${claude_add_dir_args[@]}" --max-budget-usd 0.50 )
+      ;;
+    pi)
+      agent_command=( pi -p --no-session --tools read,bash,edit,write,grep,find,ls "$full_prompt" )
+      ;;
+    openclaw)
+      agent_command=( openclaw agent --local --agent "$openclaw_agent_id" --message "$full_prompt" --json --timeout "${LLM_WIKI_OPENCLAW_TIMEOUT:-1800}" )
+      ;;
+  esac
+
+  if ! command -v "$agent_executable" >/dev/null 2>&1; then
+    log_line "ERROR: configured headless agent CLI '$agent_executable' is not installed; refusing to fall back"
+    return 1
+  fi
 
   if command -v timeout >/dev/null 2>&1; then
-    run_without_git_env timeout "${LLM_WIKI_CODEX_TIMEOUT:-1800}" codex exec "${add_dir_args[@]}" -C "$committing_tree" "$full_prompt" >>"$log_file" 2>&1 \
-      || log_line "WARN: refresh agent exited non-zero (code $?)"
+    run_without_git_env timeout "$agent_timeout" "${agent_command[@]}" >>"$log_file" 2>&1 \
+      || log_line "WARN: $headless_agent refresh agent exited non-zero (code $?)"
   else
-    run_without_git_env codex exec "${add_dir_args[@]}" -C "$committing_tree" "$full_prompt" >>"$log_file" 2>&1 \
-      || log_line "WARN: refresh agent exited non-zero (code $?)"
+    run_without_git_env "${agent_command[@]}" >>"$log_file" 2>&1 \
+      || log_line "WARN: $headless_agent refresh agent exited non-zero (code $?)"
   fi
 }
 

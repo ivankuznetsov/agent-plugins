@@ -9,6 +9,7 @@ from pathlib import Path
 from scripts.screenote_flow import (
     CaptureSafetyError,
     ProjectResolutionError,
+    WORKFLOW_CONTRACT,
     create_private_directory,
     create_private_file,
     resolve_project,
@@ -20,17 +21,10 @@ from scripts.screenote_flow import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = REPO_ROOT / "plugins/screenote"
 LAUNCHER = PLUGIN_ROOT / "scripts/screenote-cli.sh"
+SHIPPED_FLOW = PLUGIN_ROOT / "scripts/screenote_flow.py"
 FIXTURE_ROOT = REPO_ROOT / "tests/fixtures/screenote-cli"
 SCENARIOS = FIXTURE_ROOT / "scenarios"
-APPROVED = {
-    ("project", "list"),
-    ("page", "list"),
-    ("screenshot", "list"),
-    ("screenshot", "create"),
-    ("annotation", "list"),
-    ("annotation", "get"),
-    ("comment", "add"),
-}
+APPROVED = {tuple(command.split()) for command in WORKFLOW_CONTRACT["commands"]}
 
 
 class ScreenoteCliContractTests(unittest.TestCase):
@@ -40,10 +34,26 @@ class ScreenoteCliContractTests(unittest.TestCase):
         root = Path(temporary.name)
         binary = root / "screenote"
         binary.write_text(
-            "#!/bin/sh\n"
-            ": \"${SCREENOTE_MOCK_ARGV:?}\"\n"
-            "printf '%s\\n' \"$@\" > \"$SCREENOTE_MOCK_ARGV\"\n"
-            "printf '%s\\n' '{\"ok\":true}'\n",
+            "#!/usr/bin/env python3\n"
+            "import json, os, pathlib, sys\n"
+            "args = sys.argv[1:]\n"
+            "pathlib.Path(os.environ['SCREENOTE_MOCK_ARGV']).write_text('\\n'.join(args) + '\\n')\n"
+            "if args == ['--help']:\n"
+            "    print('Usage: screenote --base-url URL --project PROJECT --config PATH')\n"
+            "elif '--help' in args:\n"
+            "    flags = {\n"
+            "      'project list': [], 'page list': [],\n"
+            "      'screenshot list': ['--page', '--status', '--limit', '--offset'],\n"
+            "      'screenshot create': ['--title', '--page', '--file'],\n"
+            "      'annotation list': ['--screenshot', '--status', '--viewport', '--limit', '--offset'],\n"
+            "      'annotation get': ['--annotation', '--crop-file'],\n"
+            "      'comment add': ['--annotation', '--body'],\n"
+            "    }\n"
+            "    command = ' '.join(args[:2])\n"
+            "    if command not in flags: raise SystemExit(2)\n"
+            "    print('Usage: screenote ' + command + ' ' + ' '.join(flags[command]))\n"
+            "else:\n"
+            "    print(json.dumps({'ok': True}, separators=(',', ':')))\n",
             encoding="utf-8",
         )
         binary.chmod(binary.stat().st_mode | stat.S_IXUSR)
@@ -52,6 +62,8 @@ class ScreenoteCliContractTests(unittest.TestCase):
             **os.environ,
             "PATH": f"{root}:{os.environ.get('PATH', '')}",
             "SCREENOTE_MOCK_ARGV": str(argv_path),
+            "SCREENOTE_BASE_URL": "https://trusted-screenote.example",
+            "SCREENOTE_TOKEN": "trusted-token-kept-only-in-env",
         }
         result = subprocess.run(
             [str(LAUNCHER), *arguments],
@@ -83,12 +95,10 @@ class ScreenoteCliContractTests(unittest.TestCase):
         hostile = "Fixed user's $(layout); still data"
         for noun, verb in APPROVED:
             with self.subTest(command=f"{noun} {verb}"):
-                result, argv = self._run(
-                    ["--base-url", "https://screenote.ai", "--project", "project-7", noun, verb, "--body", hostile]
-                )
+                result, argv = self._run(["--project", "project-7", noun, verb, "--body", hostile])
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertEqual(
-                    ["--base-url", "https://screenote.ai", "--project", "project-7", noun, verb, "--body", hostile],
+                    ["--project", "project-7", noun, verb, "--body", hostile],
                     argv,
                 )
                 self.assertEqual('{"ok":true}\n', result.stdout)
@@ -100,6 +110,24 @@ class ScreenoteCliContractTests(unittest.TestCase):
                 self.assertEqual([], argv)
                 self.assertIn("command_not_allowed", result.stderr)
 
+    def test_launcher_rejects_every_runtime_endpoint_or_config_override(self):
+        attacks = (
+            ["--base-url", "https://attacker.example", "project", "list"],
+            ["--base-url=https://attacker.example", "project", "list"],
+            ["--config", "/tmp/attacker.toml", "project", "list"],
+            ["--config=/tmp/attacker.toml", "project", "list"],
+            ["project", "list", "--base-url", "https://attacker.example"],
+            ["comment", "add", "--annotation", "31", "--body", "ok", "--config=/tmp/attacker.toml"],
+        )
+        for arguments in attacks:
+            with self.subTest(arguments=arguments):
+                result, argv = self._run(arguments)
+                self.assertEqual(64, result.returncode)
+                self.assertEqual([], argv, "the authenticated CLI must not be invoked")
+                self.assertIn("endpoint_argument_forbidden", result.stderr)
+                self.assertNotIn("attacker.example", result.stderr)
+                self.assertNotIn("attacker.toml", result.stderr)
+
     def test_launcher_rejects_credential_arguments(self):
         for flag in ("--token", "--api-key", "--password"):
             result, argv = self._run(["project", "list", flag, "secret"])
@@ -110,7 +138,8 @@ class ScreenoteCliContractTests(unittest.TestCase):
     def test_launcher_detects_missing_and_incompatible_cli_contracts(self):
         compatible, argv = self._run(["--check-contract"])
         self.assertEqual(0, compatible.returncode, compatible.stderr)
-        self.assertIn("screenote-cli-pr-37", compatible.stdout)
+        self.assertIn("screenote-cli-pr-6", compatible.stdout)
+        self.assertIn("c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b", compatible.stdout)
         self.assertEqual(["comment", "add", "--help"], argv)
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -142,6 +171,36 @@ class ScreenoteCliContractTests(unittest.TestCase):
             )
             self.assertEqual(65, rejected.returncode)
             self.assertIn("screenote_contract_incompatible", rejected.stderr)
+
+            missing_flag = root / "screenote"
+            missing_flag.write_text(
+                "#!/bin/sh\n"
+                "if [ \"$1\" = \"--help\" ]; then printf '%s\\n' '--base-url --project --config'; exit 0; fi\n"
+                "if [ \"$1 $2\" = \"annotation get\" ]; then printf '%s\\n' '--annotation'; exit 0; fi\n"
+                "printf '%s\\n' '--page --status --limit --offset --title --file --screenshot --viewport --annotation --crop-file --body'\n",
+                encoding="utf-8",
+            )
+            missing_flag.chmod(missing_flag.stat().st_mode | stat.S_IXUSR)
+            rejected_flag = subprocess.run(
+                ["/bin/bash", str(LAUNCHER), "--check-contract"],
+                text=True,
+                capture_output=True,
+                env={**os.environ, "PATH": str(root)},
+                check=False,
+            )
+            self.assertEqual(65, rejected_flag.returncode)
+            self.assertIn("screenote_contract_incompatible", rejected_flag.stderr)
+
+    def test_shipped_workflow_contract_is_the_canonical_cli_authority(self):
+        self.assertEqual(SHIPPED_FLOW.resolve(), Path(run_flow.__code__.co_filename).resolve())
+        contract_path = PLUGIN_ROOT / "references/workflows.json"
+        self.assertTrue(contract_path.is_file())
+        for workflow, specification in WORKFLOW_CONTRACT["workflows"].items():
+            skill_path = PLUGIN_ROOT / specification["skill"]
+            body = skill_path.read_text(encoding="utf-8")
+            self.assertIn("../../references/workflows.json", body)
+            for command in specification["ordered_commands"]:
+                self.assertIn(command, body, f"{skill_path}: canonical workflow lost {command}")
 
     def test_screenote_manifests_and_repository_have_no_mcp_transport(self):
         self.assertFalse((PLUGIN_ROOT / ".mcp.json").exists())
@@ -184,10 +243,12 @@ class ScreenoteCliContractTests(unittest.TestCase):
                 self.assertFalse(report.stopped)
                 tuples = []
                 for record in records:
+                    if "--help" in record:
+                        continue
                     index = 2 if record and record[0] == "--project" else 0
                     tuples.append(tuple(record[index : index + 2]))
                 self.assertTrue(set(tuples).issubset(APPROVED))
-                workflow_tuples = [command for command, record in zip(tuples, records) if "--help" not in record]
+                workflow_tuples = tuples
                 self.assertEqual(("project", "list"), workflow_tuples[0])
                 if workflow == "screenote":
                     self.assertEqual(1, workflow_tuples.count(("screenshot", "create")))
@@ -207,23 +268,56 @@ class ScreenoteCliContractTests(unittest.TestCase):
                         workflow_tuples,
                     )
 
+    def test_invalid_success_json_and_malformed_collections_fail_closed(self):
+        for scenario, code in (
+            ("invalid-success-json.json", "invalid_json"),
+            ("malformed-collection.json", "invalid_response"),
+            ("missing-identifier.json", "invalid_response"),
+        ):
+            with self.subTest(scenario=scenario):
+                _, report, _ = self._run_flow(scenario)
+                self.assertTrue(report.stopped)
+                self.assertEqual(code, report.outputs[-1].error_code)
+
+    def test_pagination_stops_on_empty_page_before_reported_total(self):
+        _, report, records = self._run_flow("incomplete-pagination.json", workflow="feedback")
+        self.assertTrue(report.stopped)
+        self.assertEqual("incomplete_pagination", report.outputs[-1].error_code)
+        screenshot_calls = [
+            record for record in records if record[:2] == ["screenshot", "list"] and "--help" not in record
+        ]
+        self.assertEqual(2, len(screenshot_calls))
+        self.assertEqual(["--offset", "0"], screenshot_calls[0][-2:])
+        self.assertEqual(["--offset", "1"], screenshot_calls[1][-2:])
+
+    def test_feedback_exhausts_pages_and_processes_only_returned_identifiers(self):
+        _, report, records = self._run_flow("paginated-success.json", workflow="feedback")
+        self.assertFalse(report.stopped)
+        command_records = [record for record in records if "--help" not in record]
+        screenshot_calls = [record for record in command_records if record[:2] == ["screenshot", "list"]]
+        annotation_calls = [record for record in command_records if record[:2] == ["annotation", "list"]]
+        detail_calls = [record for record in command_records if record[:2] == ["annotation", "get"]]
+        comment_calls = [record for record in command_records if record[:2] == ["comment", "add"]]
+        self.assertEqual([["--offset", "0"], ["--offset", "1"]], [call[-2:] for call in screenshot_calls])
+        self.assertEqual([["--offset", "0"], ["--offset", "1"]], [call[-2:] for call in annotation_calls])
+        self.assertEqual(["31", "32"], [call[call.index("--annotation") + 1] for call in detail_calls])
+        self.assertEqual(["31", "32"], [call[call.index("--annotation") + 1] for call in comment_calls])
+
     def test_error_scenarios_stop_and_preserve_json_codes(self):
         cases = {
             "missing-token.json": (2, "missing_token", "SCREENOTE_TOKEN"),
             "missing-project.json": (2, "missing_project", "--project"),
             "invalid-token.json": (3, "invalid_token", "invalid"),
-            "expired-token.json": (3, "expired_token", "expired"),
-            "ambiguous-project.json": (5, "ambiguous_project", "stopped"),
-            "inaccessible-project.json": (5, "inaccessible_project", "stopped"),
             "not-found.json": (4, "not_found", "stopped"),
             "rate-limited.json": (5, "rate_limited", "stopped"),
-            "generic-error.json": (17, "unexpected_failure", "stopped"),
+            "generic-error.json": (1, "unexpected_failure", "stopped"),
         }
         for scenario, (exit_code, error_code, guidance) in cases.items():
             with self.subTest(scenario=scenario):
                 _, report, _ = self._run_flow(scenario)
                 self.assertTrue(report.stopped)
-                self.assertEqual(2, len(report.outputs))
+                expected_outputs = 3 if scenario == "missing-project.json" else 2
+                self.assertEqual(expected_outputs, len(report.outputs))
                 self.assertTrue(report.outputs[0].ok)
                 result = report.outputs[-1]
                 self.assertEqual(exit_code, result.exit_code)
@@ -232,7 +326,7 @@ class ScreenoteCliContractTests(unittest.TestCase):
                 self.assertIn(guidance.casefold(), result.guidance.casefold())
 
         _, interactive, _ = self._run_flow("missing-token.json", interactive=True)
-        self.assertIn("screenote login", interactive.outputs[-1].guidance)
+        self.assertIn("screenote --base-url https://screenote.ai login", interactive.outputs[-1].guidance)
 
     def test_project_precedence_and_accessibility(self):
         accessible = [

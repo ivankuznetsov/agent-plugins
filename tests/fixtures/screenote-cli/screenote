@@ -16,6 +16,9 @@ def main() -> int:
         print(json.dumps({"error": {"code": "missing_mock_scenario"}}), file=sys.stderr)
         return 1
     arguments = sys.argv[1:]
+    prior_records = []
+    if argv_path and Path(argv_path).exists():
+        prior_records = [json.loads(line) for line in Path(argv_path).read_text(encoding="utf-8").splitlines()]
     if argv_path:
         with Path(argv_path).open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(arguments, separators=(",", ":")) + "\n")
@@ -23,16 +26,45 @@ def main() -> int:
     while command_index < len(arguments) and arguments[command_index] in {"--base-url", "--project"}:
         command_index += 2
     command = " ".join(arguments[command_index : command_index + 2])
+    if arguments == ["--help"]:
+        print("Usage: screenote [--base-url URL] [--project PROJECT] [--config PATH]")
+        return 0
     if "--help" in arguments:
-        print(json.dumps({"ok": True, "command": command}, separators=(",", ":")))
+        flags = {
+            "project list": [],
+            "page list": [],
+            "screenshot list": ["--page", "--status", "--limit", "--offset"],
+            "screenshot create": ["--title", "--page", "--file"],
+            "annotation list": ["--screenshot", "--status", "--viewport", "--limit", "--offset"],
+            "annotation get": ["--annotation", "--crop-file"],
+            "comment add": ["--annotation", "--body"],
+        }
+        if command not in flags:
+            return 2
+        print("Usage: screenote " + command + " " + " ".join(flags[command]))
         return 0
     scenario = json.loads(Path(scenario_path).read_text(encoding="utf-8"))
     response = scenario.get("commands", {}).get(command, scenario.get("default"))
+    if isinstance(response, dict) and isinstance(response.get("responses"), list):
+        prior_count = 0
+        for record in prior_records:
+            index = 0
+            while index < len(record) and record[index] == "--project":
+                index += 2
+            if " ".join(record[index : index + 2]) == command and "--help" not in record:
+                prior_count += 1
+        responses = response["responses"]
+        response = responses[prior_count] if prior_count < len(responses) else None
     if not isinstance(response, dict):
-        response = {"exit": 1, "stderr": {"error": {"code": "unexpected_command", "command": command}}}
+        response = {"exit": 1, "stderr": {"code": "unexpected_command", "error": command}}
     exit_code = int(response.get("exit", 0))
-    output = response.get("stdout" if exit_code == 0 else "stderr", {})
-    print(json.dumps(output, separators=(",", ":")), file=sys.stdout if exit_code == 0 else sys.stderr)
+    stream_name = "stdout" if exit_code == 0 else "stderr"
+    raw_output = response.get(stream_name + "_raw")
+    if raw_output is not None:
+        print(str(raw_output), file=sys.stdout if exit_code == 0 else sys.stderr)
+    else:
+        output = response.get(stream_name, {})
+        print(json.dumps(output, separators=(",", ":")), file=sys.stdout if exit_code == 0 else sys.stderr)
     return exit_code
 
 

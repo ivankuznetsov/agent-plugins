@@ -1,5 +1,5 @@
 {
   "commands": {
-    "project list": {"exit": 2, "stderr": {"error": {"code": "missing_token", "message": "Authentication is required."}}}
+    "project list": {"exit": 2, "stderr": {"code": "missing_token", "error": "Authentication is required."}}
   }
 }

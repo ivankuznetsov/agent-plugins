@@ -2,30 +2,43 @@
 
 This plugin depends on the external `screenote` executable. Detect it with
 `command -v screenote`; never download, install, authenticate, or open a browser
-on the user's behalf. The OAuth-first compatibility baseline is Screenote CLI
-PR 37, merge `8d64ebb4a5d3d9f98d575da70c97750d15f7ae82`. Until a tagged
-release contains that contract, installation guidance may pin public ref
+on the user's behalf. The OAuth-first compatibility baseline is the reachable,
+merged Screenote CLI [PR 6](https://github.com/ivankuznetsov/screenote-cli/pull/6),
+merge `c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b`. Until a tagged release
+contains that contract, installation guidance may pin that public ref
 `c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b`:
 
 ```bash
 go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
 ```
 
-Offer that command as guidance only. For interactive setup, suggest
-`screenote login`. For noninteractive setup, require `SCREENOTE_TOKEN` through
-the CLI's environment contract. Never pass credentials as arguments or copy,
-read, print, trace, or cache their values.
+Offer that command as guidance only. For hosted interactive setup, suggest
+`screenote --base-url https://screenote.ai login`. For a custom deployment,
+the user must configure `SCREENOTE_BASE_URL` or trusted Screenote CLI config
+outside the agent workflow. For noninteractive setup, require
+`SCREENOTE_TOKEN` through the CLI's environment contract. Never pass
+credentials as arguments or copy, read, print, trace, or cache their values.
 
 ## Bundled argv-safe launcher
 
 All workflows invoke `../../scripts/screenote-cli.sh` with an argv array:
 
 ```text
-screenote-cli.sh [--base-url URL] [--project PROJECT] <noun> <verb> [arguments]
+screenote-cli.sh [--project PROJECT] <noun> <verb> [arguments]
 ```
 
+The launcher rejects `--base-url`, `--base-url=...`, `--config`, and
+`--config=...` anywhere in forwarded argv before it discovers or invokes the
+CLI. A trusted `SCREENOTE_BASE_URL` or pre-existing config remains available
+for legitimate custom deployments. Prompt-controlled argv therefore cannot
+redirect a bearer-authenticated request to a different endpoint.
+
 Before the first project preflight, run `screenote-cli.sh --check-contract`.
-This checks only non-secret `--help` surfaces for the approved tuples. A
+This checks non-secret root help plus every approved tuple and command-specific
+flag required by [the shipped workflow contract](workflows.json). Offline
+contract tests exercise the real JSON collection names, top-level errors, and
+pagination shapes recorded at the pinned public ref; the probe itself never
+makes a network request. A
 `screenote_not_found` or `screenote_contract_incompatible` diagnostic stops the
 flow with the pinned installation/update guidance; it never installs anything.
 
@@ -69,7 +82,8 @@ Parse complete JSON from stdout on success and stderr on failure. Preserve the
 original machine-readable diagnostic in the response, but redact any
 credential-shaped value before quoting surrounding prose.
 
-- Exit 2 with `missing_token`: stop. Interactively suggest `screenote login`;
+- Exit 2 with `missing_token`: stop. Interactively suggest
+  `screenote --base-url https://screenote.ai login` for the hosted service;
   noninteractively require `SCREENOTE_TOKEN`. Do not run login automatically.
 - Exit 2 with `missing_project`: stop and explain the three project sources
   above. Only an interactive agent may present accessible choices.
@@ -80,6 +94,8 @@ credential-shaped value before quoting surrounding prose.
 
 Success requires exit zero and valid JSON. Do not infer success from human
 text, an HTTP status embedded in prose, or a partially written local file.
+Exit zero with invalid or partial JSON is a contract failure and stops the
+workflow.
 
 ## Capture boundary and URL safety
 

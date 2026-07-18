@@ -145,13 +145,12 @@ When present, `llm-wiki` searches a main cross-project wiki before creating or u
 ## Automation
 
 `bootstrap` installs project wiki context through the instruction surfaces used
-by Claude Code, Codex, and Pi. OpenClaw can run the same bootstrap and wiki
-workflows from its workspace; its generated package adapter does not alter the
-canonical maintenance scripts.
+by Claude Code, Codex, Pi, and OpenClaw.
 
 - Claude Code receives wiki context through `CLAUDE.md` and a Claude `SessionStart` context hook when available.
 - Codex receives wiki context through `AGENTS.md`.
 - Pi receives wiki context through `AGENTS.md`.
+- OpenClaw receives wiki context through the `AGENTS.md` in its configured agent workspace.
 - Agent instruction updates are bounded by `<!-- BEGIN LLM WIKI -->` and `<!-- END LLM WIKI -->` markers so existing project instructions are preserved.
 - Re-running `bootstrap` from another agent updates that agent's context without changing the headless maintenance owner.
 - Existing projects from older `llm-wiki` versions keep their inferred headless owner when upgraded, even before `.llm-wiki/config.json` exists.
@@ -161,6 +160,7 @@ Only one agent owns scheduled refresh automation and post-commit wiki maintenanc
 - Claude Code headless automation uses `claude -p ...`
 - Codex headless automation uses `codex exec -C <project-root> ...`
 - Pi headless automation uses `pi -p --no-session --tools read,bash,edit,write,grep,find,ls ...`
+- OpenClaw headless automation uses `openclaw agent --local --agent <openclaw_agent_id> --message ... --json --timeout 1800` without delivery, channel, reply, or recipient flags. Bootstrap records the agent whose configured workspace matches the project instead of guessing a default ID.
 - All automation paths search the project wiki and any detected main cross-project wiki.
 - Scheduler and post-commit entries use managed markers and stable project slugs so repeated bootstraps do not create duplicate refresh jobs.
 
@@ -186,7 +186,13 @@ Pi:
 /skill:wiki-status
 ```
 
-`status` reports the current cached or installed version, latest marketplace or Pi package version, whether an update is available, the update command, and whether a restart is required. When run inside a bootstrapped project, it also reports the configured headless agent and whether Claude/Codex/Pi wiki context is present.
+OpenClaw:
+
+```text
+wiki-status
+```
+
+`status` reports the current cached or installed version, latest marketplace or package version, whether an update is available, the update command, and whether a restart is required. For OpenClaw, it checks `openclaw plugins list/inspect`, dry-runs `openclaw plugins update llm-wiki`, and uses `openclaw gateway restart --safe` when a running Gateway must reload the update. When run inside a bootstrapped project, it also reports the configured headless agent and whether Claude/Codex/Pi/OpenClaw wiki context is present.
 
 ## What It Creates
 
@@ -230,5 +236,5 @@ QMD is preferred for semantic and lexical search, but it is optional. During boo
 
 - `llm-wiki` does not invent documentation. It reads source files and records uncertainty in `wiki/gaps.md`.
 - QMD is optional, but semantic search is better when QMD is installed and indexed.
-- Agent hooks differ between Claude Code, Codex, and Pi. `bootstrap` installs context for all supported agents, but only the configured `headless_agent` runs scheduled and post-commit maintenance.
+- Agent hooks differ between Claude Code, Codex, Pi, and OpenClaw. `bootstrap` installs context for all supported agents, but only the configured `headless_agent` runs scheduled and post-commit maintenance.
 - The first bootstrap pass is intentionally broad. Review `wiki/gaps.md` afterward to decide what deserves deeper documentation.

@@ -1,5 +1,5 @@
 {
   "commands": {
-    "project list": {"exit": 3, "stderr": {"error": {"code": "invalid_token", "message": "Authentication was rejected."}}}
+    "project list": {"exit": 3, "stderr": {"code": "invalid_token", "error": "Authentication was rejected."}}
   }
 }

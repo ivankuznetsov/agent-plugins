@@ -20,6 +20,15 @@ All notable changes to the Screenote plugin are documented here.
 - Snapshot route discovery publishes repeated approved screenshot-create calls;
   feedback comments after fixes and leaves final resolution to the Screenote UI.
 - Project selection follows explicit flag, environment, then CLI config.
+- The CLI compatibility probe now checks every approved command-specific flag
+  against the reachable merged Screenote CLI PR 6 baseline.
+
+### Fixed
+
+- Use the public CLI's real collection keys, top-level error shape, and
+  pagination metadata in the shipped workflow contract and offline fixtures.
+- Treat exit-zero non-JSON output, missing identifiers, malformed collections,
+  and incomplete pagination as failures without inventing fallback ids.
 
 ### Removed
 
@@ -31,6 +40,8 @@ All notable changes to the Screenote plugin are documented here.
 
 - Credentials remain in Screenote environment/config channels and are rejected
   as command arguments.
+- Reject prompt-controlled endpoint and config overrides before the launcher
+  invokes an authenticated Screenote CLI process.
 - Successful temporary captures are deleted; failed captures remain mode
   `0600` in a private mode-`0700` directory with a reported recovery path.
 

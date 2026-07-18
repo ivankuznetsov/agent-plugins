@@ -8,6 +8,11 @@ metadata:
 # Screenote — one-page visual review
 
 Read and follow [the shared CLI contract](../../references/cli.md) completely.
+Load [the shipped workflow contract](../../references/workflows.json) and use
+its `screenote` command sequence and response keys as the authority for the
+deterministic CLI portion. This skill remains authoritative for browser capture
+and user intent.
+Canonical CLI order: `project list`, then one `screenshot create` per capture.
 Use the bundled `../../scripts/screenote-cli.sh`; do not invoke unapproved CLI
 commands or another transport.
 
@@ -44,8 +49,9 @@ Detect `screenote` on `PATH`; never install it. Run the launcher's non-secret
 `SCREENOTE_PROJECT`, then CLI config. Validate accessibility and never guess an
 ambiguous project.
 
-Handle JSON failures exactly: exit 2 `missing_token` suggests `screenote login`
-only as interactive guidance or `SCREENOTE_TOKEN` noninteractively; exit 2
+Handle JSON failures exactly: exit 2 `missing_token` suggests
+`screenote --base-url https://screenote.ai login` only as separate interactive
+guidance or `SCREENOTE_TOKEN` noninteractively; exit 2
 `missing_project` explains `--project`, `SCREENOTE_PROJECT`, and config; exit 3
 reports invalid/expired authorization; every other nonzero exit stops with the
 original machine-readable diagnostic. Noninteractive runs never prompt, read

@@ -20,15 +20,19 @@ require_text() {
 }
 
 require_file references/cli.md
+require_file references/workflows.json
 require_file scripts/screenote-cli.sh
+require_file scripts/screenote-approved-commands.sh
+require_file scripts/screenote_flow.py
 [[ -x scripts/screenote-cli.sh ]] || fail "scripts/screenote-cli.sh must be executable"
-bash -n scripts/screenote-cli.sh
+bash -n scripts/screenote-cli.sh scripts/screenote-approved-commands.sh
 
 for skill in screenote snapshot feedback; do
   file="skills/$skill/SKILL.md"
   require_file "$file"
   require_text "$file" "name: $skill"
   require_text "$file" "../../references/cli.md"
+  require_text "$file" "../../references/workflows.json"
 done
 
 for tuple in \
@@ -39,8 +43,11 @@ for tuple in \
   'annotation list' \
   'annotation get' \
   'comment add'; do
-  require_text scripts/screenote-cli.sh "'$tuple'"
+  read -r noun verb <<<"$tuple"
+  bash -c 'source scripts/screenote-approved-commands.sh; screenote_command_is_approved "$1" "$2"' _ "$noun" "$verb" ||
+    fail "generated launcher allowlist is missing: $tuple"
   require_text references/cli.md "$tuple"
+  require_text references/workflows.json "$tuple"
 done
 
 for required in \
@@ -57,7 +64,7 @@ done
 
 [[ ! -e .mcp.json ]] || fail ".mcp.json must not exist"
 
-active_files=(references skills .claude-plugin/plugin.json .codex-plugin/plugin.json scripts/screenote-cli.sh)
+active_files=(references skills .claude-plugin/plugin.json .codex-plugin/plugin.json scripts/screenote-cli.sh scripts/screenote_flow.py)
 for forbidden in \
   'mcpServers' \
   '/mcp/messages' \

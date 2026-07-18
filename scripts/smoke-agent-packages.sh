@@ -6,6 +6,10 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 PLATFORM=${1:-all}
 CONTRACT="$ROOT_DIR/plugin-surfaces.json"
+CLAUDE_EXECUTABLE=${CLAUDE_EXECUTABLE:-claude}
+CODEX_EXECUTABLE=${CODEX_EXECUTABLE:-codex}
+PI_EXECUTABLE=${PI_EXECUTABLE:-pi}
+OPENCLAW_EXECUTABLE=${OPENCLAW_EXECUTABLE:-openclaw}
 
 case "$PLATFORM" in
   all|claude|codex|pi|openclaw) ;;
@@ -71,11 +75,13 @@ check_version() {
   local executable=$2
   local expected actual raw
   if ! command -v "$executable" >/dev/null 2>&1; then
-    skip_platform "$platform" "$executable is not installed"
+    if ! skip_platform "$platform" "$executable is not installed"; then
+      return 1
+    fi
     return 2
   fi
   expected=$(pin_for "$platform")
-  raw=$($executable --version 2>&1 | head -1)
+  raw=$("$executable" --version 2>&1 | head -1)
   case "$platform" in
     claude) actual=${raw%% *} ;;
     codex) actual=${raw##* } ;;
@@ -94,24 +100,92 @@ PY
 }
 
 run_claude() {
-  if check_version claude claude; then
+  if check_version claude "$CLAUDE_EXECUTABLE"; then
     :
   else
     local status=$?
     [[ $status == 2 ]] && return 0
     return 1
   fi
-  local plugin
-  mkdir -p "$SMOKE_DIR/homes/claude"
+  local home="$SMOKE_DIR/homes/claude"
+  local plugin marketplace
+  mkdir -p "$home"
+  HOME="$home" "$CLAUDE_EXECUTABLE" plugin validate --strict \
+    "$COPY_ROOT/.claude-plugin/marketplace.json" >/dev/null
   for plugin in "${PLUGINS[@]}"; do
-    HOME="$SMOKE_DIR/homes/claude" claude plugin validate --strict \
+    HOME="$home" "$CLAUDE_EXECUTABLE" plugin validate --strict \
       "$COPY_ROOT/plugins/$plugin/.claude-plugin/plugin.json" >/dev/null
   done
+  marketplace=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["name"])' "$COPY_ROOT/.claude-plugin/marketplace.json")
+  HOME="$home" "$CLAUDE_EXECUTABLE" plugin marketplace add "$COPY_ROOT" --scope user >/dev/null
+  HOME="$home" "$CLAUDE_EXECUTABLE" plugin list --available --json >"$SMOKE_DIR/claude-available.json"
+  for plugin in "${PLUGINS[@]}"; do
+    HOME="$home" "$CLAUDE_EXECUTABLE" plugin install "$plugin@$marketplace" --scope user >/dev/null
+  done
+  HOME="$home" "$CLAUDE_EXECUTABLE" plugin list --json >"$SMOKE_DIR/claude-installed.json"
+  for plugin in "${PLUGINS[@]}"; do
+    HOME="$home" "$CLAUDE_EXECUTABLE" plugin details "$plugin@$marketplace" \
+      >"$SMOKE_DIR/claude-details-$plugin.txt"
+  done
+  python3 - "$CONTRACT" "$marketplace" "$SMOKE_DIR" <<'PY'
+import json
+from pathlib import Path, PurePosixPath
+import re
+import sys
+
+contract = json.load(open(sys.argv[1], encoding="utf-8"))
+marketplace = sys.argv[2]
+root = Path(sys.argv[3])
+expected_plugins = {plugin["name"]: plugin for plugin in contract["plugins"]}
+expected_ids = {f"{name}@{marketplace}" for name in expected_plugins}
+
+available = json.load(open(root / "claude-available.json", encoding="utf-8"))
+available_ids = {entry["pluginId"] for entry in available["available"]}
+if available_ids != expected_ids:
+    raise SystemExit(
+        f"Claude marketplace inventory differs: missing={sorted(expected_ids - available_ids)}, "
+        f"unexpected={sorted(available_ids - expected_ids)}"
+    )
+
+installed = json.load(open(root / "claude-installed.json", encoding="utf-8"))
+installed_by_id = {entry["id"]: entry for entry in installed}
+actual_ids = set(installed_by_id)
+if actual_ids != expected_ids:
+    raise SystemExit(
+        f"Claude installed inventory differs: missing={sorted(expected_ids - actual_ids)}, "
+        f"unexpected={sorted(actual_ids - expected_ids)}"
+    )
+for plugin_id, entry in installed_by_id.items():
+    plugin = expected_plugins[plugin_id.removesuffix(f"@{marketplace}")]
+    if entry.get("version") != plugin["version"] or entry.get("scope") != "user" or not entry.get("enabled"):
+        raise SystemExit(f"Claude installed plugin metadata differs for {plugin_id}: {entry}")
+
+for name, plugin in expected_plugins.items():
+    details = (root / f"claude-details-{name}.txt").read_text(encoding="utf-8")
+    match = re.search(r"^  Skills \(\d+\)\s+(.+)$", details, re.MULTILINE)
+    if not match:
+        raise SystemExit(f"Claude details did not expose a skill inventory for {name}")
+    actual = {component.strip() for component in match.group(1).split(",") if component.strip()}
+    expected = {
+        PurePosixPath(skill["path"]).parent.name
+        for skill in plugin["canonical"]["skills"]
+    }
+    expected.update(
+        entry["name"]
+        for entry in plugin["legacy_entrypoints"]
+        if entry.get("platform") == "claude"
+    )
+    if actual != expected:
+        raise SystemExit(
+            f"Claude component inventory differs for {name}: missing={sorted(expected - actual)}, "
+            f"unexpected={sorted(actual - expected)}"
+        )
+PY
   pass_platform claude
 }
 
 run_codex() {
-  if check_version codex codex; then
+  if check_version codex "$CODEX_EXECUTABLE"; then
     :
   else
     local status=$?
@@ -123,8 +197,8 @@ run_codex() {
   local plugin marketplace
   mkdir -p "$home" "$codex_home"
   marketplace=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["name"])' "$COPY_ROOT/.agents/plugins/marketplace.json")
-  HOME="$home" CODEX_HOME="$codex_home" codex plugin marketplace add "$COPY_ROOT" --json >/dev/null
-  HOME="$home" CODEX_HOME="$codex_home" codex plugin list --available --json >"$SMOKE_DIR/codex-available.json"
+  HOME="$home" CODEX_HOME="$codex_home" "$CODEX_EXECUTABLE" plugin marketplace add "$COPY_ROOT" --json >/dev/null
+  HOME="$home" CODEX_HOME="$codex_home" "$CODEX_EXECUTABLE" plugin list --available --json >"$SMOKE_DIR/codex-available.json"
   python3 - "$CONTRACT" "$SMOKE_DIR/codex-available.json" <<'PY'
 import json
 import sys
@@ -133,16 +207,19 @@ contract = json.load(open(sys.argv[1], encoding="utf-8"))
 listed = json.load(open(sys.argv[2], encoding="utf-8"))
 expected = {plugin["name"] for plugin in contract["plugins"]}
 actual = {plugin["name"] for plugin in listed["available"]}
-missing = sorted(expected - actual)
-if missing:
-    raise SystemExit(f"Codex marketplace discovery missed plugins: {missing}")
+if actual != expected:
+    raise SystemExit(
+        f"Codex marketplace inventory differs: missing={sorted(expected - actual)}, "
+        f"unexpected={sorted(actual - expected)}"
+    )
 PY
   for plugin in "${PLUGINS[@]}"; do
-    HOME="$home" CODEX_HOME="$codex_home" codex plugin add "$plugin@$marketplace" --json >/dev/null
+    HOME="$home" CODEX_HOME="$codex_home" "$CODEX_EXECUTABLE" plugin add "$plugin@$marketplace" --json >/dev/null
   done
-  HOME="$home" CODEX_HOME="$codex_home" python3 - "$CONTRACT" "$COPY_ROOT" <<'PY'
+  HOME="$home" CODEX_HOME="$codex_home" CODEX_EXECUTABLE="$CODEX_EXECUTABLE" python3 - "$CONTRACT" "$COPY_ROOT" <<'PY'
 import json
 import os
+from pathlib import Path
 import selectors
 import subprocess
 import sys
@@ -155,7 +232,7 @@ expected = {
     for skill in plugin["canonical"]["skills"]
 }
 process = subprocess.Popen(
-    ["codex", "app-server", "--stdio"],
+    [os.environ["CODEX_EXECUTABLE"], "app-server", "--stdio"],
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
@@ -193,16 +270,25 @@ finally:
     process.wait(timeout=5)
 
 entries = response["result"]["data"]
-actual = {skill["name"] for entry in entries for skill in entry["skills"]}
-missing = sorted(expected - actual)
-if missing:
-    raise SystemExit(f"Codex native skill discovery missed: {missing}")
+plugin_cache = Path(os.environ["CODEX_HOME"]) / "plugins" / "cache"
+actual = {
+    skill["name"]
+    for entry in entries
+    for skill in entry["skills"]
+    if skill.get("scope") == "user"
+    and Path(skill.get("path", "")).is_relative_to(plugin_cache)
+}
+if actual != expected:
+    raise SystemExit(
+        f"Codex native skill inventory differs: missing={sorted(expected - actual)}, "
+        f"unexpected={sorted(actual - expected)}"
+    )
 PY
   pass_platform codex
 }
 
 run_pi() {
-  if check_version pi pi; then
+  if check_version pi "$PI_EXECUTABLE"; then
     :
   else
     local status=$?
@@ -215,12 +301,12 @@ run_pi() {
   mkdir -p "$home" "$pi_home"
   for plugin in "${PLUGINS[@]}"; do
     HOME="$home" PI_CODING_AGENT_DIR="$pi_home" PI_OFFLINE=1 \
-      pi install "$COPY_ROOT/plugins/$plugin" --no-approve >/dev/null
+      "$PI_EXECUTABLE" install "$COPY_ROOT/plugins/$plugin" --no-approve >/dev/null
   done
-  HOME="$home" PI_CODING_AGENT_DIR="$pi_home" PI_OFFLINE=1 pi list --no-approve >"$SMOKE_DIR/pi-list.txt"
+  HOME="$home" PI_CODING_AGENT_DIR="$pi_home" PI_OFFLINE=1 "$PI_EXECUTABLE" list --no-approve >"$SMOKE_DIR/pi-list.txt"
   printf '%s\n' '{"type":"get_commands"}' | \
     HOME="$home" PI_CODING_AGENT_DIR="$pi_home" PI_OFFLINE=1 \
-    pi --mode rpc --no-session --no-extensions --no-prompt-templates --no-themes --no-context-files --no-approve \
+    "$PI_EXECUTABLE" --mode rpc --no-session --no-extensions --no-prompt-templates --no-themes --no-context-files --no-approve \
     >"$SMOKE_DIR/pi-commands.jsonl"
   python3 - "$CONTRACT" "$SMOKE_DIR/pi-list.txt" "$SMOKE_DIR/pi-commands.jsonl" <<'PY'
 import json
@@ -244,15 +330,17 @@ actual = {
     for command in response.get("data", {}).get("commands", [])
     if command.get("source") == "skill"
 }
-missing = sorted(expected_skills - actual)
-if missing:
-    raise SystemExit(f"Pi native skill discovery missed: {missing}")
+if actual != expected_skills:
+    raise SystemExit(
+        f"Pi native skill inventory differs: missing={sorted(expected_skills - actual)}, "
+        f"unexpected={sorted(actual - expected_skills)}"
+    )
 PY
   pass_platform pi
 }
 
 run_openclaw() {
-  if check_version openclaw openclaw; then
+  if check_version openclaw "$OPENCLAW_EXECUTABLE"; then
     :
   else
     local status=$?
@@ -266,23 +354,36 @@ run_openclaw() {
   mkdir -p "$home" "$state"
   for plugin in "${PLUGINS[@]}"; do
     HOME="$home" OPENCLAW_STATE_DIR="$state" OPENCLAW_CONFIG_PATH="$config" \
-      openclaw plugins install "$COPY_ROOT/plugins/$plugin" >/dev/null
+      "$OPENCLAW_EXECUTABLE" plugins install "$COPY_ROOT/plugins/$plugin" >/dev/null
   done
   HOME="$home" OPENCLAW_STATE_DIR="$state" OPENCLAW_CONFIG_PATH="$config" \
-    openclaw plugins inspect --all --json >"$SMOKE_DIR/openclaw-plugins.json"
+    "$OPENCLAW_EXECUTABLE" plugins inspect --all --json >"$SMOKE_DIR/openclaw-plugins.json"
   HOME="$home" OPENCLAW_STATE_DIR="$state" OPENCLAW_CONFIG_PATH="$config" \
-    openclaw skills check --json >"$SMOKE_DIR/openclaw-skills.json"
+    "$OPENCLAW_EXECUTABLE" skills list --eligible --json >"$SMOKE_DIR/openclaw-skills.json"
   HOME="$home" OPENCLAW_STATE_DIR="$state" OPENCLAW_CONFIG_PATH="$config" \
-    openclaw config validate --json >/dev/null
-  python3 - "$CONTRACT" "$SMOKE_DIR" <<'PY'
+    "$OPENCLAW_EXECUTABLE" config validate --json >/dev/null
+  python3 - "$CONTRACT" "$SMOKE_DIR" "$COPY_ROOT" <<'PY'
 import json
 from pathlib import Path
 import sys
 
 contract = json.load(open(sys.argv[1], encoding="utf-8"))
 root = Path(sys.argv[2])
+copy_root = Path(sys.argv[3])
 inspection = json.load(open(root / "openclaw-plugins.json", encoding="utf-8"))
-plugins_by_id = {entry["plugin"]["id"]: entry["plugin"] for entry in inspection}
+installed_root = root / "homes" / "openclaw-state" / "extensions"
+plugins_by_id = {
+    entry["plugin"]["id"]: entry["plugin"]
+    for entry in inspection
+    if Path(entry["plugin"].get("rootDir", "")).is_relative_to(installed_root)
+}
+expected_plugin_ids = {plugin["name"] for plugin in contract["plugins"]}
+actual_plugin_ids = set(plugins_by_id)
+if actual_plugin_ids != expected_plugin_ids:
+    raise SystemExit(
+        f"OpenClaw plugin inventory differs: missing={sorted(expected_plugin_ids - actual_plugin_ids)}, "
+        f"unexpected={sorted(actual_plugin_ids - expected_plugin_ids)}"
+    )
 for plugin in contract["plugins"]:
     inspected = plugins_by_id.get(plugin["name"], {})
     if inspected.get("id") != plugin["name"] or inspected.get("format") != "openclaw" or inspected.get("status") != "loaded":
@@ -293,10 +394,23 @@ expected = {
     for plugin in contract["plugins"]
     for skill in plugin["canonical"]["skills"]
 }
-actual = set(skills["eligible"])
-missing = sorted(expected - actual)
-if missing:
-    raise SystemExit(f"OpenClaw native skill discovery missed: {missing}")
+declared = {
+    path.parent.name
+    for plugin in contract["plugins"]
+    for path in (copy_root / plugin["path"] / "openclaw" / "skills").glob("*/SKILL.md")
+}
+native = {entry["name"] for entry in skills["skills"]}
+actual = native & declared
+if declared != expected:
+    raise SystemExit(
+        f"OpenClaw package skill inventory differs: missing={sorted(expected - declared)}, "
+        f"unexpected={sorted(declared - expected)}"
+    )
+if actual != expected:
+    raise SystemExit(
+        f"OpenClaw native skill inventory differs: missing={sorted(expected - actual)}, "
+        f"unexpected={sorted(actual - expected)}"
+    )
 PY
   pass_platform openclaw
 }

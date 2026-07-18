@@ -38,10 +38,20 @@ install the recorded public baseline:
 go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
 ```
 
-For an interactive machine, authenticate separately with `screenote login`.
-For automation, provide `SCREENOTE_TOKEN` through the CLI environment contract
-and select a project explicitly or with `SCREENOTE_PROJECT`. Project selection
-uses explicit `--project`, then `SCREENOTE_PROJECT`, then CLI config.
+For an interactive machine using the hosted service, authenticate separately
+from the agent workflow with:
+
+```bash
+screenote --base-url https://screenote.ai login
+```
+
+For a custom deployment, set `SCREENOTE_BASE_URL` or a trusted Screenote CLI
+config before login and before invoking the plugin. The bundled bearer launcher
+deliberately rejects runtime `--base-url` and `--config` overrides so untrusted
+prompt content cannot redirect an authenticated request. For automation,
+provide `SCREENOTE_TOKEN` through the CLI environment contract and select a
+project explicitly or with `SCREENOTE_PROJECT`. Project selection uses explicit
+`--project`, then `SCREENOTE_PROJECT`, then CLI config.
 
 ## Workflows
 
@@ -81,8 +91,8 @@ does not perform the final resolution mutation.
 - Native browser automation captures serially to a unique mode-`0700`
   directory with mode-`0600` files.
 - `scripts/screenote-cli.sh` accepts only project/page/screenshot/annotation
-  reads, screenshot creation, and comment creation; arguments remain separate
-  argv elements.
+  reads, screenshot creation, and comment creation; endpoint/config overrides
+  are forbidden and arguments remain separate argv elements.
 - Credentials stay in the CLI's environment or config channels, never command
   arguments, generated files, or diagnostics.
 - Exit 2 reports missing authentication/project setup, exit 3 reports rejected

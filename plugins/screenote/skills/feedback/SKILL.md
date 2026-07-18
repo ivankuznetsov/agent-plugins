@@ -8,6 +8,12 @@ metadata:
 # Feedback — retrieve and act on annotations
 
 Read and follow [the shared CLI contract](../../references/cli.md) completely.
+Load [the shipped workflow contract](../../references/workflows.json) and use
+its `feedback` command sequence, collection keys, and pagination rules as the
+authority for the deterministic CLI portion. This skill remains authoritative
+for page selection, crop inspection, and user choice.
+Canonical CLI order: `project list`, `page list`, paginated `screenshot list`,
+paginated `annotation list`, then `annotation get` and `comment add` per item.
 The public grammar remains:
 
 ```text

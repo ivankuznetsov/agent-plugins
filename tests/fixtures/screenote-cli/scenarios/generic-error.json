@@ -1,5 +1,5 @@
 {
   "commands": {
-    "project list": {"exit": 17, "stderr": {"error": {"code": "unexpected_failure", "message": "The operation stopped."}}}
+    "project list": {"exit": 1, "stderr": {"code": "unexpected_failure", "error": "The operation stopped."}}
   }
 }

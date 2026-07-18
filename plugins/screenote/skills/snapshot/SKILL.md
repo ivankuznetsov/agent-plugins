@@ -8,6 +8,11 @@ metadata:
 # Snapshot — multi-page visual review
 
 Read and follow [the shared CLI contract](../../references/cli.md) completely.
+Load [the shipped workflow contract](../../references/workflows.json) and use
+its `snapshot` command sequence and response keys as the authority for the
+deterministic CLI portion. This skill remains authoritative for route discovery,
+browser capture, and user confirmation.
+Canonical CLI order: `project list`, then repeated `screenshot create` calls.
 The public grammar remains:
 
 ```text

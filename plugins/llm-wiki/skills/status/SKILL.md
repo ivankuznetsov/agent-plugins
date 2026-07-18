@@ -1,6 +1,6 @@
 ---
 name: status
-description: Check whether llm-wiki is current, detect newer marketplace or Pi package versions, and suggest or run the right update command for Claude Code, Codex, or Pi. Use when the user asks about llm-wiki version, plugin/package updates, marketplace refresh, upgrade instructions, project context setup, or whether a new llm-wiki release is available.
+description: Check whether llm-wiki is current, detect newer marketplace or package versions, and suggest or run the right update command for Claude Code, Codex, Pi, or OpenClaw. Use when the user asks about llm-wiki version, plugin/package updates, marketplace refresh, upgrade instructions, project context setup, or whether a new llm-wiki release is available.
 ---
 
 # LLM Wiki Status
@@ -19,22 +19,24 @@ Also inspect project-local wiki configuration when available:
 
 ## Rules
 
-- Detect whether the user is running Claude Code, Codex, Pi, or multiple CLIs are present.
+- Detect whether the user is running Claude Code, Codex, Pi, OpenClaw, or multiple CLIs are present.
 - If the user asks only how to update, give commands without changing anything.
-- If the user asks to check the latest version, fetch marketplace or Pi package metadata and compare versions.
+- If the user asks to check the latest version, fetch marketplace or package metadata and compare versions.
 - If the user asks to update, run the update command for the active tool and tell them to restart the tool afterward.
 - Compare semantic versions with `sort -V` when available; otherwise parse major/minor/patch numerically. Do not compare version strings lexicographically.
-- If network access, marketplace metadata, or Pi package metadata is unavailable, report the local version and the command that refreshes the relevant metadata.
+- If network access, marketplace metadata, or package metadata is unavailable, report the local version and the command that refreshes the relevant metadata.
 - If `.llm-wiki/config.json` exists, report `headless_agent`, `context_agents`, and `main_wiki_path`.
 - Report managed wiki context using the exact `<!-- BEGIN LLM WIKI -->` and `<!-- END LLM WIKI -->` marker pair.
 - Classify `AGENTS.md` and `CLAUDE.md` context as `managed present`, `unmanaged wiki section only`, `missing`, or `unknown`.
 - Report Pi context from `AGENTS.md`; do not require `.pi/SYSTEM.md` or `.pi/APPEND_SYSTEM.md`.
 - Report whether Claude SessionStart context appears configured when `.claude/settings.json` exists.
-- Classify each automation surface as `codex`, `claude`, `pi`, `mixed`, `missing`, `mismatch`, or `unknown`.
+- Report OpenClaw context from the configured workspace's `AGENTS.md` and confirm that the project root matches that workspace before calling it present.
+- Classify each automation surface as `codex`, `claude`, `pi`, `openclaw`, `mixed`, `missing`, `mismatch`, or `unknown`.
 - Scheduler and post-commit ownership are clean only when the configured owner command is present and the non-owner command is absent.
-- `codex` means `codex exec` is present and `claude -p`, `pi -p`, and `pi --print` are absent.
-- `claude` means `claude -p` is present and `codex exec`, `pi -p`, and `pi --print` are absent.
-- `pi` means `pi -p` or `pi --print` is present and `codex exec` and `claude -p` are absent.
+- `codex` means `codex exec` is present and `claude -p`, `pi -p`, `pi --print`, and `openclaw agent --local` are absent.
+- `claude` means `claude -p` is present and `codex exec`, `pi -p`, `pi --print`, and `openclaw agent --local` are absent.
+- `pi` means `pi -p` or `pi --print` is present and `codex exec`, `claude -p`, and `openclaw agent --local` are absent.
+- `openclaw` means `openclaw agent --local --agent <openclaw_agent_id>` is present and `codex exec`, `claude -p`, `pi -p`, and `pi --print` are absent. A valid maintenance command must use the configured project-workspace agent ID and omit `--deliver` and all channel, reply, and recipient flags.
 - `mixed` means more than one owner command is present.
 - `mismatch` means exactly one owner command is present but it is not the configured `headless_agent`.
 - Count managed `llm-wiki` hook or scheduler entries when possible; report duplicates as `mixed` or `mismatch` rather than clean.
@@ -141,6 +143,52 @@ pi update git:github.com/ivankuznetsov/llm-wiki
 
 If Pi reports the package under a different installed source, use that exact source with `pi update <source>`. Tell the user to restart Pi after updating package skills.
 
+## OpenClaw
+
+OpenClaw discovers this package through its Claude-compatible marketplace support and exposes the collision-safe `wiki-bootstrap`, `wiki-research`, `wiki-plan`, and `wiki-status` skills.
+
+Useful commands:
+
+```bash
+openclaw --version
+openclaw agents list --json
+openclaw plugins list --json
+openclaw plugins inspect llm-wiki --json
+openclaw plugins update llm-wiki --dry-run
+openclaw plugins update llm-wiki
+openclaw gateway restart --safe
+```
+
+Remote marketplace version check:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ivankuznetsov/agent-plugins/main/.claude-plugin/marketplace.json \
+  | jq -r '.plugins[] | select(.name == "llm-wiki") | .version'
+```
+
+Status workflow:
+
+1. Run `openclaw --version` and `openclaw plugins list --json` when available.
+2. Find the entry whose `id` or `name` is `llm-wiki`; use its `version`, `source`, and `rootDir` fields as the installed-state evidence. Use `openclaw plugins inspect llm-wiki --json` for a focused view when the plugin is discovered.
+3. Run `openclaw agents list --json` when `.llm-wiki/config.json` names OpenClaw as the headless owner. Verify that `openclaw_agent_id` exists and its reported `workspace` resolves to the project root; otherwise classify automation as `mismatch`.
+4. Fetch the remote version from the central marketplace manifest when the user wants to know whether a new release is out.
+5. Before changing anything, run `openclaw plugins update llm-wiki --dry-run` to verify that the installed plugin is tracked and updatable.
+6. If a newer version exists and the dry run succeeds, update with:
+
+```bash
+openclaw plugins update llm-wiki
+```
+
+If OpenClaw reports that a path-installed plugin is not tracked, do not claim it was updated. Reinstall from the same trusted local path or marketplace source shown by the user's installation evidence; the marketplace form supported by the CLI is `openclaw plugins install llm-wiki --marketplace ivankuznetsov/agent-plugins --force`.
+
+After an update, a running Gateway must reload the plugin and skills. Request OpenClaw's bounded, work-aware service restart:
+
+```bash
+openclaw gateway restart --safe
+```
+
+Do not use `--force` for the Gateway restart by default. If no Gateway service is running and the user only uses one-shot local agent commands, report that the next process starts from the updated registry and no service restart is required.
+
 ## Report Format
 
 Return:
@@ -152,14 +200,16 @@ Return:
 - Status: current | update available | unknown
 - Update command: ...
 - Restart required: yes | no
-- Headless agent: claude | codex | pi | unknown
+- Headless agent: claude | codex | pi | openclaw | unknown
+- OpenClaw agent id: ... | not configured | not applicable
 - Context agents: ...
 - AGENTS.md wiki context: managed present | unmanaged wiki section only | missing | unknown
 - CLAUDE.md wiki context: managed present | unmanaged wiki section only | missing | unknown
 - Pi wiki context: AGENTS.md managed present | missing | unknown
+- OpenClaw wiki context: AGENTS.md managed present | workspace mismatch | missing | unknown
 - Claude SessionStart context: present | missing | not checked
-- Scheduled refresh owner: claude | codex | pi | mixed | missing | mismatch | unknown
-- Post-commit refresh owner: claude | codex | pi | mixed | missing | mismatch | unknown
+- Scheduled refresh owner: claude | codex | pi | openclaw | mixed | missing | mismatch | unknown
+- Post-commit refresh owner: claude | codex | pi | openclaw | mixed | missing | mismatch | unknown
 ```
 
 Mention whether the result came from local cache only or from a remote marketplace/package check.

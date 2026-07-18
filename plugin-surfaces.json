@@ -17,8 +17,8 @@
     ]
   },
   "screenote_cli": {
-    "contract_pr": "https://github.com/ivankuznetsov/screenote-cli/pull/37",
-    "contract_merge_sha": "8d64ebb4a5d3d9f98d575da70c97750d15f7ae82",
+    "contract_pr": "https://github.com/ivankuznetsov/screenote-cli/pull/6",
+    "contract_merge_sha": "c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b",
     "public_repository": "https://github.com/ivankuznetsov/screenote-cli",
     "public_test_ref": "c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b",
     "minimum_release": null,
@@ -230,7 +230,12 @@
         {"platform": "claude", "name": "snapshot", "path": "skills/snapshot/SKILL.md", "mode": "snapshot", "usage": ["snapshot [desktop|tablet|mobile] <base-URL>"], "arguments": "[desktop|tablet|mobile] <base-URL>", "pass_arguments": true},
         {"platform": "claude", "name": "feedback", "path": "skills/feedback/SKILL.md", "mode": "feedback", "usage": ["feedback [desktop|tablet|mobile] [filter]"], "arguments": "[desktop|tablet|mobile] [filter]", "pass_arguments": true}
       ],
-      "resources": ["references", "evals", {"path": "scripts/screenote-cli.sh", "required": true}],
+      "resources": [
+        "references",
+        "evals",
+        {"path": "scripts/screenote-cli.sh", "required": true},
+        {"path": "scripts/screenote_flow.py", "required": true}
+      ],
       "platforms": {
         "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "screenote, snapshot, feedback"}},
         "codex": {"support": "supported", "state": "native", "tested_host_version": "0.144.3", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".codex-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "$screenote:<skill>"}},

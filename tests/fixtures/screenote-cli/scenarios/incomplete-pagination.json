@@ -1,0 +1,12 @@
+{
+  "commands": {
+    "project list": {"exit": 0, "stdout": {"projects": [{"id": 7, "name": "demo"}]}},
+    "page list": {"exit": 0, "stdout": {"pages": [{"id": 11, "name": "login"}]}},
+    "screenshot list": {
+      "responses": [
+        {"exit": 0, "stdout": {"screenshots": [{"id": 21}], "pagination": {"total": 2, "limit": 100, "offset": 0}}},
+        {"exit": 0, "stdout": {"screenshots": [], "pagination": {"total": 2, "limit": 100, "offset": 1}}}
+      ]
+    }
+  }
+}

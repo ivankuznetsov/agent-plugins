@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "project list": {"exit": 0, "stdout": {"projects": [{"name": "demo"}]}}
+  }
+}

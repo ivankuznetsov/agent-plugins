@@ -1,6 +1,6 @@
 ---
 name: wiki-bootstrap
-description: "Bootstrap an LLM-maintained wiki for the current project. Use when a user asks to create, initialize, or refresh a project wiki, LLM wiki, QMD wiki, or codebase knowledge base for Claude Code, Codex, or Pi."
+description: "Bootstrap an LLM-maintained wiki for the current project. Use when a user asks to create, initialize, or refresh a project wiki, LLM wiki, QMD wiki, or codebase knowledge base for Claude Code, Codex, Pi, or OpenClaw."
 metadata:
   generated-from: skills/bootstrap/SKILL.md
   generated-for: openclaw

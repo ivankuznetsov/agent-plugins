@@ -1,5 +1,6 @@
 {
   "commands": {
-    "project list": {"exit": 2, "stderr": {"error": {"code": "missing_project", "message": "Select a project."}}}
+    "project list": {"exit": 0, "stdout": {"projects": [{"id": 7, "name": "demo"}]}},
+    "screenshot create": {"exit": 2, "stderr": {"code": "missing_project", "error": "project is required; set --project, SCREENOTE_PROJECT, or config project"}}
   }
 }
