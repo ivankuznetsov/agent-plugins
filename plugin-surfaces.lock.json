@@ -232,7 +232,7 @@
       "version": "2.0.0",
       "canonical": {
         "skills/seo/SKILL.md": {
-          "sha256": "8c2cb44c1ea99f852f85fe1169bc2c7245de63fa929e43fd08514300b995c3f3",
+          "sha256": "87306367f68021eee750d7eba911bcd4288e935fa25d5a8be422f2e01478e870",
           "semantic_sha256": "421b55784fc77bc16e61b02cbe5ee7a15f9c817e738faeaa8de0c3dd97288077",
           "sections": {
             "1:agent seo": "7023077a01501c8d4b56751d40b2298f15d9759231187720728c76cf3d88ac34",
