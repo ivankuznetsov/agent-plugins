@@ -1,7 +1,7 @@
 {
   "name": "agent-seo",
-  "version": "1.2.0",
-  "description": "SEO content workflow for creating, analyzing, and optimizing long-form blog content with web search integration, AI humanization, and Ruby-based analysis tools",
+  "version": "2.0.0",
+  "description": "SEO content workflow for creating, analyzing, and optimizing long-form blog content with web search, editorial revision, and Ruby-based analysis tools",
   "author": {
     "name": "Ivan Kuznetsov",
     "email": "github@ivankuznetsov",
@@ -17,14 +17,14 @@
     "seo",
     "content-writing",
     "keyword-research",
-    "ai-humanization",
+    "editorial-revision",
     "content-optimization"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Agent SEO",
     "shortDescription": "Research, write, fact-check, and optimize SEO content.",
-    "longDescription": "Agent SEO provides a skill-driven SEO content workflow for Codex and a slash-command workflow for Claude Code. Use it to research topics, write long-form articles, humanize AI-assisted drafts, fact-check claims, optimize content, analyze existing pages, and use optional Ruby analysis tools for keyword density, readability, SEO quality, and content scrubbing.",
+    "longDescription": "Agent SEO provides a skill-driven SEO content workflow for Codex and a slash-command workflow for Claude Code. Use it to research topics, write long-form articles, revise drafts for clarity and brand voice, fact-check claims, optimize content, analyze existing pages, and use optional Ruby analysis tools for keyword density, readability, SEO quality, and read-only formatting audits.",
     "developerName": "Ivan Kuznetsov",
     "category": "Productivity",
     "capabilities": [

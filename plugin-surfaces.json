@@ -97,7 +97,7 @@
     {
       "name": "agent-seo",
       "path": "plugins/agent-seo",
-      "version": "1.2.0",
+      "version": "2.0.0",
       "stability": "stable",
       "metadata": {
         "display_name": "Agent SEO",

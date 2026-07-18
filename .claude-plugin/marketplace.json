@@ -71,8 +71,8 @@
     {
       "name": "agent-seo",
       "source": "./plugins/agent-seo",
-      "description": "SEO content workflow for researching, writing, humanizing, fact-checking, and optimizing long-form content.",
-      "version": "1.2.0",
+      "description": "SEO content workflow for researching, writing, editorial revision, fact-checking, and optimizing long-form content.",
+      "version": "2.0.0",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
@@ -87,7 +87,7 @@
         "seo",
         "content-writing",
         "keyword-research",
-        "ai-humanization",
+        "editorial-revision",
         "content-optimization"
       ],
       "category": "content",
@@ -96,7 +96,7 @@
         "content",
         "writing",
         "optimization",
-        "humanization"
+        "editorial-revision"
       ]
     },
     {

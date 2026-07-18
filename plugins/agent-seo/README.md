@@ -3,9 +3,9 @@
 Existing Claude Code installs that use `ivankuznetsov/claude-seo` remain supported. New installs should use the shared `ivankuznetsov/agent-plugins` marketplace.
 
 Agent SEO is a Claude Code, Codex, Pi, and OpenClaw plugin for creating,
-analyzing, and optimizing SEO content. Use it to research topics, write
-long-form articles, humanize AI-assisted content, fact-check claims, analyze
-existing pages, and review performance data.
+analyzing, and optimizing SEO content. Use it by name to research topics, write
+long-form articles, revise prose for clarity and brand voice, fact-check claims,
+analyze existing pages, and review performance data.
 
 ## Installation
 
@@ -43,17 +43,34 @@ Use Agent SEO to write an article from research/brief-podcast-monetization-2026-
 Use Agent SEO to audit drafts/podcast-monetization.md for SEO gaps and factual claims.
 ```
 
-### Pi and OpenClaw
+### Pi
 
 Install the self-contained package directory from a clone:
 
 ```bash
 pi install /path/to/agent-plugins/plugins/agent-seo
+```
+
+### OpenClaw
+
+Install the public ClawHub release:
+
+```bash
+openclaw plugins install clawhub:agent-seo
+```
+
+For development against a clone, install the local directory instead:
+
+```bash
 openclaw plugins install /path/to/agent-plugins/plugins/agent-seo
 ```
 
-Both hosts expose `agent-seo`, with the same ten modes and artifact paths as
-Claude Code and Codex.
+Pi and OpenClaw expose `agent-seo`, with the same ten modes and artifact paths
+as Claude Code and Codex. Invoke it by name, for example:
+
+```text
+Use Agent SEO to audit article.md for formatting controls.
+```
 
 ### Requirements
 
@@ -70,12 +87,12 @@ Claude Code users can use these slash commands:
 | --- | --- |
 | `/seo:research [topic]` | Keyword research with web search |
 | `/seo:write [topic]` | Write an SEO-optimized article |
-| `/seo:humanize [file]` | Remove AI writing patterns |
+| `/seo:humanize [file]` | Revise clarity, specificity, rhythm, and brand voice |
 | `/seo:fact-check [file]` | Verify claims using web search |
 | `/seo:optimize [file]` | Final SEO optimization |
 | `/seo:rewrite [topic]` | Update existing content |
 | `/seo:analyze-existing [URL or file]` | Analyze content for improvements |
-| `/seo:scrub [file]` | Remove AI watermarks |
+| `/seo:scrub [file]` | Run a read-only formatting-control audit |
 | `/seo:data [type]` | Fetch GA4/GSC/DataForSEO/Ahrefs data |
 | `/seo:performance-review [days]` | Review content performance |
 
@@ -85,7 +102,7 @@ Codex users should describe the workflow naturally:
 
 - "Use Agent SEO to research [topic]"
 - "Use Agent SEO to write from this research brief"
-- "Use Agent SEO to humanize this draft"
+- "Use Agent SEO to humanize this draft for clarity and brand voice"
 - "Use Agent SEO to fact-check this article"
 - "Use Agent SEO to optimize this file before publishing"
 - "Use Agent SEO to fetch quick-win keyword data"
@@ -121,8 +138,11 @@ seo-keywords --file article.md --keyword "podcast tips" --json
 seo-readability --file article.md --json
 seo-quality --file article.md --keyword "podcast tips" --json
 seo-intent --keyword "how to start a podcast"
-seo-scrub --file article.md --output cleaned.md --stats
+seo-scrub --file article.md --stats
 ```
+
+Agent SEO 2.0 makes `seo-scrub` a read-only audit. See
+[`MIGRATION-2.0.md`](MIGRATION-2.0.md) before upgrading automation from 1.x.
 
 Manual setup:
 
@@ -149,6 +169,10 @@ Customize files in `context/` for your brand:
 | `features.md` | Product or service positioning |
 
 Optional live data sources:
+
+Use a secret manager, OS keychain, or exported environment variables. If a
+credential file is unavoidable, store it outside the repository with mode
+`0600`; never put service-account JSON or API secrets in a project-local file.
 
 ```bash
 export GA4_PROPERTY_ID="your-property-id"

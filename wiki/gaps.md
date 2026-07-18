@@ -16,6 +16,9 @@
   these bundle plugins because OpenClaw's formal minimum supported version is
   still unspecified. The contract records the tested host version without
   inventing a minimum.
+- ClawHub releases are immutable. Agent SEO registry consumers should use
+  `2.0.0` or later only after the public scan is clean; any future scan finding
+  requires a new patch release instead of changing an existing archive.
 
 The former Agent Reviewer host-parity gap is closed: every host now defaults to
 two independent review passes, unions their findings, and applies the same

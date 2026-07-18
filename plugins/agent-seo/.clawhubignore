@@ -1,0 +1,8 @@
+# Development-only material is not part of the installable Agent SEO bundle.
+todos/
+data_sources/ruby/test/
+NEXT-STEPS.md
+output/
+reports/
+data_sources/ruby/.bundle/
+**/__pycache__/

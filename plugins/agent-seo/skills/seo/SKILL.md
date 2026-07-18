@@ -1,15 +1,17 @@
 ---
 name: agent-seo
-description: Complete SEO content workflow for Codex and Claude Code. Use when the user asks for Agent SEO, agent-seo, SEO topic research, SEO article writing, content humanization, fact-checking, content optimization, existing-page analysis, content rewriting, AI watermark scrubbing, live SEO data, or performance review. In Codex, users invoke this skill by asking for Agent SEO or describing the SEO workflow they want; in Claude Code, the same workflows are also exposed as /seo:* commands.
+description: Complete SEO content workflow for Claude Code, Codex, Pi, and OpenClaw. Use only when the user explicitly asks for Agent SEO, agent-seo, a /seo:* command, or one of its named SEO modes: research, write, humanize, fact-check, optimize, analyze-existing, rewrite, scrub, data, or performance-review. Do not select it for generic writing or analytics discussion. The legacy scrub mode performs a read-only formatting audit. All four hosts can invoke Agent SEO by name; Claude Code also exposes the workflows as /seo:* commands.
 ---
 
 # Agent SEO
 
-Agent SEO creates, analyzes, and optimizes long-form SEO content. Codex uses this skill as the native entry point. Claude Code users can keep using the `/seo:*` command files.
+Agent SEO creates, analyzes, and optimizes long-form SEO content. Claude Code,
+Codex, Pi, and OpenClaw all load this canonical skill. Claude Code users can
+also use the `/seo:*` command files.
 
 ## Invocation
 
-In Codex, respond to natural requests such as:
+In Codex, Pi, and OpenClaw, respond to natural requests such as:
 
 ```text
 Use Agent SEO to research podcast monetization.
@@ -17,7 +19,10 @@ Use Agent SEO to write an article from research/brief-podcast-monetization-2026-
 Use Agent SEO to check drafts/podcast-monetization.md for SEO gaps and factual claims.
 ```
 
-Do not promise Codex-native `/seo:*` slash commands. Those command names are the Claude Code interface. When a Codex user mentions `/seo:research`, `/seo:write`, or another `/seo:*` command, run the equivalent workflow from this skill.
+Do not promise Codex-, Pi-, or OpenClaw-native `/seo:*` slash commands. Those
+command names are the Claude Code interface. When a user on another host
+mentions `/seo:research`, `/seo:write`, or another `/seo:*` command, run the
+equivalent workflow from this skill.
 
 The canonical mode selectors are `research`, `write`, `humanize`, `fact-check`,
 `optimize`, `analyze-existing`, `rewrite`, `scrub`, `data`, and
@@ -29,6 +34,9 @@ The canonical mode selectors are `research`, `write`, `humanize`, `fact-check`,
 - Prefer primary or authoritative sources for facts and cite source URLs in reports and drafts.
 - Load available context files from `context/` before writing or optimizing: `brand-voice.md`, `writing-examples.md`, `style-guide.md`, `seo-guidelines.md`, `target-keywords.md`, `internal-links-map.md`, `features.md`, and `competitor-analysis.md`.
 - Save durable artifacts to the existing workspace folders: `research/`, `drafts/`, `rewrites/`, and `published/`.
+- Default to new project-local artifacts. Never overwrite or edit an existing file unless the user explicitly asks to modify that exact path; otherwise return a preview or save a new file under `rewrites/`.
+- Preserve authorship, provenance, and AI-use disclosures. Editorial revision may improve clarity, rhythm, specificity, and brand voice, but must never conceal origin or misrepresent authorship.
+- Query configured analytics or SEO providers only after the user explicitly selects `data` or `performance-review`. Before the first external query, name the configured sources and requested scope; never reveal credentials or unrelated records in output.
 - Use lowercase hyphenated slugs and ISO dates in generated filenames.
 - Ruby tools are optional. If Ruby, Bundler, or data source credentials are missing, continue with prompt-driven workflows and give setup guidance instead of failing.
 - Resolve bundled `agents/`, `context/`, `data_sources/`, `hooks/`, and `scripts/`
@@ -46,12 +54,12 @@ The canonical mode selectors are `research`, `write`, `humanize`, `fact-check`,
 | --- | --- | --- |
 | Research a topic | `/seo:research [topic]` | `research/brief-[topic-slug]-[YYYY-MM-DD].md` |
 | Write an article | `/seo:write [topic or brief]` | `drafts/[topic-slug]-[YYYY-MM-DD].md` |
-| Humanize content | `/seo:humanize [file or text]` | Updated content or rewritten response |
+| Humanize content | `/seo:humanize [file or text]` | Rewritten response or new file under `rewrites/` |
 | Fact-check content | `/seo:fact-check [file or text]` | `drafts/seo:fact-check-[topic-slug]-[YYYY-MM-DD].md` |
 | Optimize a draft | `/seo:optimize [file]` | `drafts/optimization-report-[topic-slug]-[YYYY-MM-DD].md` |
 | Analyze existing content | `/seo:analyze-existing [URL or file]` | `research/analysis-[post-slug]-[YYYY-MM-DD].md` |
 | Rewrite content | `/seo:rewrite [topic or analysis]` | `rewrites/[topic-slug]-rewrite-[YYYY-MM-DD].md` |
-| Scrub AI watermarks | `/seo:scrub [file]` | Cleaned markdown file |
+| Audit formatting controls | `/seo:scrub [file]` | Read-only formatting report |
 | Fetch SEO data | `/seo:data [type]` | Data-backed recommendations |
 | Review performance | `/seo:performance-review [days]` | `research/seo:performance-review-[YYYY-MM-DD].md` |
 
@@ -87,10 +95,7 @@ Use this when the user asks to create a new long-form article.
 5. Include frontmatter or a metadata block with meta title, meta description, primary keyword, secondary keywords, URL slug, links, and word count.
 6. Add an SEO checklist covering keyword placement, links, metadata lengths, word count, hierarchy, readability, and CTA.
 7. Save to `drafts/[topic-slug]-[YYYY-MM-DD].md`.
-8. Run the Scrub Workflow on the saved Markdown before review (the bundled
-   Ruby `seo-scrub` is preferred; apply the same rules directly when it is not
-   available).
-9. Dispatch the five established post-write agents: `content-analyzer`,
+8. Dispatch the five established post-write agents: `content-analyzer`,
    `seo-optimizer`, `meta-creator`, `internal-linker`, and `keyword-mapper`.
    Preserve their distinct reports: content analysis, SEO recommendations,
    metadata options, internal-link opportunities, and keyword mapping. Missing
@@ -98,7 +103,8 @@ Use this when the user asks to create a new long-form article.
 
 ## Humanize Workflow
 
-Use this when the user asks to make AI-assisted content sound natural.
+Use this when the user explicitly selects `humanize` to revise content for
+clarity, specificity, rhythm, and brand voice.
 
 1. Read the file or supplied text.
 2. Run the established 24-pattern audit: inflated significance, notability
@@ -109,10 +115,13 @@ Use this when the user asks to make AI-assisted content sound natural.
    conclusions, generic transitions, canned reader address, needless
    restatement, hedging, throat-clearing, chatbot artifacts, decorative
    styling, em-dash overuse, and generic conclusions.
-3. Replace em dashes and decorative styling when they read as AI artifacts.
-4. Preserve meaning, facts, source citations, brand voice, and the target audience.
+3. Replace overused em dashes and decorative styling when they reduce clarity.
+4. Preserve meaning, facts, source citations, brand voice, the target audience,
+   and every authorship, provenance, or AI-use disclosure.
 5. Add specificity, varied rhythm, concrete examples, and practical judgments where the draft is generic.
-6. Return the revised content. If a file path was provided and the user expects an edit, update that file.
+6. Return a preview for supplied text. For a file path, save the revision to
+   `rewrites/[topic-slug]-humanized-[YYYY-MM-DD].md` by default. Modify the
+   original only when the user explicitly asks to edit that exact path.
 
 ## Fact-Check Workflow
 
@@ -172,25 +181,25 @@ Use this when the user asks to refresh or improve existing content.
 4. Add sections that fill competitor gaps and remove duplicate or outdated material.
 5. Preserve ranking-sensitive URL slug unless the user asks otherwise.
 6. Save the rewritten article to `rewrites/[topic-slug]-rewrite-[YYYY-MM-DD].md` and a change summary to `rewrites/changes-[topic-slug]-[YYYY-MM-DD].md`.
-7. Run the Scrub Workflow, then dispatch `content-analyzer`, `seo-optimizer`,
-   `meta-creator`, and `internal-linker` as the established four-agent rewrite
+7. Dispatch `content-analyzer`, `seo-optimizer`, `meta-creator`, and
+   `internal-linker` as the established four-agent rewrite
    review wave. Keep partial-data labels when optional inputs are unavailable.
 
 ## Scrub Workflow
 
-Use this only on an existing Markdown file. Refuse a missing path, directory,
-non-Markdown input, symlinked destination, or unexpected overwrite target.
+The legacy `scrub` selector is a **read-only formatting audit**. Use it only on
+an existing Markdown file. Refuse a missing path, directory, non-Markdown
+input, or symlink.
 
-1. Read the file, retain its permissions, and work through a private temporary
-   output before atomically replacing that same file.
-2. Remove every Unicode category `Cf` format-control character, including the
-   documented zero-width space/non-joiner, BOM, word joiner, soft hyphen, and
-   narrow no-break space cases.
-3. Replace em dashes contextually with a comma, colon, semicolon, parentheses,
-   or sentence break; do not perform a blind one-character substitution.
-4. Report counts by removed/replaced kind plus a 300-character verification
-   sample without inventing content.
-5. A second run must be idempotent: zero additional removals or replacements.
+1. Read the file without changing its contents or permissions.
+2. Count Unicode category `Cf` format-control characters and em dashes. Report
+   their line and column locations so the user can distinguish intentional
+   language/formatting characters from accidental artifacts.
+3. Do not remove characters, rewrite punctuation, create a cleaned copy, or
+   strip authorship/provenance markers. Never infer permission to transform the
+   file from the command name.
+4. Return the report in chat. The optional Ruby `seo-scrub` compatibility CLI
+   performs the same read-only audit and reports `content_changed: false`.
 
 ## Data Workflow
 
@@ -207,7 +216,8 @@ Supported types:
 - `authority [domain]`
 - `competitors [domain]`
 
-Before running Ruby data calls, check configuration:
+Run this workflow only after an explicit `data` request. Before running Ruby
+data calls, name the requested scope and check configuration:
 
 - `GA4_PROPERTY_ID` and `GA4_CREDENTIALS_PATH`
 - `GSC_SITE_URL` and `GSC_CREDENTIALS_PATH`
@@ -237,7 +247,7 @@ seo-keywords --file article.md --keyword "podcast tips" --json
 seo-readability --file article.md --json
 seo-quality --file article.md --keyword "podcast tips" --json
 seo-intent --keyword "how to start a podcast"
-seo-scrub --file article.md --output cleaned.md --stats
+seo-scrub --file article.md --stats
 ```
 
 Manual setup:
@@ -259,4 +269,4 @@ Claude Code may run `scripts/ensure-deps.sh` from its SessionStart hook. Codex u
 - Meta title: 50-60 characters.
 - Meta description: 150-160 characters.
 - Readability: 8th-10th grade, short paragraphs, varied sentence rhythm.
-- Humanization: no filler, chatbot artifacts, inflated AI vocabulary, or unsupported claims.
+- Editorial quality: no filler, chatbot artifacts, inflated language, or unsupported claims; preserve provenance disclosures.

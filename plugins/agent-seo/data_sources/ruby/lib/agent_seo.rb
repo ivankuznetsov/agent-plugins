@@ -5,7 +5,7 @@ require 'logger'
 # AgentSeo - Ruby Data Sources for SEO Analysis
 # Provides integrated access to GA4, GSC, DataForSEO, and Ahrefs data
 module AgentSeo
-  VERSION = '1.0.0'
+  VERSION = '2.0.0'
 
   autoload :Helpers, 'agent_seo/helpers'
   autoload :GoogleAnalytics, 'agent_seo/google_analytics'
@@ -36,6 +36,7 @@ module AgentSeo
   # Default logger - logs warnings and above to stderr
   self.logger = Logger.new($stderr, level: Logger::WARN)
 
+  # Runtime configuration sourced from explicit environment variables.
   class Configuration
     attr_accessor :ga4_property_id, :ga4_credentials_path,
                   :gsc_site_url, :gsc_credentials_path,
@@ -55,12 +56,4 @@ module AgentSeo
       @cache_dir = 'data_sources/cache'
     end
   end
-end
-
-# Load dotenv if available
-begin
-  require 'dotenv'
-  Dotenv.load('data_sources/config/.env')
-rescue LoadError
-  # dotenv not available, continue without it
 end

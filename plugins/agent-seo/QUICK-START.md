@@ -1,6 +1,7 @@
 # Quick Start
 
-Agent SEO works in Claude Code and Codex. New installs should use the shared marketplace.
+Agent SEO works in Claude Code, Codex, Pi, and OpenClaw. New Claude/Codex
+installs use the shared marketplace; OpenClaw installs use ClawHub.
 
 ## 1. Install
 
@@ -20,6 +21,18 @@ codex plugin marketplace add ivankuznetsov/agent-plugins
 Then open Codex, run `/plugins`, select `aikuznetsov-marketplace`, and install `agent-seo`.
 
 Existing Claude Code users with `ivankuznetsov/claude-seo` can keep that marketplace installed.
+
+Pi from a clone:
+
+```bash
+pi install /path/to/agent-plugins/plugins/agent-seo
+```
+
+OpenClaw from ClawHub:
+
+```bash
+openclaw plugins install clawhub:agent-seo
+```
 
 ## 2. Configure Context
 
@@ -52,14 +65,20 @@ Codex:
 ```text
 Use Agent SEO to research your topic.
 Use Agent SEO to write an article from the research brief.
-Use Agent SEO to humanize, fact-check, and optimize the draft.
+Use Agent SEO to humanize the draft for clarity and brand voice, then fact-check and optimize it.
+```
+
+Pi and OpenClaw use the same named-skill form:
+
+```text
+Use Agent SEO to audit drafts/your-topic.md for formatting controls.
 ```
 
 Research briefs are saved in `research/`. Drafts are saved in `drafts/`.
 
 ## Optional Ruby Tools
 
-Core workflows do not require Ruby. Install the optional local analysis tools only if you want keyword density, readability, SEO quality, search intent, and scrubber CLIs:
+Core workflows do not require Ruby. Install the optional local analysis tools only if you want keyword density, readability, SEO quality, search intent, and the read-only formatting audit CLI:
 
 ```bash
 cd data_sources/ruby
@@ -78,7 +97,12 @@ Run a final optimization pass
 Fetch quick-win keyword data
 ```
 
-In Claude Code these map to `/seo:*` commands. In Codex, ask for Agent SEO by name and describe the workflow.
+In Claude Code these map to `/seo:*` commands. In Codex, Pi, and OpenClaw, ask
+for Agent SEO by name and describe the workflow.
+
+Agent SEO writes new project-local artifacts by default. It edits an existing
+file only when you explicitly ask it to modify that exact path, and it preserves
+authorship, provenance, and AI-use disclosures.
 
 ## More Detail
 
