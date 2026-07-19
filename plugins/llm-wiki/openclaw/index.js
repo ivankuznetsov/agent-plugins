@@ -5,6 +5,6 @@
 export default {
   id: "llm-wiki",
   name: "LLM Wiki",
-  description: "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
+  description: "Create and query project wikis with optional maintenance automation.",
   register() {},
 };

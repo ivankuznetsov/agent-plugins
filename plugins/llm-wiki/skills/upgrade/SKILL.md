@@ -25,7 +25,8 @@ QMD, or reinstall the scheduler.
 
 ## Run the Upgrade
 
-Resolve `scripts/upgrade-project.sh` relative to this SKILL.md and run:
+Resolve `skills/upgrade/scripts/upgrade-project.sh` under the installed package
+root and run:
 
 ```bash
 skills/upgrade/scripts/upgrade-project.sh --project "$(git rev-parse --show-toplevel)"

@@ -110,6 +110,15 @@ refresh_root="$state_dir/refresh-worktree"
 log_file="$state_dir/post-commit-refresh.log"
 refresh_branch="${LLM_WIKI_REFRESH_BRANCH:-llm-wiki/refresh}"
 lock_owner_oid=""
+owner_config="$canonical_config"
+[ -f "$owner_config" ] || owner_config="$committing_tree/.llm-wiki/config.json"
+if ! grep -Eq '"automation_enabled"[[:space:]]*:[[:space:]]*true' "$owner_config" 2>/dev/null || \
+   ! grep -Eq '"external_provider_access_approved"[[:space:]]*:[[:space:]]*true' "$owner_config" 2>/dev/null; then
+  printf '%s\n' \
+    'llm-wiki: automatic refresh disabled; enable it explicitly after approving persistent automation and provider access' >&2
+  [ -z "$retry_selector" ] && exit 0
+  exit 1
+fi
 mkdir -p "$pending_dir" "$failed_dir"
 
 positive_integer_or_default() {

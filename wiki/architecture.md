@@ -24,6 +24,8 @@ vocabulary, lifecycle notes, and install paths. Safety, error handling,
 resources, and workflow behavior remain canonical. Package validation copies
 each plugin alone and rejects symlinks, absolute paths, parent escapes, missing
 resources, and references to another plugin.
+LLM Wiki uses inline Pi/OpenClaw adapters so each copied package remains
+self-contained while exposing collision-safe `wiki-*` skill names.
 
 OpenClaw needs a JavaScript entry to activate manifest-declared skills. The
 generated entry is intentionally content-only and registers no runtime
