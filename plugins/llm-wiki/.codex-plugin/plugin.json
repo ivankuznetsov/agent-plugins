@@ -1,7 +1,7 @@
 {
   "name": "llm-wiki",
-  "version": "0.2.0",
-  "description": "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
+  "version": "0.3.0",
+  "description": "Create and query project wikis with optional maintenance automation.",
   "author": {
     "name": "ivankuznetsov",
     "url": "https://github.com/ivankuznetsov"
@@ -23,8 +23,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "LLM Wiki",
-    "shortDescription": "Bootstrap and query LLM-maintained project wikis.",
-    "longDescription": "LLM Wiki packages workflows for creating and upgrading a project-local wiki, installing Claude Code, Codex, and Pi wiki context, researching project and main cross-project wiki knowledge, planning with wiki context before implementation, and checking plugin/package update status. QMD is used when available, with CLI and ripgrep fallbacks.",
+    "shortDescription": "Create and query consent-gated project wikis.",
+    "longDescription": "LLM Wiki packages workflows for creating and upgrading a project-local wiki, installing Claude Code, Codex, Pi, and OpenClaw context, researching project and main cross-project wiki knowledge, planning with wiki context, and checking package status. Persistent maintenance automation is disabled by default and requires separate explicit consent. QMD is used when available, with CLI and ripgrep fallbacks.",
     "developerName": "ivankuznetsov",
     "category": "Coding",
     "capabilities": [

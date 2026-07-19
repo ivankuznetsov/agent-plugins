@@ -19,7 +19,9 @@ If the feature description is empty, ask the user what they want to plan and wai
 
 ## Step 1: Run Wiki Research
 
-Use the `research` skill on the feature description before any other planning research.
+Use the installed wiki research skill on the feature description before any
+other planning research: `research` on Claude Code or Codex, and
+`wiki-research` on Pi or OpenClaw.
 
 The output must include a `Past Knowledge` section with:
 
@@ -35,7 +37,7 @@ If no wiki exists, continue with an explicit note:
 ```markdown
 ### Past Knowledge
 
-No project wiki was found. Consider running `bootstrap` after this plan. Proceeding with normal planning.
+No project wiki was found. Consider running `bootstrap` on Claude Code/Codex or `wiki-bootstrap` on Pi/OpenClaw after this plan. Proceeding with normal planning.
 ```
 
 ## Step 2: Delegate to Compound Engineering When Available

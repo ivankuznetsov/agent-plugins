@@ -136,6 +136,8 @@ Config shape:
   "headless_agent": "<claude-or-codex-or-pi-or-openclaw>",
   "context_agents": ["claude", "codex", "pi", "openclaw"],
   "openclaw_agent_id": "<configured-agent-id-or-null>",
+  "automation_enabled": false,
+  "external_provider_access_approved": false,
   "main_wiki_path": "<detected-or-provided-main-wiki-path>",
   "created_by": "<current-tool>"
 }
@@ -145,6 +147,8 @@ Rules:
 
 - `headless_agent` must be exactly one of `claude`, `codex`, `pi`, or `openclaw`. Reject any other value instead of silently falling back to a different agent.
 - `context_agents` is the supported context list and should include `claude`, `codex`, `pi`, and `openclaw`.
+- Keep `automation_enabled` and `external_provider_access_approved` `false`
+  unless the user separately approves persistent automation and provider access.
 - When OpenClaw is the headless owner, run `openclaw agents list --json`, select the single agent whose `workspace` resolves to the project root, and persist its `id` as `openclaw_agent_id`. Do not guess `main`; agent IDs and the default agent can be customized.
 - When OpenClaw is not the headless owner, preserve an existing `openclaw_agent_id` or write `null` when no matching project-workspace agent is known.
 - If `.llm-wiki/config.json` is missing, first check for legacy automation from older `llm-wiki` versions before treating this as a first bootstrap.
@@ -240,7 +244,10 @@ OpenClaw context:
 - Confirm the project root is the active OpenClaw agent workspace before selecting `openclaw` as `headless_agent`. If it is not, report the workspace mismatch instead of claiming the project `AGENTS.md` will be injected.
 - Do not add channel-delivery flags to wiki maintenance commands. Scheduled and post-commit refreshes are local automation, not chat replies.
 
-Always ensure scheduled wiki refresh automation exists for the configured `headless_agent`. Do not ask whether to add it.
+Do not install scheduled or post-commit automation unless the user separately
+approves it after seeing the provider, files, hooks, and activation commands.
+Without that approval, leave both consent flags `false` and report the manual
+refresh commands instead.
 
 If the current tool is not the configured `headless_agent`, update session context for the current tool and validate/report the existing automation owner. Do not rewrite scheduler or post-commit ownership unless automation is missing, unsafe, or the user asks to repair or switch ownership.
 
@@ -305,7 +312,7 @@ cd "$project_root"
 openclaw agent --local --agent "<openclaw_agent_id>" --message "Refresh this project's LLM wiki. Read .llm-wiki/config.json, AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, add a wiki/log.d/<timestamp>-<slug>.md fragment without editing compiled wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --json --timeout 1800
 ```
 
-Install the best available scheduler without prompting:
+After that separate approval, install the best available scheduler:
 
 - Linux with systemd user services: create `~/.config/systemd/user/llm-wiki-<project-slug>.service` and `.timer`, then run `systemctl --user daemon-reload` and `systemctl --user enable --now llm-wiki-<project-slug>.timer`.
 - macOS with launchd: create `~/Library/LaunchAgents/com.llm-wiki.<project-slug>.plist` with a 24 hour `StartInterval`, then run `launchctl load`.
@@ -402,6 +409,7 @@ Report:
 - Post-commit hook automation status.
 - Top three gaps.
 - Any files intentionally skipped.
+- Persistent-automation approval.
 
 ## Rules
 

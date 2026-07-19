@@ -16,7 +16,7 @@ It works with my original six-project setup: project-local `wiki/` folders, a ma
 - `upgrade` migrates an existing project's managed scripts, hook, and changelog structure.
 - `research` searches the project wiki and main cross-project wiki before planning or implementation.
 - `wiki-plan` runs wiki research first, then hands the result to Compound Engineering planning when available.
-- `status` checks whether a newer `llm-wiki` release is available and reports the correct update command.
+- `wiki-status` checks whether a newer `llm-wiki` release is available and reports the correct update command without colliding with Claude Code's built-in `/status`.
 
 ## Install: Claude Code
 
@@ -39,7 +39,7 @@ Then use the installed plugin commands/skills from Claude Code. The key entrypoi
 /llm-wiki:upgrade
 /llm-wiki:research
 /llm-wiki:wiki-plan
-/llm-wiki:status
+/llm-wiki:wiki-status
 ```
 
 ## Install: Codex
@@ -59,14 +59,20 @@ $llm-wiki:bootstrap
 $llm-wiki:upgrade
 $llm-wiki:research
 $llm-wiki:wiki-plan
-$llm-wiki:status
+$llm-wiki:wiki-status
 ```
 
 If Codex displays a fully qualified marketplace namespace, use that displayed name.
 
 ## Install: Pi
 
-Install the self-contained package directory from this marketplace clone:
+Install from ClawHub:
+
+```bash
+openclaw plugins install clawhub:llm-wiki
+```
+
+For local development, install the self-contained package directory:
 
 ```bash
 pi install /path/to/agent-plugins/plugins/llm-wiki
@@ -137,7 +143,7 @@ $llm-wiki:wiki-plan add billing reminders
 Check whether `llm-wiki` has an update:
 
 ```text
-$llm-wiki:status
+$llm-wiki:wiki-status
 ```
 
 Pi uses the same workflows through `/skill:wiki-*` commands:
@@ -163,8 +169,9 @@ When present, `llm-wiki` searches a main cross-project wiki before creating or u
 
 ## Automation
 
-`bootstrap` installs project wiki context through the instruction surfaces used
-by Claude Code, Codex, Pi, and OpenClaw.
+`bootstrap` creates the project wiki and agent context requested by the user.
+Persistent hooks, schedulers, and provider-backed maintenance are a separate
+opt-in and remain disabled by default.
 
 - Claude Code receives wiki context through `CLAUDE.md` and a Claude `SessionStart` context hook when available.
 - Codex receives wiki context through `AGENTS.md`.
@@ -176,7 +183,10 @@ by Claude Code, Codex, Pi, and OpenClaw.
   owner when upgraded, even when `.llm-wiki/config.json` survives only in Git
   history.
 
-Only one agent owns scheduled refresh automation and post-commit wiki maintenance. The first agent to run `bootstrap` becomes the default headless maintainer, recorded in `.llm-wiki/config.json`.
+Only one agent owns scheduled refresh automation and post-commit wiki
+maintenance. The selected owner is recorded in `.llm-wiki/config.json`, and the
+runner starts only when both `automation_enabled` and
+`external_provider_access_approved` are explicitly set to `true`.
 
 - Claude Code headless automation uses `claude -p ...`
 - Codex headless automation uses `codex exec -C <project-root> ...`
@@ -228,13 +238,13 @@ Check whether `llm-wiki` has a newer marketplace or Pi package release:
 Claude Code:
 
 ```text
-/llm-wiki:status
+/llm-wiki:wiki-status
 ```
 
 Codex:
 
 ```text
-$llm-wiki:status
+$llm-wiki:wiki-status
 ```
 
 Pi:
@@ -249,7 +259,7 @@ OpenClaw:
 wiki-status
 ```
 
-`status` reports the current cached or installed version, latest marketplace or package version, whether an update is available, the update command, and whether a restart is required. For OpenClaw, it checks `openclaw plugins list/inspect`, dry-runs `openclaw plugins update llm-wiki`, and uses `openclaw gateway restart --safe` when a running Gateway must reload the update. When run inside a bootstrapped project, it also reports the configured headless agent and whether Claude/Codex/Pi/OpenClaw wiki context is present.
+`wiki-status` reports the current cached or installed version, latest marketplace or package version, whether an update is available, the update command, and whether a restart is required. For OpenClaw, it checks `openclaw plugins list/inspect`, dry-runs `openclaw plugins update llm-wiki`, and uses `openclaw gateway restart --safe` when a running Gateway must reload the update. When run inside a bootstrapped project, it also reports the configured headless agent and whether Claude/Codex/Pi/OpenClaw wiki context is present.
 
 ## What It Creates
 
