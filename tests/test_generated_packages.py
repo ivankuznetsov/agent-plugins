@@ -110,6 +110,11 @@ class GeneratedPackageTests(unittest.TestCase):
                 manifest = json.loads((root / "openclaw.plugin.json").read_text())
                 self.assertEqual(["./pi/skills"], package["pi"]["skills"])
                 self.assertEqual(["./openclaw/index.js"], package["openclaw"]["extensions"])
+                tested_openclaw = plugin["platforms"]["openclaw"]["tested_host_version"]
+                self.assertEqual(
+                    {"pluginApi": f">={tested_openclaw}"},
+                    package["openclaw"]["compat"],
+                )
                 self.assertTrue((root / "openclaw/index.js").is_file())
                 self.assertEqual(["./openclaw/skills"], manifest["skills"])
                 self.assertEqual(plugin["name"], manifest["id"])

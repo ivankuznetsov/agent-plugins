@@ -12,10 +12,10 @@
 - LLM Wiki 0.3.0 upstream release/tag publication remains a release-management
   step. The ClawHub replacement is not verified until the exact merged source
   is published and publicly visible.
-- ClawHub's package inspector reports a P2 compatibility-metadata warning for
-  these bundle plugins because OpenClaw's formal minimum supported version is
-  still unspecified. The contract records the tested host version without
-  inventing a minimum.
+- Compatibility with OpenClaw releases older than `2026.7.1-beta.2` remains
+  unverified. ClawHub packages therefore declare that tested version as their
+  conservative plugin API floor while leaving the broader host minimum
+  unspecified.
 - ClawHub releases are immutable. Agent SEO registry consumers should use
   `2.0.0` or later only after the public scan is clean; any future scan finding
   requires a new patch release instead of changing an existing archive.
