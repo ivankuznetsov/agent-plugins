@@ -1,6 +1,6 @@
 {
   "name": "agent-reviewer",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "description": "Clone your team's best code reviewers from their PR history and run them as a review panel.",
   "homepage": "https://github.com/ivankuznetsov/agent-plugins",
@@ -20,7 +20,10 @@
   "openclaw": {
     "extensions": [
       "./openclaw/index.js"
-    ]
+    ],
+    "compat": {
+      "pluginApi": ">=2026.7.1-beta.2"
+    }
   },
   "x-agent-plugins-generated": "scripts/generate-agent-packages.py"
 }

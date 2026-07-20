@@ -252,6 +252,7 @@ def generate_files(root: Path) -> dict[str, bytes]:
     for plugin in contract["plugins"]:
         plugin_root = root / plugin["path"]
         metadata = plugin["metadata"]
+        tested_openclaw = plugin["platforms"]["openclaw"]["tested_host_version"]
         package = {
             "name": plugin["name"],
             "version": plugin["version"],
@@ -262,7 +263,10 @@ def generate_files(root: Path) -> dict[str, bytes]:
             "license": metadata["license"],
             "keywords": metadata["npm_keywords"],
             "pi": {"skills": ["./pi/skills"]},
-            "openclaw": {"extensions": ["./openclaw/index.js"]},
+            "openclaw": {
+                "extensions": ["./openclaw/index.js"],
+                "compat": {"pluginApi": f">={tested_openclaw}"},
+            },
             "x-agent-plugins-generated": GENERATOR,
         }
         openclaw = {

@@ -4,6 +4,13 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-07-20
+
+### Fixed
+
+- Declare the tested OpenClaw plugin API floor in generated package metadata
+  so ClawHub can validate host compatibility.
+
 ## [0.3.0] - 2026-07-18
 
 ### Changed

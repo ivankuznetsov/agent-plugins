@@ -38,7 +38,7 @@
   },
   "plugins": {
     "agent-reviewer": {
-      "version": "0.3.0",
+      "version": "0.3.1",
       "canonical": {
         "skills/agent-reviewer/SKILL.md": {
           "sha256": "79e4b8b7c75b1f4e695d64dae27906d610914a962f1050039b33cc47e555aa8d",
@@ -229,7 +229,7 @@
       }
     },
     "agent-seo": {
-      "version": "2.0.0",
+      "version": "2.0.1",
       "canonical": {
         "skills/seo/SKILL.md": {
           "sha256": "87306367f68021eee750d7eba911bcd4288e935fa25d5a8be422f2e01478e870",
@@ -487,7 +487,7 @@
       }
     },
     "agent-writing": {
-      "version": "0.5.1",
+      "version": "0.5.2",
       "canonical": {
         "skills/writing/SKILL.md": {
           "sha256": "33ec1dfc95c6e0e66668ce7cde04997b03bc29a1db3955bebe78ded0f03cc953",
@@ -636,7 +636,7 @@
       }
     },
     "llm-wiki": {
-      "version": "0.3.0",
+      "version": "0.3.1",
       "canonical": {
         "skills/bootstrap/SKILL.md": {
           "sha256": "9b9597565a6020a70724efc0d274f1730c6fa32985648d638aaa9da378e9b839",
@@ -843,7 +843,7 @@
       }
     },
     "screenote": {
-      "version": "3.0.0",
+      "version": "3.0.1",
       "canonical": {
         "skills/screenote/SKILL.md": {
           "sha256": "ec1a80d416d4352b0768e19797cf1d446c6425b3b98ebc462b20678386883f5e",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2] - 2026-07-20
+
+### Fixed
+
+- Declare the tested OpenClaw plugin API floor in generated package metadata
+  so ClawHub can validate host compatibility.
+
 ## [0.5.1] - 2026-07-18
 
 ### Fixed

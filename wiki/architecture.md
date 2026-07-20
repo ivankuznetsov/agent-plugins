@@ -12,7 +12,8 @@ library generator reads the contract and canonical skills, then checks in:
 - Claude compatibility command wrappers and normalized manifests;
 - Codex metadata pointing at the canonical skill roots;
 - Pi and OpenClaw skill adapters whose references remain inside the package;
-- Pi/OpenClaw package metadata, the root catalogs, and semantic hash lock.
+- Pi/OpenClaw package metadata, including a plugin API floor derived from the
+  tested OpenClaw host version, the root catalogs, and semantic hash lock.
 
 Generation is deletion-aware: marker-owned adapters and wrappers that are no
 longer declared are pruned, while unrelated hand-written files are preserved.

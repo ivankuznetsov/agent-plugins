@@ -10,6 +10,10 @@ The versions below are exact CI pins, not formal minimums. None of the four
 upstreams currently specifies a formal minimum for this repository's plugin
 shape, so the minimum remains explicitly unspecified.
 
+ClawHub package metadata separately declares `>=2026.7.1-beta.2` as the
+conservative OpenClaw plugin API floor because that is the host/API version
+these packages were built and tested against.
+
 | Host | CI-tested version | Formal minimum | Native check |
 | --- | --- | --- | --- |
 | Claude Code | `2.1.179` | Upstream does not specify one | Strict manifest/component validation from a copied package |
@@ -28,11 +32,11 @@ plugin directory so a copied package does not depend on the repository root.
 
 | Plugin | Version | Stability | Canonical skill source | Bundled resources |
 | --- | --- | --- | --- | --- |
-| Agent Reviewer | `0.3.0` | Stable | `skills/agent-reviewer/SKILL.md` | agents, references, scripts, eval harness |
-| Agent SEO | `2.0.0` | Stable | `skills/seo/SKILL.md` | agents, context, data sources, hooks, scripts |
-| Agent Writing | `0.5.1` | Stable | `skills/writing/SKILL.md` | agents, voice/style context |
-| LLM Wiki | `0.3.0` | Stable | five files under `skills/` | assets, consent-gated maintenance templates |
-| Screenote | `3.0.0` | Stable | `skills/{screenote,snapshot,feedback}/SKILL.md` | CLI launcher, references, evals |
+| Agent Reviewer | `0.3.1` | Stable | `skills/agent-reviewer/SKILL.md` | agents, references, scripts, eval harness |
+| Agent SEO | `2.0.1` | Stable | `skills/seo/SKILL.md` | agents, context, data sources, hooks, scripts |
+| Agent Writing | `0.5.2` | Stable | `skills/writing/SKILL.md` | agents, voice/style context |
+| LLM Wiki | `0.3.1` | Stable | five files under `skills/` | assets, consent-gated maintenance templates |
+| Screenote | `3.0.1` | Stable | `skills/{screenote,snapshot,feedback}/SKILL.md` | CLI launcher, references, evals |
 
 ## Plugin invocations
 
@@ -41,7 +45,7 @@ plugin directory so a copied package does not depend on the repository root.
 | Agent Reviewer | `/reviewer:extract`, `/reviewer:review`, `/reviewer:update` | `$agent-reviewer:agent-reviewer` | `agent-reviewer` | `agent-reviewer` |
 | Agent SEO | ten existing `/seo:*` commands | `$agent-seo:agent-seo` | `agent-seo` | `agent-seo` |
 | Agent Writing | seven existing `/write:*` commands | `$agent-writing:agent-writing` | `agent-writing` | `agent-writing` |
-| LLM Wiki | `bootstrap`, `upgrade`, `research`, `wiki-plan`, `status` | `$llm-wiki:<skill>` | `wiki-bootstrap`, `wiki-upgrade`, `wiki-research`, `wiki-plan`, `wiki-status` | `wiki-bootstrap`, `wiki-upgrade`, `wiki-research`, `wiki-plan`, `wiki-status` |
+| LLM Wiki | `bootstrap`, `upgrade`, `research`, `wiki-plan`, `wiki-status` | `$llm-wiki:<skill>` | `wiki-bootstrap`, `wiki-upgrade`, `wiki-research`, `wiki-plan`, `wiki-status` | `wiki-bootstrap`, `wiki-upgrade`, `wiki-research`, `wiki-plan`, `wiki-status` |
 | Screenote | `/screenote`, `/snapshot`, `/feedback` | `$screenote:<skill>` | `screenote`, `snapshot`, `feedback` | `screenote`, `snapshot`, `feedback` |
 
 ## Installation shapes
