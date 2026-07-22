@@ -374,6 +374,7 @@ class LlmWikiOpenClawTests(unittest.TestCase):
             timer_text = timer.read_text(encoding="utf-8")
             self.assertIn("MemoryMax=4G", service_text)
             self.assertIn("MemorySwapMax=0", service_text)
+            self.assertIn("TimeoutStartSec=4h", service_text)
             self.assertIn("%t/llm-wiki-refresh.lock", service_text)
             self.assertNotIn("Persistent=", timer_text)
 

@@ -100,7 +100,9 @@ Type=oneshot
 Environment=LLM_WIKI_GLOBAL_LOCK_HELD=1
 WorkingDirectory=$encoded_root
 ExecStart=$encoded_flock --nonblock --conflict-exit-code 0 %t/llm-wiki-refresh.lock $encoded_runner --project $encoded_root --drain
-TimeoutStartSec=45min
+# A scheduled drain may run three batches. Each batch permits a 30-minute
+# agent plus two independently bounded 15-minute QMD phases.
+TimeoutStartSec=4h
 MemoryMax=4G
 MemorySwapMax=0
 UNIT

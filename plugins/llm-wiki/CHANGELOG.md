@@ -4,6 +4,16 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.4] - 2026-07-22
+
+### Fixed
+
+- Allow the managed Linux service four hours for a valid three-batch drain,
+  covering each batch's bounded agent and QMD phases without weakening the
+  memory, swap, or machine-wide serialization limits.
+- Vendor the standalone llm-wiki 0.1.18 scheduler-timeout fix across Claude,
+  Codex, Pi, and OpenClaw surfaces.
+
 ## [0.3.3] - 2026-07-22
 
 ### Fixed

@@ -235,6 +235,9 @@ runner starts only when both `automation_enabled` and
   retry leaves it open. Pass a full source SHA instead of `all` to restore one
   quarantined record.
 - Scheduled maintenance drains the same durable queue used by commit hooks. It
+  allows four hours for up to three batches, covering each batch's 30-minute
+  agent limit and two separate 15-minute QMD phases while retaining the 4 GiB
+  memory cap, no-swap policy, and machine-wide provider lock.
   fetches, merges, and pushes only `origin/llm-wiki/refresh`; it never writes to
   or pushes the protected default branch. A publication failure retains the
   local refresh commit and queued state for a later retry.
