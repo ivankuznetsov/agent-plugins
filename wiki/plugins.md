@@ -30,11 +30,13 @@ Version 2.0 makes the removed mutation contract explicit and documents the
 LLM Wiki bootstrap creates the requested project wiki. Scheduler, managed-hook,
 shared-Git, and provider-backed maintenance are a separate opt-in; 0.2.x
 configs without both consent flags are automation-disabled under the 0.3
-runtime. Version 0.3.5 reconciles linked checkouts to one non-persistent,
+runtime. The current runtime reconciles linked checkouts to one non-persistent,
 memory-bounded timer per repository, serializes providers across repositories,
 publishes wiki-only output to `origin/llm-wiki/refresh`, and bounds source-ref
-recovery transactions. Headless hooks reconstruct the standard user bus,
-retain the scheduler marker after transient signal failure, and ignore commits
-that only rewrite compiled `wiki/log.md`. The worker accepts only its configured
+recovery transactions. Version 0.3.3 makes headless hooks reconstruct the
+standard user bus, retain the scheduler marker after transient signal failure,
+and ignore commits that only rewrite compiled `wiki/log.md`. Version 0.3.4 gives
+an up-to-three-batch service drain a four-hour outer window while preserving the
+4 GiB/no-swap and per-phase bounds. Version 0.3.5 accepts only the configured
 Codex, Claude Code, Pi, or validated OpenClaw owner; it no longer exposes an
 arbitrary refresh-command environment override.

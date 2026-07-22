@@ -16,9 +16,10 @@
   separate version lines (`0.1.x` upstream runtime and `0.3.x` consent-gated
   marketplace package). A marketplace release must preserve the consent and
   OpenClaw adaptations while vendoring the released runtime. Marketplace
-  0.3.5 vendors the released standalone 0.1.19 provider-only dispatch fix;
-  public ClawHub scan and catalog visibility remain release-time evidence
-  rather than source-tree facts.
+  0.3.3 through 0.3.5 vendor standalone releases 0.1.17 through 0.1.19. Local
+  `llm-wiki-v0.3.3` and `llm-wiki-v0.3.4` tags exist, but no local 0.3.5 tag was
+  present during this refresh. The source bump does not prove GitHub or ClawHub
+  publication, scan completion, or public catalog visibility.
 - Compatibility with OpenClaw releases older than `2026.7.1-beta.2` remains
   unverified. ClawHub packages therefore declare that tested version as their
   conservative plugin API floor while leaving the broader host minimum

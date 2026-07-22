@@ -3,6 +3,68 @@
 Append-only log of all wiki operations.
 
 <!-- BEGIN GENERATED WIKI LOG FRAGMENTS -->
+---
+title: Coalesce LLM Wiki 0.3.3 through 0.3.5 runtime hardening
+date: 2026-07-22T22:08:20Z
+tags: [llm-wiki, systemd, scheduler, providers, security]
+---
+
+Coalesced queued branch-tip commits `a7bc290`, `a93917b`, and `3aa72cc` into
+the final marketplace 0.3.5 source state. Version 0.3.3 restores the standard
+user-systemd bus environment for headless hooks and upgrades, retains the
+scheduler marker when a best-effort signal fails, falls back through the
+existing machine-wide serialization path, and excludes commits that only update
+compiled `wiki/log.md` before queueing or provider launch.
+
+Version 0.3.4 changes the managed service's outer start limit from 45 minutes
+to four hours so an allowed three-batch drain can finish. The 4 GiB memory
+ceiling, no-swap policy, machine-wide provider lock, and smaller agent and QMD
+phase limits remain in force. Version 0.3.5 removes the undocumented
+`LLM_WIKI_REFRESH_CMD` executable override; after both consent gates pass, the
+worker can dispatch only to the configured Codex, Claude Code, Pi, or validated
+OpenClaw owner through fixed command shapes.
+
+The batch changes no public skill inventory, command grammar, data model, or
+runtime dependency. Page coverage is unchanged, so `wiki/index.md` remains
+untouched; the compiled `wiki/log.md` was not edited. Local 0.3.3 and 0.3.4 tags
+exist, while 0.3.5 publication, scan completion, and public catalog visibility
+remain release-time evidence recorded in `wiki/gaps.md`.
+
+---
+title: Restrict LLM Wiki refreshes to configured providers
+date: 2026-07-22T21:17:00Z
+tags: [llm-wiki, security, providers, clawhub]
+---
+
+Marketplace LLM Wiki 0.3.5 vendors standalone runtime 0.1.19 and removes the
+undocumented `LLM_WIKI_REFRESH_CMD` arbitrary executable override. The worker
+retains its separate automation and provider-access consent gate, but once
+enabled it can dispatch only to the configured Codex, Claude Code, Pi, or
+validated OpenClaw owner through fixed command shapes and existing timeouts.
+
+This closes the one unexpected issue from ClawHub's delayed semantic scan of
+0.3.4. Findings about durable hooks, timers, wiki writes, and refresh-branch
+publication describe the package's disclosed opt-in purpose and remain subject
+to the existing consent, path, lock, memory, and wiki-only publication guards.
+
+---
+title: Keep LLM Wiki bounded scheduling reachable from headless hooks
+date: 2026-07-22T20:38:00Z
+tags: [llm-wiki, systemd, scheduler, queue, release]
+---
+
+Prepared LLM Wiki marketplace 0.3.3 from the released standalone 0.1.17
+runtime while retaining the four-host consent gate and OpenClaw owner
+dispatch. Commit hooks and scheduler upgrades now reconstruct missing
+user-systemd bus variables from the standard per-user socket. A failed signal
+keeps the installed scheduler marker and uses the existing serialized fallback
+for the current queue instead of disabling later bounded dispatch.
+
+Commits changing only compiled `wiki/log.md` now exit before queue creation,
+source pinning, or provider launch. Source fragments and other project changes
+remain eligible. Regression coverage exercises the real shell templates for
+compiled-log no-op behavior, bus recovery, marker retention, and fallback.
+
 # 2026-07-22 — ClawHub safety and compatibility batch
 
 Coalesced five queued source records into their three final outcomes. Agent SEO
@@ -25,6 +87,18 @@ prove upstream release publication, ClawHub scan completion, public visibility,
 or compatibility with older OpenClaw versions; those remain gaps. Page coverage
 did not change, so `wiki/index.md` was left untouched, and the compiled
 `wiki/log.md` was not edited.
+
+# 2026-07-22 — LLM Wiki 0.3.2 runtime safety
+
+- Vendored the standalone 0.1.16 queue, scheduler, and publication runtime into
+  the four-host package while preserving 0.3 consent gates and OpenClaw owner
+  dispatch.
+- Replaced checkout-local timer proliferation with one non-persistent,
+  memory-bounded timer owned by the repository primary checkout.
+- Added machine-wide provider serialization, wiki-only refresh-branch
+  publication, bounded source-pin transactions, and interrupted queue recovery.
+- Upgrades now reconcile and stop obsolete units, leaving the timer disabled
+  unless both automation consent flags are explicitly true.
 
 # OpenClaw plugin API compatibility metadata
 
