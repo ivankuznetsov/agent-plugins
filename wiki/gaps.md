@@ -12,7 +12,10 @@
 - LLM Wiki's standalone and four-host marketplace packages intentionally use
   separate version lines (`0.1.x` upstream runtime and `0.3.x` consent-gated
   marketplace package). A marketplace release must preserve the consent and
-  OpenClaw adaptations while vendoring the released runtime.
+  OpenClaw adaptations while vendoring the released runtime. Marketplace
+  0.3.3 vendors the released standalone 0.1.17 headless scheduler fix; public
+  ClawHub scan and catalog visibility remain release-time evidence rather than
+  source-tree facts.
 - Compatibility with OpenClaw releases older than `2026.7.1-beta.2` remains
   unverified. ClawHub packages therefore declare that tested version as their
   conservative plugin API floor while leaving the broader host minimum
