@@ -57,6 +57,22 @@ decode_systemd_path() {
     sed -e 's/\\x22/"/g' -e 's/\\x20/ /g' -e 's/\\x5c/\\/g'
 }
 
+systemctl_command=(systemctl)
+configure_user_systemctl_command() {
+  local uid runtime_dir bus_address
+  uid="$(id -u)"
+  runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$uid}"
+  bus_address="${DBUS_SESSION_BUS_ADDRESS:-}"
+
+  systemctl_command=(systemctl)
+  if [ -S "$runtime_dir/bus" ]; then
+    bus_address="${bus_address:-unix:path=$runtime_dir/bus}"
+    systemctl_command=(
+      env "XDG_RUNTIME_DIR=$runtime_dir" "DBUS_SESSION_BUS_ADDRESS=$bus_address" systemctl
+    )
+  fi
+}
+
 base="$(basename "$primary_root" | sed 's/[^A-Za-z0-9_.-]/-/g')"
 slug="$base-$(digest "$primary_root")"
 service_name="llm-wiki-$slug.service"
@@ -161,9 +177,10 @@ for candidate in "${obsolete[@]}"; do
   [ -e "$candidate" ] || [ -L "$candidate" ] || continue
   if [ "${LLM_WIKI_SKIP_SYSTEMCTL:-${HIVE_SKIP_LLM_WIKI_SYSTEMCTL:-}}" != 1 ] && \
      command -v systemctl >/dev/null 2>&1; then
+    configure_user_systemctl_command
     case "$candidate" in
       *.service|*.timer)
-        systemctl --user stop "$(basename "$candidate")" >/dev/null 2>&1 || true
+        "${systemctl_command[@]}" --user stop "$(basename "$candidate")" >/dev/null 2>&1 || true
         ;;
     esac
   fi
@@ -177,11 +194,12 @@ fi
 
 if [ "${LLM_WIKI_SKIP_SYSTEMCTL:-${HIVE_SKIP_LLM_WIKI_SYSTEMCTL:-}}" != 1 ] && \
    command -v systemctl >/dev/null 2>&1; then
-  systemctl --user daemon-reload
-  systemctl --user stop "$service_name" >/dev/null 2>&1 || true
-  systemctl --user stop "$timer_name" >/dev/null 2>&1 || true
+  configure_user_systemctl_command
+  "${systemctl_command[@]}" --user daemon-reload
+  "${systemctl_command[@]}" --user stop "$service_name" >/dev/null 2>&1 || true
+  "${systemctl_command[@]}" --user stop "$timer_name" >/dev/null 2>&1 || true
   if [ "$enable_timer" -eq 1 ]; then
-    systemctl --user start "$timer_name"
+    "${systemctl_command[@]}" --user start "$timer_name"
   fi
 fi
 printf 'llm-wiki: installed one bounded scheduler for repository: %s\n' "$primary_root"

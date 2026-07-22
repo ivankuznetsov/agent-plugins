@@ -2,7 +2,7 @@
   "id": "llm-wiki",
   "name": "LLM Wiki",
   "description": "Create and query project wikis with optional maintenance automation.",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "skills": [
     "./openclaw/skills"
   ],

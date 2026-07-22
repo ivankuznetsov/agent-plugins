@@ -4,6 +4,21 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.3] - 2026-07-22
+
+### Fixed
+
+- Reconstruct the standard user-systemd bus environment in headless commit
+  hooks and scheduler upgrades, so the installed 4 GiB/no-swap worker remains
+  reachable without an interactive shell.
+- Preserve the repository scheduler marker when a best-effort service signal
+  fails, while retaining the machine-wide serialized fallback for the current
+  queue.
+- Skip commits whose only changed path is compiled `wiki/log.md`, preventing a
+  generated projection from launching another provider-backed refresh.
+- Preserve the four-agent consent and OpenClaw ownership adaptations while
+  vendoring the standalone 0.1.17 runtime fix.
+
 ## [0.3.2] - 2026-07-22
 
 ### Fixed
