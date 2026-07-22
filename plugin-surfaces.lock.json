@@ -636,7 +636,7 @@
       }
     },
     "llm-wiki": {
-      "version": "0.3.4",
+      "version": "0.3.5",
       "canonical": {
         "skills/bootstrap/SKILL.md": {
           "sha256": "6e446e783ac32d2f605f036891fcee29651aca14696065f2753cec13eab58a16",
@@ -722,7 +722,7 @@
         },
         "templates": {
           "exists": true,
-          "sha256": "eadb377a0defb2c14f3abb3a63bbf9ce836e8035045f96a2f25a4836540df411",
+          "sha256": "5bfdb6df0bbfc2d23df12e05f47bdab4c99845385ffb3f1528498812dcc9dece",
           "files": [
             "templates/compile-log.sh",
             "templates/install-systemd-scheduler.sh",

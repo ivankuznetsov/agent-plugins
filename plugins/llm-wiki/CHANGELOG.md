@@ -4,6 +4,17 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.5] - 2026-07-22
+
+### Security
+
+- Remove the undocumented `LLM_WIKI_REFRESH_CMD` arbitrary executable
+  override from the shipped worker. Headless refreshes now dispatch only to
+  the explicitly configured Codex, Claude Code, Pi, or validated OpenClaw
+  owner through fixed, bounded command shapes.
+- Vendor the standalone llm-wiki 0.1.19 provider-only dispatch fix while
+  retaining the marketplace consent gate and OpenClaw owner adaptation.
+
 ## [0.3.4] - 2026-07-22
 
 ### Fixed

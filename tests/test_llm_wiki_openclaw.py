@@ -116,6 +116,7 @@ class LlmWikiOpenClawTests(unittest.TestCase):
         self.assertIn('refresh_branch="${LLM_WIKI_REFRESH_BRANCH:-llm-wiki/refresh}"', template)
         self.assertIn('push "$refresh_remote" "HEAD:refs/heads/$refresh_branch"', template)
         self.assertNotIn('push "$refresh_remote" "HEAD:refs/heads/$base_branch"', template)
+        self.assertNotIn("LLM_WIKI_REFRESH_CMD", template)
 
     def test_compiled_log_only_commit_does_not_queue_or_launch_refresh(self):
         with tempfile.TemporaryDirectory() as directory:
