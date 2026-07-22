@@ -10,6 +10,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = REPO_ROOT / "plugins" / "llm-wiki"
 POST_COMMIT_TEMPLATE = PLUGIN_ROOT / "templates" / "post-commit-refresh.sh"
+SCHEDULER_TEMPLATE = PLUGIN_ROOT / "templates" / "install-systemd-scheduler.sh"
 UPGRADE_SCRIPT = PLUGIN_ROOT / "skills" / "upgrade" / "scripts" / "upgrade-project.sh"
 
 
@@ -106,6 +107,114 @@ class LlmWikiOpenClawTests(unittest.TestCase):
         self.assertEqual([], arguments)
         self.assertIn("automatic refresh disabled", result.stderr)
 
+    def test_post_commit_runtime_bounds_recovery_and_publishes_only_refresh_branch(self):
+        template = POST_COMMIT_TEMPLATE.read_text(encoding="utf-8")
+
+        self.assertIn("LLM_WIKI_MAX_SOURCE_PIN_BATCH", template)
+        self.assertIn("reconstructed interrupted queue write", template)
+        self.assertIn('refresh_branch="${LLM_WIKI_REFRESH_BRANCH:-llm-wiki/refresh}"', template)
+        self.assertIn('push "$refresh_remote" "HEAD:refs/heads/$refresh_branch"', template)
+        self.assertNotIn('push "$refresh_remote" "HEAD:refs/heads/$base_branch"', template)
+
+    def test_scheduler_reconciles_linked_worktrees_and_stops_disabled_units(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "project"
+            linked = Path(directory) / "linked"
+            unit_dir = Path(directory) / "systemd"
+            bin_dir = Path(directory) / "bin"
+            systemctl_log = Path(directory) / "systemctl.log"
+            root.mkdir()
+            unit_dir.mkdir()
+            bin_dir.mkdir()
+            (root / ".llm-wiki").mkdir()
+            (root / "wiki").mkdir()
+            (root / ".llm-wiki" / "config.json").write_text("{}\n", encoding="utf-8")
+            (root / "wiki" / "index.md").write_text("# Wiki\n", encoding="utf-8")
+            self.run_git(root, "init", "-b", "main")
+            self.run_git(root, "config", "user.email", "llm-wiki-test@example.com")
+            self.run_git(root, "config", "user.name", "LLM Wiki Test")
+            self.run_git(root, "add", ".")
+            self.run_git(root, "commit", "-m", "initial")
+            self.run_git(root, "worktree", "add", "-b", "feature", str(linked))
+
+            common_dir = Path(
+                subprocess.run(
+                    ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                    cwd=root,
+                    text=True,
+                    capture_output=True,
+                    check=True,
+                ).stdout.strip()
+            )
+            shared_dir = common_dir / "llm-wiki"
+            shared_dir.mkdir()
+            shutil.copy2(POST_COMMIT_TEMPLATE, shared_dir / "post-commit-refresh.sh")
+            (shared_dir / "post-commit-refresh.sh").chmod(0o755)
+
+            fake_systemctl = bin_dir / "systemctl"
+            fake_systemctl.write_text(
+                '#!/usr/bin/env bash\nprintf "%s\\n" "$*" >>"$LLM_WIKI_SYSTEMCTL_LOG"\n',
+                encoding="utf-8",
+            )
+            fake_systemctl.chmod(0o755)
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{bin_dir}:/usr/bin:/bin",
+                    "LLM_WIKI_SYSTEMD_USER_DIR": str(unit_dir),
+                    "LLM_WIKI_FLOCK_PATH": shutil.which("flock") or "/usr/bin/flock",
+                    "LLM_WIKI_SYSTEMCTL_LOG": str(systemctl_log),
+                }
+            )
+
+            for project in (root, linked):
+                result = subprocess.run(
+                    [str(SCHEDULER_TEMPLATE), "--project", str(project)],
+                    env=environment,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+            services = list(unit_dir.glob("llm-wiki-*.service"))
+            timers = list(unit_dir.glob("llm-wiki-*.timer"))
+            self.assertEqual(1, len(services))
+            self.assertEqual(1, len(timers))
+            service = services[0]
+            timer = timers[0]
+            service_text = service.read_text(encoding="utf-8")
+            timer_text = timer.read_text(encoding="utf-8")
+            self.assertIn("MemoryMax=4G", service_text)
+            self.assertIn("MemorySwapMax=0", service_text)
+            self.assertIn("%t/llm-wiki-refresh.lock", service_text)
+            self.assertNotIn("Persistent=", timer_text)
+
+            legacy_service = unit_dir / "llm-wiki-linked-legacy.service"
+            legacy_timer = unit_dir / "llm-wiki-linked-legacy.timer"
+            legacy_service.write_text(
+                "[Unit]\nDescription=Refresh LLM wiki for llm-wiki-linked-legacy\n"
+                f"[Service]\nWorkingDirectory={linked}\n",
+                encoding="utf-8",
+            )
+            legacy_timer.write_text("[Timer]\nPersistent=true\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [str(SCHEDULER_TEMPLATE), "--disabled", "--project", str(linked)],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertFalse(legacy_service.exists())
+            self.assertFalse(legacy_timer.exists())
+            self.assertFalse((unit_dir / "timers.target.wants" / timer.name).exists())
+            systemctl_calls = systemctl_log.read_text(encoding="utf-8")
+            self.assertIn("stop llm-wiki-linked-legacy.service", systemctl_calls)
+            self.assertIn("stop llm-wiki-linked-legacy.timer", systemctl_calls)
+            self.assertIn(f"stop {timer.name}", systemctl_calls)
+
     def test_post_commit_template_requires_explicit_openclaw_agent_id(self):
         result, arguments, log = self.run_template("openclaw", openclaw_agent_id=None)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
@@ -154,6 +263,76 @@ class LlmWikiOpenClawTests(unittest.TestCase):
             )
             self.assertEqual(10, result.returncode, result.stdout + result.stderr)
             self.assertIn("upgrade available", result.stdout)
+
+    def test_project_upgrade_installs_all_runtime_files_without_enabling_unapproved_timer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "project"
+            unit_dir = Path(directory) / "systemd"
+            root.mkdir()
+            unit_dir.mkdir()
+            (root / ".llm-wiki").mkdir()
+            (root / "wiki").mkdir()
+            (root / ".llm-wiki" / "config.json").write_text(
+                json.dumps(
+                    {
+                        "headless_agent": "codex",
+                        "automation_enabled": False,
+                        "external_provider_access_approved": False,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (root / "wiki" / "index.md").write_text("# Wiki\n", encoding="utf-8")
+            self.run_git(root, "init", "-b", "main")
+            self.run_git(root, "config", "user.email", "llm-wiki-test@example.com")
+            self.run_git(root, "config", "user.name", "LLM Wiki Test")
+            self.run_git(root, "add", ".")
+            self.run_git(root, "commit", "-m", "initial")
+
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "LLM_WIKI_SYSTEMD_USER_DIR": str(unit_dir),
+                    "LLM_WIKI_SKIP_SYSTEMCTL": "1",
+                    "LLM_WIKI_FLOCK_PATH": shutil.which("flock") or "/usr/bin/flock",
+                }
+            )
+            result = subprocess.run(
+                [str(UPGRADE_SCRIPT), "--project", str(root)],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            for name in (
+                "post-commit-refresh.sh",
+                "refresh-wiki.sh",
+                "compile-log.sh",
+                "install-systemd-scheduler.sh",
+            ):
+                self.assertTrue((root / ".llm-wiki" / name).is_file(), name)
+            self.assertEqual(1, len(list(unit_dir.glob("llm-wiki-*.service"))))
+            self.assertEqual(1, len(list(unit_dir.glob("llm-wiki-*.timer"))))
+            self.assertEqual(
+                [],
+                list((unit_dir / "timers.target.wants").glob("llm-wiki-*.timer")),
+            )
+
+            check_result = subprocess.run(
+                [str(UPGRADE_SCRIPT), "--check", "--project", str(root)],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(
+                0,
+                check_result.returncode,
+                check_result.stdout + check_result.stderr,
+            )
+            self.assertIn("project structure is current", check_result.stdout)
 
     def run_template(self, headless_agent, openclaw_agent_id="main", consent=True):
         with tempfile.TemporaryDirectory() as directory:

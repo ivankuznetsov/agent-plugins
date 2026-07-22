@@ -12,8 +12,9 @@ metadata:
 
 Upgrade the current project's managed llm-wiki files to the templates bundled
 with this installed release. This is a narrow, deterministic migration: do not
-regenerate wiki pages, switch the headless owner, run a refresh agent, update
-QMD, or reinstall the scheduler.
+regenerate wiki pages, switch the headless owner, run a refresh agent, or update
+QMD. It deterministically reconciles the managed scheduler and leaves it
+disabled unless both automation consent flags are true.
 
 ## Preconditions
 
@@ -45,10 +46,15 @@ not a migration failure.
 The script upgrades only managed structure:
 
 - `.llm-wiki/post-commit-refresh.sh`
+- `.llm-wiki/refresh-wiki.sh`
 - `.llm-wiki/compile-log.sh`
-- canonical copies of both scripts under
+- `.llm-wiki/install-systemd-scheduler.sh`
+- canonical copies of the runner and compiler under
   `$(git rev-parse --git-common-dir)/llm-wiki/` for all linked worktrees
 - canonical shared owner config and keepalive refs for existing queued commits
+- bounded source-pin backfill, including recoverable interrupted queue writes
+- one bounded repository-wide systemd timer, or the same reconciled units left
+  disabled when automation consent is absent
 - a missing `.llm-wiki/config.json` when live or historical evidence identifies
   one unambiguous legacy owner
 - `wiki/log.d/` and the compiled `wiki/log.md` layout
@@ -64,7 +70,7 @@ checkout-local copy remains a manual entrypoint and compatibility fallback.
 ## Safety Contract
 
 - Preserve unrelated tracked and untracked project changes.
-- Overwrite only the two llm-wiki-managed scripts listed above.
+- Overwrite only the four llm-wiki-managed scripts listed above.
 - Replace or deduplicate only the marked post-commit hook block; preserve all
   unmarked hook logic and refuse unmatched markers.
 - Preserve all hand-written legacy changelog prose while introducing the

@@ -9,9 +9,10 @@
   knowledge remains authoritative here.
 - Automatic Screenote annotation resolution remains deferred until the
   mutation is explicitly approved in the CLI contract.
-- LLM Wiki 0.3.0 upstream release/tag publication remains a release-management
-  step. The ClawHub replacement is not verified until the exact merged source
-  is published and publicly visible.
+- LLM Wiki's standalone and four-host marketplace packages intentionally use
+  separate version lines (`0.1.x` upstream runtime and `0.3.x` consent-gated
+  marketplace package). A marketplace release must preserve the consent and
+  OpenClaw adaptations while vendoring the released runtime.
 - Compatibility with OpenClaw releases older than `2026.7.1-beta.2` remains
   unverified. ClawHub packages therefore declare that tested version as their
   conservative plugin API floor while leaving the broader host minimum

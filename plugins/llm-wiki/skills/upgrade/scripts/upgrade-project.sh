@@ -197,8 +197,10 @@ fi
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 plugin_root="$(cd "$script_dir/../../.." && pwd)"
 post_template="$plugin_root/templates/post-commit-refresh.sh"
+refresh_template="$plugin_root/templates/refresh-wiki.sh"
 compile_template="$plugin_root/templates/compile-log.sh"
-for template in "$post_template" "$compile_template"; do
+scheduler_template="$plugin_root/templates/install-systemd-scheduler.sh"
+for template in "$post_template" "$refresh_template" "$compile_template" "$scheduler_template"; do
   if [ ! -f "$template" ]; then
     printf 'llm-wiki: bundled template missing: %s\n' "$template" >&2
     exit 1
@@ -377,8 +379,10 @@ render_migrated_log() {
 }
 
 pin_existing_queued_sources() {
-  local path name queued_sha queued_branch update_line
+  local path name queued_sha update_line batch_size batch_count=0
   local updates="$tmp_dir/source-pin-updates" transaction="$tmp_dir/source-pins"
+  batch_size="${LLM_WIKI_MAX_SOURCE_PIN_BATCH:-64}"
+  [[ "$batch_size" =~ ^[1-9][0-9]*$ ]] || batch_size=64
   {
     shopt -s nullglob
     for path in \
@@ -388,8 +392,7 @@ pin_existing_queued_sources() {
       [ -f "$path" ] || continue
       name="$(basename "$path")"
       queued_sha=""
-      queued_branch=""
-      IFS=$'\t' read -r queued_sha queued_branch <"$path" || true
+      IFS=$'\t' read -r queued_sha _ <"$path" || true
       # A pre-upgrade worker may have stopped after writing the atomic temp but
       # before renaming it into the visible queue. Pin only temps that the
       # runtime can recover: a strict .<sha>.<pid> name whose record starts with
@@ -410,14 +413,23 @@ pin_existing_queued_sources() {
     done
     shopt -u nullglob
   } | LC_ALL=C sort -u >"$updates"
-  {
-    printf 'start\n'
-    while IFS= read -r update_line; do
-      printf '%s\n' "$update_line"
-    done <"$updates"
-    printf 'commit\n'
-  } >"$transaction"
-  git -C "$root" update-ref --stdin <"$transaction"
+  : >"$transaction"
+  while IFS= read -r update_line; do
+    if [ "$batch_count" -eq 0 ]; then
+      printf 'start\n' >"$transaction"
+    fi
+    printf '%s\n' "$update_line" >>"$transaction"
+    batch_count=$((batch_count + 1))
+    if [ "$batch_count" -ge "$batch_size" ]; then
+      printf 'commit\n' >>"$transaction"
+      git -C "$root" update-ref --stdin <"$transaction" || return 1
+      batch_count=0
+    fi
+  done <"$updates"
+  if [ "$batch_count" -gt 0 ]; then
+    printf 'commit\n' >>"$transaction"
+    git -C "$root" update-ref --stdin <"$transaction"
+  fi
 }
 
 process_identity() {
@@ -495,6 +507,18 @@ if [ ! -x "$root/.llm-wiki/post-commit-refresh.sh" ] || \
   post_needs_upgrade=1
   changes+=(".llm-wiki/post-commit-refresh.sh")
 fi
+refresh_needs_upgrade=0
+if [ ! -x "$root/.llm-wiki/refresh-wiki.sh" ] || \
+   ! cmp -s "$refresh_template" "$root/.llm-wiki/refresh-wiki.sh"; then
+  refresh_needs_upgrade=1
+  changes+=(".llm-wiki/refresh-wiki.sh")
+fi
+scheduler_script_needs_upgrade=0
+if [ ! -x "$root/.llm-wiki/install-systemd-scheduler.sh" ] || \
+   ! cmp -s "$scheduler_template" "$root/.llm-wiki/install-systemd-scheduler.sh"; then
+  scheduler_script_needs_upgrade=1
+  changes+=(".llm-wiki/install-systemd-scheduler.sh")
+fi
 compile_needs_upgrade=0
 if [ ! -x "$root/.llm-wiki/compile-log.sh" ] || \
    ! cmp -s "$compile_template" "$root/.llm-wiki/compile-log.sh"; then
@@ -527,6 +551,22 @@ if [ ! -x "$hook_path" ] || ! cmp -s "$rendered_hook" "$hook_path"; then
   hook_needs_upgrade=1
   changes+=("post-commit hook")
 fi
+scheduler_args=(--project "$root")
+if ! grep -Eq '"automation_enabled"[[:space:]]*:[[:space:]]*true' "$canonical_config_source" 2>/dev/null || \
+   ! grep -Eq '"external_provider_access_approved"[[:space:]]*:[[:space:]]*true' "$canonical_config_source" 2>/dev/null; then
+  scheduler_args+=(--disabled)
+fi
+scheduler_status=0
+"$scheduler_template" --check "${scheduler_args[@]}" >/dev/null 2>&1 || scheduler_status=$?
+case "$scheduler_status" in
+  0) ;;
+  10) changes+=("bounded repository-wide systemd scheduler") ;;
+  20) changes+=("bounded repository-wide systemd scheduler (blocked: flock is required)") ;;
+  *)
+    printf 'llm-wiki: could not inspect the systemd scheduler\n' >&2
+    exit 1
+    ;;
+esac
 
 if [ "$mode" = check ]; then
   if [ "${#changes[@]}" -eq 0 ]; then
@@ -561,6 +601,12 @@ fi
 if [ "$post_needs_upgrade" -eq 1 ]; then
   install -m 0755 "$post_template" "$root/.llm-wiki/post-commit-refresh.sh"
 fi
+if [ "$refresh_needs_upgrade" -eq 1 ]; then
+  install -m 0755 "$refresh_template" "$root/.llm-wiki/refresh-wiki.sh"
+fi
+if [ "$scheduler_script_needs_upgrade" -eq 1 ]; then
+  install -m 0755 "$scheduler_template" "$root/.llm-wiki/install-systemd-scheduler.sh"
+fi
 if [ "$compile_needs_upgrade" -eq 1 ]; then
   install -m 0755 "$compile_template" "$root/.llm-wiki/compile-log.sh"
 fi
@@ -572,6 +618,14 @@ if [ "$shared_compile_needs_upgrade" -eq 1 ]; then
 fi
 if [ "$shared_config_needs_upgrade" -eq 1 ]; then
   install -m 0644 "$canonical_config_source" "$shared_config_path"
+fi
+scheduler_apply_status=0
+"$root/.llm-wiki/install-systemd-scheduler.sh" "${scheduler_args[@]}" || scheduler_apply_status=$?
+if [ "$scheduler_apply_status" -eq 20 ]; then
+  printf 'llm-wiki: warning: managed files were upgraded, but flock is required before the bounded systemd scheduler can be installed\n' >&2
+elif [ "$scheduler_apply_status" -ne 0 ]; then
+  printf 'llm-wiki: could not install the bounded systemd scheduler\n' >&2
+  exit "$scheduler_apply_status"
 fi
 if [ "$log_needs_migration" -eq 1 ]; then
   install -m 0644 "$compiled_log" "$root/wiki/log.md"

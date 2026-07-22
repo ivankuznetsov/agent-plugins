@@ -193,10 +193,13 @@ runner starts only when both `automation_enabled` and
 - Pi headless automation uses `pi -p --no-session --tools read,bash,edit,write,grep,find,ls ...`
 - OpenClaw headless automation uses `openclaw agent --local --agent <openclaw_agent_id> --message ... --json --timeout 1800` without delivery, channel, reply, or recipient flags. Bootstrap records the agent whose configured workspace matches the project instead of guessing a default ID.
 - All automation paths search the project wiki and any detected main cross-project wiki.
-- Scheduler and post-commit entries use managed markers and stable project slugs so repeated bootstraps do not create duplicate refresh jobs.
+- Linux scheduler installation resolves the repository's primary checkout and
+  reconciles all linked worktrees to one non-persistent timer. Obsolete managed
+  timers are stopped and removed. Every repository shares one machine-wide
+  provider lock, and each service is limited to 4 GiB RAM with swap disabled.
 - Post-commit maintenance never writes into a user checkout. Relevant commits
   are coalesced in the shared Git directory and refreshed transactionally on the
-  local `llm-wiki/refresh` branch through a disposable managed worktree. A
+  `llm-wiki/refresh` branch through a disposable managed worktree. A
   canonical runner in that shared Git directory serves every linked worktree,
   with one canonical owner config, so upgrading once cannot leave older branches
   executing stale local scripts or selecting a stale provider.
@@ -209,9 +212,12 @@ runner starts only when both `automation_enabled` and
   bounded changed-path context, so concurrent hooks cannot turn a historical
   backlog into an unbounded sequence of subscription runs. Override these
   defaults with `LLM_WIKI_MAX_AUTO_PENDING`, `LLM_WIKI_MAX_BATCH_SOURCES`,
+  `LLM_WIKI_MAX_SOURCE_PIN_BATCH`,
   `LLM_WIKI_MAX_PATHS_PER_SOURCE`, and `LLM_WIKI_MAX_PATH_BYTES`.
-  Queued commits are pinned under `refs/llm-wiki/sources/` until their durable
-  receipt is written. Sources that arrive outside a running batch open a visible
+  Queued commits are pinned under `refs/llm-wiki/sources/` in transactions of
+  at most 64 refs by default until their durable receipt is written. Empty
+  crash-left `.<sha>.<pid>` queue files are reconstructed when the source commit
+  is still available. Sources that arrive outside a running batch open a visible
   `deferred:<count>` circuit rather than remaining silently pending.
   Atomic source-SHA receipt refs make changed and no-op acknowledgement replay-safe, and
   a compare-and-swap Git ref makes stale-lock replacement single-winner.
@@ -228,8 +234,10 @@ runner starts only when both `automation_enabled` and
   sources remain; only the final successful batch clears the circuit. A failed
   retry leaves it open. Pass a full source SHA instead of `all` to restore one
   quarantined record.
-- The refresh branch is intentionally local and is never pushed automatically;
-  operators can inspect, merge, or open a PR from it on their normal schedule.
+- Scheduled maintenance drains the same durable queue used by commit hooks. It
+  fetches, merges, and pushes only `origin/llm-wiki/refresh`; it never writes to
+  or pushes the protected default branch. A publication failure retains the
+  local refresh commit and queued state for a later retry.
 
 ## Update Status
 

@@ -636,11 +636,11 @@
       }
     },
     "llm-wiki": {
-      "version": "0.3.1",
+      "version": "0.3.2",
       "canonical": {
         "skills/bootstrap/SKILL.md": {
-          "sha256": "9b9597565a6020a70724efc0d274f1730c6fa32985648d638aaa9da378e9b839",
-          "semantic_sha256": "f953edb019bdc2c4dcf07fcc9d88dc252f1736a27d3240727d1bca7478397430",
+          "sha256": "6e446e783ac32d2f605f036891fcee29651aca14696065f2753cec13eab58a16",
+          "semantic_sha256": "f36ca66c3dbf57c57e2f13e89a9027580b727e35a4e58cc71db2e1564d47efdb",
           "sections": {
             "1:bootstrap llm wiki": "774f22f2954bef05dc6cdf5f125c0cf1125903dde6f81336c5ec061447386b9d",
             "2:preconditions": "82a221777c857eede5e97fddc34ce173709cba496b373154fac6410d2eaff30d",
@@ -651,20 +651,20 @@
             "2:[timestamp] bootstrap": "485c7edd8b497ca6654d20f1c139675f9e27cff72e4cf04f9f494dd44d393632",
             "2:step 5: add agent instructions": "fd40fbda54316fd3acbf2b0e22050f4f0682f459b34982e36b65bb6490b1e3de",
             "2:wiki": "1eda77f740be21744dbbea6153ed8d7e220fe6944aa55574ccf025fe46d2487e",
-            "2:step 6: hooks, scheduled automation, and qmd": "def8c592c6fcdf848c3b53cfd8d1811e87e18db4cd2b3b28a4caae95ed2b1a6f",
+            "2:step 6: hooks, scheduled automation, and qmd": "882e01f1a7be17ffab96fc34ae35cbbe8b79edee797f378b110a5671105fc131",
             "1:or": "d0ce4eb2166e22f45b8faf03f2a6c1ba2626fa52a30cb6998a606ccf74a274cc",
             "2:step 7: report": "5b7459747dc14c6c96ff58ca95b73c35d9995c2177c1ca828a94b27f5e3d37a0",
             "2:rules": "6535528b074874edb47973a9bfee3f0f209bebfca01486b8f11d2c59c8bc0092"
           }
         },
         "skills/upgrade/SKILL.md": {
-          "sha256": "8f1005ef7997e28b1f656798767ee75347e1bc05710ac0adebcb82551f0a59fc",
-          "semantic_sha256": "b70ba03f836f68d4f2f2d37e7051441bfd16f95358b6ff49d43a54ea5fc9add3",
+          "sha256": "e5dcff373583573bcb7eb3375f1a7906b3ce32a572519b526f9d8e5be3ba5b31",
+          "semantic_sha256": "af583ec71a6c1e84e62c87859dfa0ab13e7890d3082db77fb16bddfc47dc067b",
           "sections": {
-            "1:upgrade llm wiki project structure": "9d93eacc79a1b3bd06492bfe8d6da41929ca7740e9d104bc57b19e4b4430085b",
+            "1:upgrade llm wiki project structure": "56556675486274c770f88e736ad65cff9e00009154adc8d76d93ba14c0677f8f",
             "2:preconditions": "4e05f4c754a0bc9a897ba43a7e303b90656aa67af9f67341c1da65a8cd48ffb7",
-            "2:run the upgrade": "d31f5a9f121318a7cd8312527640042b9aea42be02134091f063805298269bad",
-            "2:safety contract": "830b805bc6bbc985fe149e314a566b99d02c45468f3c795dfc7c443656a2ef32",
+            "2:run the upgrade": "f23e962fffe7efb8b4519c87cdc5b0e60cafb868e97531e47da47ddc1c07773f",
+            "2:safety contract": "27384894672abc0af96330fee4ee6ee983b57b255b04dc28268dc0dd812020b6",
             "2:report": "a9a4e2088a69fc85f0bc906ee30eec02a4287ef805e0a955983f414bae1adadd"
           }
         },
@@ -722,18 +722,20 @@
         },
         "templates": {
           "exists": true,
-          "sha256": "468cbaebd27e5db982c522211954d82d50013fadc652a41deb8639a79c643dc0",
+          "sha256": "264d01db93a76080b4ecb586a5cbe98608edc6358820a36f676a1c2683f3d2af",
           "files": [
             "templates/compile-log.sh",
-            "templates/post-commit-refresh.sh"
+            "templates/install-systemd-scheduler.sh",
+            "templates/post-commit-refresh.sh",
+            "templates/refresh-wiki.sh"
           ]
         }
       },
       "adapters": {
         "pi/skills/wiki-bootstrap/SKILL.md": {
-          "sha256": "30295c49c48525bd200c2ec5fd2bf8f3bd7e280ff00743d8ad18ae08ac9b4106",
+          "sha256": "35600a6d44693b492fb7b197866ad5052c3f00ee1262849776e36beb5889e8dc",
           "canonical": "skills/bootstrap/SKILL.md",
-          "canonical_semantic_sha256": "f953edb019bdc2c4dcf07fcc9d88dc252f1736a27d3240727d1bca7478397430",
+          "canonical_semantic_sha256": "f36ca66c3dbf57c57e2f13e89a9027580b727e35a4e58cc71db2e1564d47efdb",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -741,9 +743,9 @@
           ]
         },
         "openclaw/skills/wiki-bootstrap/SKILL.md": {
-          "sha256": "92d45026922a865927e42b7ad880990624e4c11a26972da1d0a95d6d6cbe66f6",
+          "sha256": "ee96d7b8ecb513831c1ff954e72888bfd3dc9e8e7c9b3213e29e7c51f141694b",
           "canonical": "skills/bootstrap/SKILL.md",
-          "canonical_semantic_sha256": "f953edb019bdc2c4dcf07fcc9d88dc252f1736a27d3240727d1bca7478397430",
+          "canonical_semantic_sha256": "f36ca66c3dbf57c57e2f13e89a9027580b727e35a4e58cc71db2e1564d47efdb",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -751,9 +753,9 @@
           ]
         },
         "pi/skills/wiki-upgrade/SKILL.md": {
-          "sha256": "5f6e360de9f1a5d8bf6c51b5d3083fc4aa2fc5b43695e629c79e595709e5297a",
+          "sha256": "ba41283db68305ac52bbee91ad1b570d9f449e8c9329d962490ad24ec4721d5b",
           "canonical": "skills/upgrade/SKILL.md",
-          "canonical_semantic_sha256": "b70ba03f836f68d4f2f2d37e7051441bfd16f95358b6ff49d43a54ea5fc9add3",
+          "canonical_semantic_sha256": "af583ec71a6c1e84e62c87859dfa0ab13e7890d3082db77fb16bddfc47dc067b",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -761,9 +763,9 @@
           ]
         },
         "openclaw/skills/wiki-upgrade/SKILL.md": {
-          "sha256": "99651026489b7fd0a5cca9ac6306f4ef16033e695f5b5e5ae6724cf0f6f8fdf5",
+          "sha256": "39e2b2f1b6243b8efd0cc4c75dd9fea6b840d55ff77991e5d4c89652d54237f3",
           "canonical": "skills/upgrade/SKILL.md",
-          "canonical_semantic_sha256": "b70ba03f836f68d4f2f2d37e7051441bfd16f95358b6ff49d43a54ea5fc9add3",
+          "canonical_semantic_sha256": "af583ec71a6c1e84e62c87859dfa0ab13e7890d3082db77fb16bddfc47dc067b",
           "overlays": [
             "frontmatter",
             "invocation",
