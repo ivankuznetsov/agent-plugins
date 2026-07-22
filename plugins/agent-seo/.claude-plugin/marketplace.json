@@ -5,15 +5,15 @@
     "email": "github@ivankuznetsov"
   },
   "metadata": {
-    "description": "SEO content workflow plugin for Claude Code and Codex",
-    "version": "1.2.0"
+    "description": "SEO content workflow plugin for Claude Code, Codex, Pi, and OpenClaw",
+    "version": "2.0.1"
   },
   "plugins": [
     {
       "name": "agent-seo",
       "source": "./",
-      "description": "Complete SEO content workflow for Claude Code and Codex, with research, writing, humanization, fact-checking, optimization, and optional Ruby analysis tools",
-      "version": "1.2.0",
+      "description": "Complete four-host SEO workflow with research, writing, editorial revision, fact-checking, optimization, and optional Ruby analysis tools",
+      "version": "2.0.1",
       "author": {
         "name": "Ivan Kuznetsov"
       },
@@ -28,11 +28,11 @@
         "seo",
         "content-writing",
         "keyword-research",
-        "ai-humanization",
+        "editorial-revision",
         "content-optimization"
       ],
       "category": "content",
-      "tags": ["seo", "content", "writing", "optimization", "humanization"]
+      "tags": ["seo", "content", "writing", "optimization", "editing"]
     }
   ]
 }

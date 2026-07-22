@@ -21,7 +21,10 @@ Determine:
 - Whether `<parent-of-project>/wikis/main/wiki/` exists.
 - Whether QMD MCP tools, `qmd` CLI, or only `rg` are available.
 
-If no main cross-project wiki exists, say that explicitly. Ask the user for a main wiki folder when cross-project context is important, or suggest running `bootstrap` to create `<parent-of-project>/wikis/master/wiki/`.
+If no main cross-project wiki exists, say that explicitly. Ask the user for a
+main wiki folder when cross-project context is important, or suggest running
+`bootstrap` on Claude Code/Codex or `wiki-bootstrap` on Pi/OpenClaw to create
+`<parent-of-project>/wikis/master/wiki/`.
 
 ## Step 2: Search With the Best Available Tool
 
@@ -128,7 +131,8 @@ Return this structure:
 - ...
 ```
 
-If no wiki exists, say that explicitly and suggest running `bootstrap`.
+If no wiki exists, say that explicitly and suggest running `bootstrap` on
+Claude Code/Codex or `wiki-bootstrap` on Pi/OpenClaw.
 
 ## Rules
 

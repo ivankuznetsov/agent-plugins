@@ -18,7 +18,7 @@ class LlmWikiOpenClawTests(unittest.TestCase):
         bootstrap = (PLUGIN_ROOT / "skills" / "bootstrap" / "SKILL.md").read_text(
             encoding="utf-8"
         )
-        status = (PLUGIN_ROOT / "skills" / "status" / "SKILL.md").read_text(
+        status = (PLUGIN_ROOT / "skills" / "wiki-status" / "SKILL.md").read_text(
             encoding="utf-8"
         )
 
@@ -49,16 +49,16 @@ class LlmWikiOpenClawTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("generated-from: skills/bootstrap/SKILL.md", bootstrap)
-        self.assertIn("[skills/bootstrap/SKILL.md](../../../skills/bootstrap/SKILL.md)", bootstrap)
+        self.assertIn("# Bootstrap LLM Wiki", bootstrap)
         self.assertIn("OpenClaw", bootstrap)
-        self.assertIn("generated-from: skills/status/SKILL.md", status)
-        self.assertIn("[skills/status/SKILL.md](../../../skills/status/SKILL.md)", status)
+        self.assertIn("generated-from: skills/wiki-status/SKILL.md", status)
+        self.assertIn("Installed source:", status)
         self.assertIn("OpenClaw", status)
         upgrade = (
             PLUGIN_ROOT / "openclaw" / "skills" / "wiki-upgrade" / "SKILL.md"
         ).read_text(encoding="utf-8")
         self.assertIn("generated-from: skills/upgrade/SKILL.md", upgrade)
-        self.assertIn("[skills/upgrade/SKILL.md](../../../skills/upgrade/SKILL.md)", upgrade)
+        self.assertIn("upgrade-project.sh --project", upgrade)
 
     def test_post_commit_template_dispatches_non_delivering_openclaw_turn(self):
         result, arguments, _ = self.run_template("openclaw")
@@ -99,6 +99,12 @@ class LlmWikiOpenClawTests(unittest.TestCase):
         self.assertEqual([], arguments)
         self.assertIn("unsupported or missing headless_agent", log)
         self.assertIn("queue retained", log)
+
+    def test_post_commit_template_requires_explicit_automation_consent(self):
+        result, arguments, _ = self.run_template("codex", consent=False)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual([], arguments)
+        self.assertIn("automatic refresh disabled", result.stderr)
 
     def test_post_commit_template_requires_explicit_openclaw_agent_id(self):
         result, arguments, log = self.run_template("openclaw", openclaw_agent_id=None)
@@ -149,7 +155,7 @@ class LlmWikiOpenClawTests(unittest.TestCase):
             self.assertEqual(10, result.returncode, result.stdout + result.stderr)
             self.assertIn("upgrade available", result.stdout)
 
-    def run_template(self, headless_agent, openclaw_agent_id="main"):
+    def run_template(self, headless_agent, openclaw_agent_id="main", consent=True):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "project"
             bin_dir = Path(directory) / "bin"
@@ -166,6 +172,8 @@ class LlmWikiOpenClawTests(unittest.TestCase):
             config = {
                 "headless_agent": headless_agent,
                 "context_agents": ["claude", "codex", "pi", "openclaw"],
+                "automation_enabled": consent,
+                "external_provider_access_approved": consent,
             }
             if openclaw_agent_id is not None:
                 config["openclaw_agent_id"] = openclaw_agent_id

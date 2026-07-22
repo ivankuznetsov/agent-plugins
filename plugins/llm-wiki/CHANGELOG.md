@@ -4,6 +4,34 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-07-20
+
+### Fixed
+
+- Declare the tested OpenClaw plugin API floor in generated package metadata
+  so ClawHub can validate host compatibility.
+
+## [0.3.0] - 2026-07-18
+
+### Changed
+
+- Hooks, schedulers, and provider-backed maintenance require a separate
+  explicit opt-in after bootstrap creates the project wiki.
+- Existing 0.2.x configs without `automation_enabled` and
+  `external_provider_access_approved` are treated as automation-disabled until
+  a user enables them.
+- The canonical status skill is named `wiki-status` so Claude Code's built-in
+  `/status` remains available. It activates only for explicit llm-wiki maintenance questions and
+  reports both consent flags without changing them. OpenClaw status now reads
+  durable install provenance first, keeps ClawHub, marketplace, and local-path
+  checks on their recorded sources, and reports the latest published version.
+- Inline Pi/OpenClaw skill content now names the collision-safe `wiki-*`
+  siblings explicitly, while project checks resolve the upgrade executable only
+  from `skills/upgrade/scripts/upgrade-project.sh` under the installed package
+  root.
+
+See `MIGRATION-0.3.md` for the consent migration.
+
 ## [0.2.0] - 2026-07-18
 
 ### Added

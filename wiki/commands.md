@@ -10,8 +10,9 @@ Claude Code retains its established slash commands:
 - Agent Writing: `/write:editor-ru`, `/write:editor`, `/write:full`,
   `/write:journalist`, `/write:writer-ivan`, `/write:writer-ru`, and
   `/write:writer`.
-- LLM Wiki: `bootstrap`, `upgrade`, `research`, `wiki-plan`, and `status` in its
-  plugin namespace.
+- LLM Wiki: `bootstrap`, `upgrade`, `research`, `wiki-plan`, and `wiki-status`
+  in its plugin namespace. The prefixed name prevents Claude Code's built-in
+  `/status` from resolving to the plugin skill.
 - Screenote: `/screenote [viewport] <URL-or-page>`,
   `/snapshot [viewport] <base-URL>`, and `/feedback [viewport] [filter]`.
 
@@ -21,6 +22,16 @@ Codex uses the installed plugin skill names. Pi and OpenClaw use
 hosts: `wiki-bootstrap`, `wiki-upgrade`, `wiki-research`, `wiki-plan`, and
 `wiki-status`.
 
+LLM Wiki bootstrap creates the requested project wiki. Hooks, schedulers, and
+provider-backed maintenance require a separate explicit approval;
+`wiki-status` reports both consent flags without changing them.
+
 Generated Claude command wrappers choose one canonical mode and forward
 arguments without reparsing them. `tests/fixtures/entrypoints.json` is the
 compatibility authority for legacy argument grammar.
+
+Agent SEO keeps `/seo:scrub` for compatibility, but it only reports formatting
+controls with one-based line/column locations and never changes the source
+file. The 2.0 CLI rejects non-Markdown paths, symlinks, and the removed
+`--output` mutation surface. `/seo:humanize` writes a new artifact unless the
+user explicitly requests an in-place edit of the exact path.

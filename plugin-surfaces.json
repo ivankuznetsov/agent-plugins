@@ -36,7 +36,7 @@
     {
       "name": "agent-reviewer",
       "path": "plugins/agent-reviewer",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "stability": "stable",
       "metadata": {
         "display_name": "Agent Reviewer",
@@ -97,7 +97,7 @@
     {
       "name": "agent-seo",
       "path": "plugins/agent-seo",
-      "version": "1.2.0",
+      "version": "2.0.1",
       "stability": "stable",
       "metadata": {
         "display_name": "Agent SEO",
@@ -137,7 +137,7 @@
     {
       "name": "agent-writing",
       "path": "plugins/agent-writing",
-      "version": "0.5.0",
+      "version": "0.5.2",
       "stability": "stable",
       "metadata": {
         "display_name": "Agent Writing",
@@ -174,11 +174,11 @@
     {
       "name": "llm-wiki",
       "path": "plugins/llm-wiki",
-      "version": "0.2.0",
+      "version": "0.3.1",
       "stability": "stable",
       "metadata": {
         "display_name": "LLM Wiki",
-        "description": "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
+        "description": "Create and query project wikis with optional maintenance automation.",
         "homepage": "https://github.com/ivankuznetsov/llm-wiki",
         "repository": "https://github.com/ivankuznetsov/llm-wiki",
         "license": "MIT",
@@ -186,19 +186,20 @@
         "npm_keywords": ["llm-wiki", "agent-skills", "qmd", "knowledge-management", "planning", "pi-package"]
       },
       "canonical": {
+        "adapter_mode": "inline",
         "skill_roots": ["skills"],
         "skills": [
           {"name": "bootstrap", "path": "skills/bootstrap/SKILL.md", "aliases": {"pi": "wiki-bootstrap", "openclaw": "wiki-bootstrap"}},
           {"name": "upgrade", "path": "skills/upgrade/SKILL.md", "aliases": {"pi": "wiki-upgrade", "openclaw": "wiki-upgrade"}},
           {"name": "research", "path": "skills/research/SKILL.md", "aliases": {"pi": "wiki-research", "openclaw": "wiki-research"}},
           {"name": "wiki-plan", "path": "skills/wiki-plan/SKILL.md", "aliases": {"pi": "wiki-plan", "openclaw": "wiki-plan"}},
-          {"name": "status", "path": "skills/status/SKILL.md", "aliases": {"pi": "wiki-status", "openclaw": "wiki-status"}}
+          {"name": "wiki-status", "path": "skills/wiki-status/SKILL.md", "aliases": {"pi": "wiki-status", "openclaw": "wiki-status"}}
         ]
       },
       "legacy_entrypoints": [],
       "resources": ["assets", "templates"],
       "platforms": {
-        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "bootstrap, upgrade, research, wiki-plan, status"}},
+        "claude": {"support": "supported", "state": "native", "tested_host_version": "2.1.179", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".claude-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "bootstrap, upgrade, research, wiki-plan, wiki-status"}},
         "codex": {"support": "supported", "state": "native", "tested_host_version": "0.144.3", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": ".codex-plugin/plugin.json", "skill_roots": ["skills"], "metadata": {"invocation": "$llm-wiki:<skill>"}},
         "pi": {"support": "supported", "state": "generated", "tested_host_version": "0.80.10", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "package.json", "skill_roots": ["pi/skills"], "metadata": {"invocation": "wiki-bootstrap, wiki-upgrade, wiki-research, wiki-plan, wiki-status"}},
         "openclaw": {"support": "supported", "state": "generated", "tested_host_version": "2026.7.1-beta.2", "minimum_host_version": null, "minimum_evidence": "upstream_minimum_unspecified", "manifest": "openclaw.plugin.json", "skill_roots": ["openclaw/skills"], "metadata": {"invocation": "wiki-bootstrap, wiki-upgrade, wiki-research, wiki-plan, wiki-status"}}
@@ -207,7 +208,7 @@
     {
       "name": "screenote",
       "path": "plugins/screenote",
-      "version": "3.0.0",
+      "version": "3.0.1",
       "stability": "stable",
       "metadata": {
         "display_name": "Screenote",

@@ -1,8 +1,8 @@
 {
   "name": "llm-wiki",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "type": "module",
-  "description": "Bootstrap, upgrade, and query LLM-maintained project wikis before planning or implementation.",
+  "description": "Create and query project wikis with optional maintenance automation.",
   "homepage": "https://github.com/ivankuznetsov/llm-wiki",
   "repository": "https://github.com/ivankuznetsov/llm-wiki",
   "license": "MIT",
@@ -22,7 +22,10 @@
   "openclaw": {
     "extensions": [
       "./openclaw/index.js"
-    ]
+    ],
+    "compat": {
+      "pluginApi": ">=2026.7.1-beta.2"
+    }
   },
   "x-agent-plugins-generated": "scripts/generate-agent-packages.py"
 }

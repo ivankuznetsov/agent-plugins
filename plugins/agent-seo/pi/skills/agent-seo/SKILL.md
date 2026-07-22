@@ -1,6 +1,6 @@
 ---
 name: agent-seo
-description: "Complete SEO content workflow for Codex and Claude Code. Use when the user asks for Agent SEO, agent-seo, SEO topic research, SEO article writing, content humanization, fact-checking, content optimization, existing-page analysis, content rewriting, AI watermark scrubbing, live SEO data, or performance review. In Codex, users invoke this skill by asking for Agent SEO or describing the SEO workflow they want; in Claude Code, the same workflows are also exposed as /seo:* commands."
+description: "Complete SEO content workflow for Claude Code, Codex, Pi, and OpenClaw. Use only when the user explicitly asks for Agent SEO, agent-seo, a /seo:* command, or one of its named SEO modes: research, write, humanize, fact-check, optimize, analyze-existing, rewrite, scrub, data, or performance-review. Do not select it for generic writing or analytics discussion. The legacy scrub mode performs a read-only formatting audit. All four hosts can invoke Agent SEO by name; Claude Code also exposes the workflows as /seo:* commands."
 metadata:
   generated-from: skills/seo/SKILL.md
   generated-for: pi

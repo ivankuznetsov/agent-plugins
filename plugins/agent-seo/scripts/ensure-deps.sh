@@ -7,7 +7,7 @@ RUBY_DIR="${PLUGIN_ROOT}/data_sources/ruby"
 MARKER="${RUBY_DIR}/vendor/.installed"
 
 if ! command -v ruby &> /dev/null; then
-  echo "[agent-seo] Ruby not found. Core commands (research, write, humanize, fact-check) work without it. Analysis tools (keyword density, readability, SEO quality, scrub) require Ruby 3.0+."
+  echo "[agent-seo] Ruby not found. Core commands (research, write, humanize, fact-check) work without it. Analysis tools (keyword density, readability, SEO quality, formatting audit) require Ruby 3.0+."
   exit 0
 fi
 

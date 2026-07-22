@@ -2,6 +2,13 @@
 
 All notable changes to the Screenote plugin are documented here.
 
+## [3.0.1] - 2026-07-20
+
+### Fixed
+
+- Declare the tested OpenClaw plugin API floor in generated package metadata
+  so ClawHub can validate host compatibility.
+
 ## [3.0.0] - 2026-07-17
 
 ### Added

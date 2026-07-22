@@ -20,9 +20,6 @@ gem 'matrix', '~> 0.4'  # For clustering calculations
 gem 'nokogiri', '~> 1.15'  # HTML parsing
 gem 'stopwords-filter', '~> 0.4'  # Stop words removal
 
-# Configuration
-gem 'dotenv', '~> 2.8'
-
 # JSON handling
 gem 'oj', '~> 3.16'  # Fast JSON parser
 

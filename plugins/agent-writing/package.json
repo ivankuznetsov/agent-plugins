@@ -1,6 +1,6 @@
 {
   "name": "agent-writing",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "type": "module",
   "description": "Investigate, draft, and edit with three writing voices working as a team of rivals.",
   "homepage": "https://github.com/ivankuznetsov/agent-plugins",
@@ -20,7 +20,10 @@
   "openclaw": {
     "extensions": [
       "./openclaw/index.js"
-    ]
+    ],
+    "compat": {
+      "pluginApi": ">=2026.7.1-beta.2"
+    }
   },
   "x-agent-plugins-generated": "scripts/generate-agent-packages.py"
 }

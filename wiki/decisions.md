@@ -17,7 +17,10 @@ approval.
 
 Exact CI pins prove current compatibility. A formal minimum is recorded only
 when upstream evidence establishes it; otherwise the contract explicitly says
-the upstream minimum is unspecified.
+the upstream minimum is unspecified. ClawHub's package contract is narrower:
+`openclaw.compat.pluginApi` uses the exact OpenClaw version each package was
+built and tested against as a conservative API floor, independently of the
+general host minimum.
 
 ## Screenote uses the JSON CLI only
 

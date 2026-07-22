@@ -1,6 +1,6 @@
 ---
-name: status
-description: Check whether llm-wiki is current, detect newer marketplace or package versions, and suggest or run the right update command for Claude Code, Codex, Pi, or OpenClaw. Use when the user asks about llm-wiki version, plugin/package updates, marketplace refresh, upgrade instructions, project context setup, or whether a new llm-wiki release is available.
+name: wiki-status
+description: "Report llm-wiki maintenance status. Use only when the user explicitly mentions llm-wiki and asks for its installed version, update availability, project wiki structure, consent state, or refresh queue health. Do not select this skill for generic plugin, documentation, project-context, or upgrade questions."
 ---
 
 # LLM Wiki Status
@@ -24,10 +24,11 @@ Also inspect project-local wiki configuration when available:
 - `$(git rev-parse --git-common-dir)/llm-wiki/failed/`
 - `refs/llm-wiki/sources/`
 
-When the project is bootstrapped, resolve the canonical upgrade script relative
-to `../upgrade/SKILL.md` and run it with `--check`. Report exit status `10` as
-`upgrade available`, not as an error. Do not apply the project migration unless
-the user explicitly asks to update or upgrade the project-local structure.
+When the project is bootstrapped, resolve
+`skills/upgrade/scripts/upgrade-project.sh` under this skill's installed package
+root and run it with `--check`. Report exit status `10` as `upgrade available`,
+not as an error. Do not apply the project migration unless the user explicitly
+asks to update or upgrade the project-local structure.
 
 ## Rules
 
@@ -38,6 +39,9 @@ the user explicitly asks to update or upgrade the project-local structure.
 - Compare semantic versions with `sort -V` when available; otherwise parse major/minor/patch numerically. Do not compare version strings lexicographically.
 - If network access, marketplace metadata, or package metadata is unavailable, report the local version and the command that refreshes the relevant metadata.
 - If `.llm-wiki/config.json` exists, report `headless_agent`, `context_agents`, and `main_wiki_path`.
+- Report `automation_enabled` and `external_provider_access_approved` exactly as
+  `true`, `false`, `missing`, or `invalid`. Treat anything except two literal
+  `true` values as disabled; status never enables either flag.
 - Report project structure as `current`, `upgrade available`, or `unknown` from the bundled upgrade check.
 - Inspect refresh state in the shared Git directory. Always count runnable
   pending records, hidden interrupted queue records, and quarantined source
@@ -71,7 +75,7 @@ the user explicitly asks to update or upgrade the project-local structure.
   configured owner is `mismatch`.
 - The canonical post-commit template is different by design: it contains all
   four provider commands behind a runtime `headless_agent` dispatcher. Resolve
-  `../../templates/post-commit-refresh.sh` relative to this SKILL.md. When the
+  `templates/post-commit-refresh.sh` under the installed package root. When the
   project copy is byte-for-byte equal to that bundled template, classify its
   owner from a validated `.llm-wiki/config.json` value (`codex`, `claude`, `pi`,
   or `openclaw`), not by scanning provider command tokens. For OpenClaw also
@@ -197,7 +201,10 @@ If Pi reports the package under a different installed source, use that exact sou
 
 ## OpenClaw
 
-OpenClaw discovers this package through its Claude-compatible marketplace support and exposes the collision-safe `wiki-bootstrap`, `wiki-upgrade`, `wiki-research`, `wiki-plan`, and `wiki-status` skills.
+OpenClaw exposes the collision-safe `wiki-bootstrap`, `wiki-upgrade`,
+`wiki-research`, `wiki-plan`, and `wiki-status` skills. It can install this
+package from ClawHub, a Claude-compatible marketplace, or a local development
+path; status must preserve whichever source the installed record names.
 
 Useful commands:
 
@@ -209,29 +216,66 @@ openclaw plugins inspect llm-wiki --json
 openclaw plugins update llm-wiki --dry-run
 openclaw plugins update llm-wiki
 openclaw gateway restart --safe
+clawhub package inspect llm-wiki --json
 ```
 
-Remote marketplace version check:
+ClawHub metadata check for a `clawhub:llm-wiki` install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ivankuznetsov/agent-plugins/main/.claude-plugin/marketplace.json \
-  | jq -r '.plugins[] | select(.name == "llm-wiki") | .version'
+clawhub package inspect llm-wiki --json
 ```
 
 Status workflow:
 
 1. Run `openclaw --version` and `openclaw plugins list --json` when available.
-2. Find the entry whose `id` or `name` is `llm-wiki`; use its `version`, `source`, and `rootDir` fields as the installed-state evidence. Use `openclaw plugins inspect llm-wiki --json` for a focused view when the plugin is discovered.
+2. Find the entry whose `id` or `name` is `llm-wiki`; use its `version`,
+   `source`, and `rootDir` fields as installed-state evidence. Then run
+   `openclaw plugins inspect llm-wiki --json` and inspect `.install` before any
+   remote lookup. The durable install record, not the discovered filesystem
+   path alone, owns provenance: use `.install.source`, `.install.spec`,
+   `.install.clawhubPackage`, `.install.marketplaceSource`,
+   `.install.marketplacePlugin`, and `.install.sourcePath` when present.
 3. Run `openclaw agents list --json` when `.llm-wiki/config.json` names OpenClaw as the headless owner. Verify that `openclaw_agent_id` exists and its reported `workspace` resolves to the project root; otherwise classify automation as `mismatch`.
-4. Fetch the remote version from the central marketplace manifest when the user wants to know whether a new release is out.
-5. Before changing anything, run `openclaw plugins update llm-wiki --dry-run` to verify that the installed plugin is tracked and updatable.
-6. If a newer version exists and the dry run succeeds, update with:
+4. Branch on the recorded install source when the user asks for a remote check:
+   - For `.install.source == "clawhub"` or a record with
+     `.install.clawhubPackage`, query that exact package with `clawhub package
+     inspect <package> --json` and read `package.latestVersion`. A successful
+     metadata lookup proves the release is publicly visible; otherwise report
+     visibility as `unknown`. Keep the recorded source locator for reinstall;
+     this package's expected locator is `clawhub:llm-wiki`.
+   - For `.install.source == "marketplace"`, query only the recorded marketplace
+     source with `openclaw plugins marketplace list <marketplaceSource> --json`
+     and find the recorded marketplace plugin. Do not substitute ClawHub or the
+     central marketplace for a different recorded marketplace source. Reinstall
+     with `openclaw plugins install <marketplacePlugin> --marketplace
+     <marketplaceSource> --force` only when the user explicitly requests it.
+   - For `.install.source == "path"`, report the exact `sourcePath` as a
+     development install. Do not claim a remote latest version or automatic
+     registry update; reinstall from that exact path only when the user asks.
+   - For npm, Git, archive, or another recorded source, report the recorded
+     source and use only its tracked update metadata. Do not query ClawHub or a
+     marketplace unless the install record identifies that registry.
+5. For a tracked ClawHub, marketplace, npm, or Git install, run `openclaw
+   plugins update llm-wiki --dry-run` before suggesting an update. A dry-run
+   failure means update status is `unknown`, not that the package was updated.
+6. If the recorded source reports a newer visible release and the dry run
+   succeeds, update with:
 
 ```bash
 openclaw plugins update llm-wiki
 ```
 
-If OpenClaw reports that a path-installed plugin is not tracked, do not claim it was updated. Reinstall from the same trusted local path or marketplace source shown by the user's installation evidence; the marketplace form supported by the CLI is `openclaw plugins install llm-wiki --marketplace ivankuznetsov/agent-plugins --force`.
+If a tracked ClawHub installation needs an explicitly requested reinstall, keep
+its registry source:
+
+```bash
+openclaw plugins install clawhub:llm-wiki --force
+```
+
+If OpenClaw reports that a path-installed plugin is not tracked, do not claim it
+was updated. Reinstall only from the exact local path in the install record. For
+a marketplace installation, retain the recorded marketplace source and plugin
+name rather than changing registries.
 
 After an update, a running Gateway must reload the plugin and skills. Request OpenClaw's bounded, work-aware service restart:
 
@@ -248,11 +292,16 @@ Return:
 ```markdown
 **llm-wiki Plugin Status**
 - Current cached/installed version: ...
-- Latest marketplace/package version: ...
+- Installed source: clawhub:<package> | marketplace:<source> | path:<path> | npm:<spec> | git:<spec> | other:<source> | unknown
+- Latest source version: ... | not applicable | unknown
+- Registry visibility: public | not applicable | unknown
 - Status: current | update available | unknown
 - Update command: ...
+- Reinstall source: ... | not applicable | unknown
 - Restart required: yes | no
 - Headless agent: claude | codex | pi | openclaw | unknown
+- automation_enabled: true | false | missing | invalid
+- external_provider_access_approved: true | false | missing | invalid
 - OpenClaw agent id: ... | not configured | not applicable
 - Context agents: ...
 - AGENTS.md wiki context: managed present | unmanaged wiki section only | missing | unknown

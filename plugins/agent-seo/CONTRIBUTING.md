@@ -1,6 +1,7 @@
 # Contributing to Agent SEO
 
-Thank you for improving Agent SEO. This repo supports both Claude Code and Codex, so changes should keep both plugin surfaces working.
+Thank you for improving Agent SEO. This package supports Claude Code, Codex,
+Pi, and OpenClaw, so changes should keep all four plugin surfaces working.
 
 ## Project Surfaces
 

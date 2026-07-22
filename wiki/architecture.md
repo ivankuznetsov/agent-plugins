@@ -12,7 +12,8 @@ library generator reads the contract and canonical skills, then checks in:
 - Claude compatibility command wrappers and normalized manifests;
 - Codex metadata pointing at the canonical skill roots;
 - Pi and OpenClaw skill adapters whose references remain inside the package;
-- Pi/OpenClaw package metadata, the root catalogs, and semantic hash lock.
+- Pi/OpenClaw package metadata, including a plugin API floor derived from the
+  tested OpenClaw host version, the root catalogs, and semantic hash lock.
 
 Generation is deletion-aware: marker-owned adapters and wrappers that are no
 longer declared are pruned, while unrelated hand-written files are preserved.
@@ -24,6 +25,8 @@ vocabulary, lifecycle notes, and install paths. Safety, error handling,
 resources, and workflow behavior remain canonical. Package validation copies
 each plugin alone and rejects symlinks, absolute paths, parent escapes, missing
 resources, and references to another plugin.
+LLM Wiki uses inline Pi/OpenClaw adapters so each copied package remains
+self-contained while exposing collision-safe `wiki-*` skill names.
 
 OpenClaw needs a JavaScript entry to activate manifest-declared skills. The
 generated entry is intentionally content-only and registers no runtime
@@ -41,3 +44,9 @@ diagnostic without guessing a recovery path.
 LLM Wiki's shared transactional refresh runner dispatches exactly one configured
 owner, including a validated OpenClaw workspace agent, from a disposable refresh
 worktree.
+
+Agent SEO writes new project artifacts by default. Its legacy `scrub` surface
+is a read-only formatting audit, while live analytics access requires an
+explicit data workflow with a declared provider and scope.
+The Ruby audit uses Unicode category `Cf` directly and returns one-based
+line/column findings shared by human-readable and JSON output.

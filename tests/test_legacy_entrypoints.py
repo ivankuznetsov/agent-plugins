@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -47,17 +48,95 @@ class LegacyEntrypointTests(unittest.TestCase):
 
     def test_writing_canonical_skill_has_public_defaults(self):
         body = (REPO_ROOT / "plugins/agent-writing/skills/writing/SKILL.md").read_text().lower()
-        for phrase in ("--scope", "repository root", "--style", "context/voice.md", "--lang", "defaults to `ru`", "--suffix", "`verification:`", "`partial`", "needs another pass"):
+        for phrase in ("--scope", "repository root", "--style", "context/voice.md", "--lang", "defaults to `ru`", "--suffix", "`verification:`", "`partial`", "needs another pass", "read-only by default", "explicitly asks or opts in"):
             self.assertIn(phrase, body)
+
+    def test_writing_editor_requires_consent_before_persisting_context(self):
+        plugin_root = REPO_ROOT / "plugins/agent-writing"
+        policy_paths = [
+            plugin_root / "skills/writing/SKILL.md",
+            plugin_root / "agents/editor.md",
+            plugin_root / "agents/editor-ru.md",
+            plugin_root / "context/anti-examples.md",
+        ]
+        mutation = re.compile(
+            r"\b(append(?:s|ed|ing)?|writ(?:e|es|ten)|wrote|"
+            r"modif(?:y|ies|ied|ying)|persist(?:s|ed|ing)?|updat(?:e|es|ed|ing)|add(?:s|ed|ing)?)\b"
+        )
+        bundled_context = re.compile(r"\b(context|anti-example|plugin file|bundled file)\b")
+        consent = re.compile(r"\b(explicit|opt(?:s|ed|ing)? in|only when)\b")
+
+        for path in policy_paths:
+            body = path.read_text().lower()
+            for sentence in re.split(r"(?<=[.!?])\s+", body):
+                if mutation.search(sentence) and bundled_context.search(sentence):
+                    self.assertRegex(sentence, consent, f"unconsented bundled-context mutation in {path}")
+
+        editor = policy_paths[1].read_text().lower()
+        anti_examples = policy_paths[3].read_text().lower()
+        self.assertIn("include the candidate before/fix pair in the review", editor)
+        self.assertIn("explicitly opts in", editor)
+        self.assertIn("read-only by default", anti_examples)
+        self.assertIn("explicitly opts in", anti_examples)
 
     def test_seo_canonical_skill_preserves_all_modes_and_orchestration(self):
         body = (REPO_ROOT / "plugins/agent-seo/skills/seo/SKILL.md").read_text().lower()
         for mode in ("analyze-existing", "data", "fact-check", "humanize", "optimize", "performance-review", "research", "rewrite", "scrub", "write"):
             self.assertIn(f"`{mode}`", body)
-        for phrase in ("content-analyzer", "seo-optimizer", "meta-creator", "internal-linker", "keyword-mapper", "unicode category `cf`"):
+        for phrase in ("content-analyzer", "seo-optimizer", "meta-creator", "internal-linker", "keyword-mapper", "read-only formatting audit", "explicitly asks to modify that exact path", "preserve authorship, provenance"):
             self.assertIn(phrase, body)
         for pattern in (r"50%\s+impact", r"30%\s+effort", r"20%\s+confidence"):
             self.assertRegex(body, pattern)
+
+    def test_seo_formatting_audit_cannot_mutate_or_conceal_provenance(self):
+        plugin_root = REPO_ROOT / "plugins/agent-seo"
+        skill = (plugin_root / "skills/seo/SKILL.md").read_text().lower()
+        scrubber = (plugin_root / "data_sources/ruby/lib/agent_seo/content_scrubber.rb").read_text().lower()
+        cli = (plugin_root / "data_sources/ruby/bin/seo-scrub").read_text().lower()
+        clawhub_ignore = (plugin_root / ".clawhubignore").read_text().splitlines()
+
+        for phrase in ("ai watermark", "appears naturally human-written", "expects an edit"):
+            self.assertNotIn(phrase, skill)
+            self.assertNotIn(phrase, scrubber)
+            self.assertNotIn(phrase, cli)
+        self.assertNotIn("file.write", scrubber)
+        self.assertNotIn("file.write", cli)
+        for write_call in ("io.write", "file.binwrite", "file.open"):
+            self.assertNotIn(write_call, scrubber)
+            self.assertNotIn(write_call, cli)
+        self.assertIn("--output was removed in agent seo 2.0", cli)
+        self.assertIn("content_changed: false", skill)
+        self.assertIn("content_changed: false", scrubber)
+        for excluded in (
+            "todos/",
+            "data_sources/ruby/test/",
+            "output/",
+            "reports/",
+        ):
+            self.assertIn(excluded, clawhub_ignore)
+
+        env_templates = list(plugin_root.rglob(".env.example"))
+        self.assertEqual([plugin_root / ".env.example"], env_templates)
+        for path in env_templates:
+            body = path.read_text().lower()
+            self.assertNotIn("copy this file to .env", body)
+            self.assertNotIn("./credentials/", body)
+            self.assertIn("outside", body)
+
+        data_readme = (plugin_root / "data_sources/README.md").read_text().lower()
+        self.assertNotIn("owner or full access", data_readme)
+        self.assertIn("restricted user", data_readme)
+
+    def test_seo_generated_discovery_names_every_supported_host(self):
+        plugin_root = REPO_ROOT / "plugins/agent-seo"
+        for relative in (
+            "skills/seo/SKILL.md",
+            "pi/skills/agent-seo/SKILL.md",
+            "openclaw/skills/agent-seo/SKILL.md",
+        ):
+            body = (plugin_root / relative).read_text().lower()
+            for host in ("claude code", "codex", "pi", "openclaw"):
+                self.assertIn(host, body, f"{relative} omits {host}")
 
     def test_codex_roots_and_llm_wiki_pi_names_remain_stable(self):
         for plugin in self.plugins.values():

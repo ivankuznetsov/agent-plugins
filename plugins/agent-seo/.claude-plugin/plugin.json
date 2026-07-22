@@ -1,7 +1,7 @@
 {
   "name": "agent-seo",
-  "version": "1.2.0",
-  "description": "SEO content workflow for creating, analyzing, and optimizing long-form blog content with web search integration, AI humanization, and Ruby-based analysis tools",
+  "version": "2.0.1",
+  "description": "SEO content workflow for creating, analyzing, and optimizing long-form blog content with web search, editorial revision, and Ruby-based analysis tools",
   "author": {
     "name": "Ivan Kuznetsov"
   },
@@ -16,7 +16,7 @@
     "seo",
     "content-writing",
     "keyword-research",
-    "ai-humanization",
+    "editorial-revision",
     "content-optimization"
   ]
 }

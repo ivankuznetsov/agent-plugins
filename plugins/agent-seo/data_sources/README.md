@@ -43,11 +43,6 @@ Data sources provide real-time performance metrics for:
 
 ```
 data_sources/
-├── config/                 # API credentials and settings
-│   ├── .env.example       # Template for environment variables
-│   ├── ga4_config.json    # GA4 property settings
-│   ├── gsc_config.json    # Search Console property settings
-│   └── dataforseo_config.json  # DataForSEO settings
 ├── ruby/                  # Ruby integration modules
 │   ├── lib/agent_seo/
 │   │   ├── google_analytics.rb
@@ -77,20 +72,22 @@ bundle install
 3. Enable Google Analytics Data API
 4. Create service account credentials
 5. Download JSON key file
-6. Save as `data_sources/config/ga4_credentials.json`
+6. Store the key outside the repository with mode `0600`
 7. Add service account email to GA4 property (View access)
 
 #### Google Search Console
 1. Use same Google Cloud project
 2. Enable Search Console API
 3. Use same service account or create OAuth 2.0 credentials
-4. Save credentials as `data_sources/config/gsc_credentials.json`
-5. Add service account to Search Console property (Owner or Full access)
+4. Store credentials outside the repository with mode `0600`
+5. Add the service account as a Restricted user for view-only report access;
+   never grant Owner. See Google's
+   [permission reference](https://support.google.com/webmasters/answer/7687615).
 
 #### DataForSEO
 1. Sign up at [DataForSEO](https://dataforseo.com/)
 2. Get API credentials (login + password)
-3. Add to `.env` file:
+3. Load through a secret manager or protected session environment:
    ```
    DATAFORSEO_LOGIN=your_login
    DATAFORSEO_PASSWORD=your_password
@@ -98,20 +95,17 @@ bundle install
 
 ### 3. Configure Data Sources
 
-Copy example config:
-```bash
-cp data_sources/config/.env.example data_sources/config/.env
-```
-
-Edit `.env` with your credentials:
+Prefer a secret manager or protected session environment. Do not create a
+populated configuration file inside the repository. If credential files are
+unavoidable, use absolute paths to user-owned files outside the checkout:
 ```env
 # Google Analytics 4
 GA4_PROPERTY_ID=123456789
-GA4_CREDENTIALS_PATH=data_sources/config/ga4_credentials.json
+GA4_CREDENTIALS_PATH=/absolute/path/outside/repository/google.json
 
 # Google Search Console
 GSC_SITE_URL=https://castos.com
-GSC_CREDENTIALS_PATH=data_sources/config/gsc_credentials.json
+GSC_CREDENTIALS_PATH=/absolute/path/outside/repository/google.json
 
 # DataForSEO
 DATAFORSEO_LOGIN=your_login
@@ -291,13 +285,14 @@ The Performance Agent uses this data to:
 
 ## Security
 
-**IMPORTANT**: Never commit credentials to git!
+**IMPORTANT**: Never store credentials in the repository, even when a path is
+listed in `.gitignore`.
 
-- `.env` files are in `.gitignore`
-- Credential JSON files are in `.gitignore`
-- Use service accounts, not user accounts
+- Prefer workload identity, a secret manager, or an OS keychain
+- Keep unavoidable credential files outside the checkout with mode `0600`
+- Use dedicated service accounts, not user accounts
 - Rotate credentials regularly
-- Limit service account permissions to read-only
+- Limit service account permissions to read-only and the intended property
 
 ## Troubleshooting
 
