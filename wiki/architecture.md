@@ -46,6 +46,8 @@ variables from the standard socket and retain the installed service marker
 after a transient signal failure. Compiled-`wiki/log.md`-only commits do not
 enter the queue. Successful wiki-only batches are merged with and pushed only
 to `origin/llm-wiki/refresh`, never the protected default branch.
+The runtime has no arbitrary command override: provider dispatch is limited to
+fixed Codex, Claude Code, Pi, and validated OpenClaw command shapes.
 Large queued-source pin sets are processed in bounded Git transactions, and
 recoverable interrupted queue files are rebuilt from their source commits.
 

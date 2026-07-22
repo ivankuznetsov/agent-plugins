@@ -800,12 +800,6 @@ wiki_only_changes() {
 
 run_refresh_agent() {
   local prompt="$1"
-  if [ -n "${LLM_WIKI_REFRESH_CMD:-}" ]; then
-    run_with_timeout "${LLM_WIKI_REFRESH_TIMEOUT:-1800}" \
-      "$LLM_WIKI_REFRESH_CMD" "$refresh_root" "$prompt" >>"$log_file" 2>&1
-    return $?
-  fi
-
   local headless_agent timeout_seconds owner_config openclaw_agent_id
   owner_config="$canonical_config"
   [ -f "$owner_config" ] || owner_config="$committing_tree/.llm-wiki/config.json"
