@@ -13,7 +13,7 @@
       "name": "llm-wiki",
       "source": "./plugins/llm-wiki",
       "description": "Create and query project wikis with optional maintenance automation.",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
