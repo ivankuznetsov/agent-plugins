@@ -12,16 +12,17 @@
   knowledge remains authoritative here.
 - Automatic Screenote annotation resolution remains deferred until the
   mutation is explicitly approved in the CLI contract.
-- LLM Wiki 0.3.0 upstream release/tag publication remains a release-management
-  step. The ClawHub replacement is not verified until the exact merged source
-  is published and publicly visible.
+- The queued source commits establish package versions Agent Reviewer 0.3.1,
+  Agent SEO 2.0.1, Agent Writing 0.5.2, LLM Wiki 0.3.1, and Screenote 3.0.1,
+  but do not establish upstream tag/release publication, successful ClawHub
+  scans, or public registry visibility for those exact versions.
 - Compatibility with OpenClaw releases older than `2026.7.1-beta.2` remains
   unverified. ClawHub packages therefore declare that tested version as their
   conservative plugin API floor while leaving the broader host minimum
   unspecified.
-- ClawHub releases are immutable. Agent SEO registry consumers should use
-  `2.0.0` or later only after the public scan is clean; any future scan finding
-  requires a new patch release instead of changing an existing archive.
+- ClawHub releases are immutable. Registry consumers should use the listed
+  patch versions only after their public scans are clean; any future scan
+  finding requires a new release instead of changing an existing archive.
 
 The former Claude Code `/status` collision is closed by naming the canonical
 LLM Wiki skill `wiki-status`; a transient Claude Code 2.1.179 session verified

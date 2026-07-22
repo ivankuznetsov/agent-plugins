@@ -35,6 +35,18 @@ diagnostic and error code, gives specific setup guidance only for exit-2
 `missing_token` / `missing_project` and exit-3 authentication failures, and
 does not choose an alternative when a project is ambiguous or inaccessible.
 
+## Agent SEO mutation and live data require explicit scope
+
+The legacy `scrub` surface remains available as a read-only formatting audit.
+Editorial workflows create new artifacts by default, preserve authorship and
+provenance disclosures, and edit an existing file only when the user explicitly
+requests that exact path. Analytics providers are queried only from an explicit
+`data` or `performance-review` workflow with a declared source and scope.
+
+The 1.x cleaned-text, `--output`, and in-place Ruby contracts are intentionally
+removed. The replacement reports Unicode format controls and em dashes with
+one-based locations and keeps credentials outside the repository.
+
 ## Packages are plain self-contained directories
 
 Adapters, scripts, agents, references, context, and manifests live below the

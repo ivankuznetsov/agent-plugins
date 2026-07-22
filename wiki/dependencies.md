@@ -20,6 +20,11 @@ Workflow-specific optional dependencies remain local to their plugins:
 - Agent Reviewer uses authenticated `gh` and `jq`; its eval isolation can use
   `unshare` and `bwrap`.
 - Agent SEO's local analysis utilities use Ruby and Bundler; prompt workflows
-  do not require Ruby.
-- LLM Wiki prefers QMD and falls back to `rg`.
+  do not require Ruby. Version 2.0 removes `dotenv` and does not auto-load a
+  repository `.env`; live provider configuration comes from explicit process
+  environment values, and its setup guidance keeps credential files outside
+  the repository.
+- LLM Wiki prefers QMD and falls back to `rg`. Automated refresh also requires
+  `git` plus `timeout` or `gtimeout`, but the final 0.3 source adds no
+  `bubblewrap` or `sandbox-exec` runtime dependency.
 - Screenote capture uses each host's native browser automation.

@@ -43,7 +43,10 @@ failures receive bounded recovery guidance; other nonzero outcomes retain the
 diagnostic without guessing a recovery path.
 LLM Wiki's shared transactional refresh runner dispatches exactly one configured
 owner, including a validated OpenClaw workspace agent, from a disposable refresh
-worktree.
+worktree. Automatic dispatch requires both `automation_enabled` and
+`external_provider_access_approved`. The final 0.3 runner preserves the existing
+bounded direct provider transaction; it does not add a separate `bubblewrap` or
+`sandbox-exec` provider boundary.
 
 Agent SEO writes new project artifacts by default. Its legacy `scrub` surface
 is a read-only formatting audit, while live analytics access requires an

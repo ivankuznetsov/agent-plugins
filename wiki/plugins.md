@@ -5,11 +5,14 @@ OpenClaw.
 
 | Plugin | Version | Canonical workflows | Package resources |
 | --- | --- | --- | --- |
-| `agent-reviewer` | `0.3.0` | `agent-reviewer` | agents, references, scripts, eval |
-| `agent-seo` | `2.0.0` | `seo` | agents, context, data sources, hooks, scripts |
-| `agent-writing` | `0.5.1` | `writing` | agents, context |
-| `llm-wiki` | `0.3.0` | `bootstrap`, `upgrade`, `research`, `wiki-plan`, `wiki-status` | assets, consent-gated templates |
-| `screenote` | `3.0.0` | `screenote`, `snapshot`, `feedback` | CLI launcher, references, evals |
+| `agent-reviewer` | `0.3.1` | `agent-reviewer` | agents, references, scripts, eval |
+| `agent-seo` | `2.0.1` | `seo` | agents, context, data sources, hooks, scripts |
+| `agent-writing` | `0.5.2` | `writing` | agents, context |
+| `llm-wiki` | `0.3.1` | `bootstrap`, `upgrade`, `research`, `wiki-plan`, `wiki-status` | assets, consent-gated templates |
+| `screenote` | `3.0.1` | `screenote`, `snapshot`, `feedback` | CLI launcher, references, evals |
+
+These patch versions add the generated OpenClaw plugin API floor without
+changing the canonical workflow behavior beneath the preceding releases.
 
 Claude and Codex install through their root marketplaces. Pi and OpenClaw
 install a copied `plugins/<name>` directory. Every copied package is complete;
