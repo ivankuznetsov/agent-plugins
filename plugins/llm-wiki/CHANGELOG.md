@@ -4,6 +4,21 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] - 2026-07-22
+
+### Fixed
+
+- Reconcile all linked worktrees to one non-persistent, memory-bounded systemd
+  timer per repository and stop obsolete managed units instead of multiplying
+  jobs across temporary checkouts.
+- Drain queued commits under a machine-wide provider lock and publish wiki-only
+  results to `origin/llm-wiki/refresh`, leaving protected default checkouts
+  clean.
+- Bound large source-pin migrations to 64 refs per Git transaction and recover
+  empty crash-left queue records when their source commit remains available.
+- Preserve the four-agent consent gate and OpenClaw owner dispatch while
+  upgrading projects to the shared 0.1.16 transactional runtime.
+
 ## [0.3.1] - 2026-07-20
 
 ### Fixed

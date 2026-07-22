@@ -248,6 +248,8 @@ OpenClaw context:
 - Ensure `AGENTS.md` contains the wiki section from Step 5. OpenClaw auto-injects the `AGENTS.md` in its configured agent workspace at the start of every session.
 - Confirm the project root is the active OpenClaw agent workspace before selecting `openclaw` as `headless_agent`. If it is not, report the workspace mismatch instead of claiming the project `AGENTS.md` will be injected.
 - Do not add channel-delivery flags to wiki maintenance commands. Scheduled and post-commit refreshes are local automation, not chat replies.
+- Omit `--deliver`, `--channel`, `--reply-channel`, `--reply-to`, and `--to`
+  from every OpenClaw maintenance command.
 
 Do not install scheduled or post-commit automation unless the user separately
 approves it after seeing the provider, files, hooks, and activation commands.
@@ -256,78 +258,52 @@ refresh commands instead.
 
 If the current tool is not the configured `headless_agent`, update session context for the current tool and validate/report the existing automation owner. Do not rewrite scheduler or post-commit ownership unless automation is missing, unsafe, or the user asks to repair or switch ownership.
 
-The scheduler must use the configured `.llm-wiki/config.json` `headless_agent`.
+The scheduler and post-commit hook must use the configured
+`.llm-wiki/config.json` `headless_agent`. Do not hand-write provider wrappers.
+Resolve the installed `llm-wiki` package root by walking up from the active
+skill until the ancestor containing both `templates/` and the package manifest
+is found. This works for native and generated host skill paths. Copy these
+canonical files from `<package-root>/templates/`, make them executable, and keep
+the same copies in `.llm-wiki/`:
 
-Create `.llm-wiki/refresh-wiki.sh` and make it executable. It should run the configured headless agent's CLI from the project root:
+- `post-commit-refresh.sh`
+- `refresh-wiki.sh`
+- `compile-log.sh`
+- `install-systemd-scheduler.sh`
 
-- `headless_agent: "codex"`: use `codex exec -C "<project-root>" "<refresh prompt>"`.
-- `headless_agent: "claude"`: use `claude -p "<refresh prompt>"` with the same refresh intent.
-- `headless_agent: "pi"`: use `pi -p --no-session --tools read,bash,edit,write,grep,find,ls "<refresh prompt>"` with the same refresh intent.
-- `headless_agent: "openclaw"`: use `openclaw agent --local --agent "<openclaw_agent_id>" --message "<refresh prompt>" --json --timeout 1800` from the configured OpenClaw project workspace. The explicit agent selector is required by the CLI and binds the turn to the verified project workspace. Omit `--deliver`, `--channel`, `--reply-channel`, `--reply-to`, and `--to` so automation cannot send the result to a channel.
+Copy the runner, compiler, and validated config into
+`$(git rev-parse --git-common-dir)/llm-wiki/`. Wire the common `post-commit`
+hook to call the shared runner with
+`--project "$(git rev-parse --show-toplevel)"`, falling back to the checkout
+copy only when the shared runner is absent. This makes the primary checkout's
+installed runtime authoritative for every linked worktree, including older
+branches with stale ignored `.llm-wiki` files or config.
 
-For Codex-owned headless automation, never write automation that shells out to `claude` or `claude -p`. Do not fall back from Codex automation to Claude if `codex` is missing; report the missing `codex` CLI instead.
-
-For Claude-owned headless automation, never write automation that shells out to `codex exec`. Do not fall back from Claude automation to Codex if `claude` is missing; report the missing `claude` CLI instead.
-
-For Pi-owned headless automation, never write automation that shells out to `codex exec` or `claude -p`. Do not fall back from Pi automation to Claude or Codex if `pi` is missing; report the missing `pi` CLI instead.
-
-For OpenClaw-owned headless automation, never write automation that shells out to `codex exec`, `claude -p`, or `pi`. Do not fall back from OpenClaw automation to another agent if `openclaw` is missing; report the missing `openclaw` CLI or project-workspace mismatch instead.
-
-Codex refresh script shape:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$project_root"
-
-codex exec -C "$project_root" "Refresh this project's LLM wiki. Read .llm-wiki/config.json, AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
-```
-
-Claude Code refresh script shape:
+After the separate automation approval, on Linux run:
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$project_root"
-
-claude -p "Refresh this project's LLM wiki. Read .llm-wiki/config.json, CLAUDE.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --allowedTools "Bash,Read,Edit,Write" --max-budget-usd 0.50
+.llm-wiki/install-systemd-scheduler.sh --project "$(git rev-parse --show-toplevel)"
 ```
 
-Pi refresh script shape:
+The installer reconciles all linked worktrees to one non-persistent timer for
+the repository's primary checkout, removes and stops obsolete managed units,
+serializes all repositories through one machine-wide lock, and enforces a 4 GiB
+memory limit with no swap. The timer drains already queued commits; it does not
+launch a direct refresh against whichever checkout happened to install it.
+When automation is not approved, do not enable a timer; the upgrade path uses
+`--disabled` to reconcile old units without activating maintenance. On
+non-systemd platforms, leave the scripts installed, record the scheduler gap in
+`wiki/gaps.md`, and report the manual drain command.
 
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$project_root"
-
-pi -p --no-session --tools read,bash,edit,write,grep,find,ls "Refresh this project's LLM wiki. Read .llm-wiki/config.json, AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, append wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts."
-```
-
-OpenClaw refresh script shape:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$project_root"
-
-openclaw agent --local --agent "<openclaw_agent_id>" --message "Refresh this project's LLM wiki. Read .llm-wiki/config.json, AGENTS.md, wiki/index.md, wiki/gaps.md, and recent wiki/log.md entries first. If .llm-wiki/config.json contains main_wiki_path, search that exact path before changing project pages. Also search default main cross-project wiki paths when they exist: ~/wikis/master/wiki/, ~/wikis/main/wiki/, ../wikis/master/wiki/, and ../wikis/main/wiki/. Inspect recent git history and changed source files. Update stale wiki pages, update wiki/index.md when page coverage changes, add a wiki/log.d/<timestamp>-<slug>.md fragment without editing compiled wiki/log.md, and record uncertainty in wiki/gaps.md. Do not invent facts." --json --timeout 1800
-```
-
-After that separate approval, install the best available scheduler:
-
-- Linux with systemd user services: create `~/.config/systemd/user/llm-wiki-<project-slug>.service` and `.timer`, then run `systemctl --user daemon-reload` and `systemctl --user enable --now llm-wiki-<project-slug>.timer`.
-- macOS with launchd: create `~/Library/LaunchAgents/com.llm-wiki.<project-slug>.plist` with a 24 hour `StartInterval`, then run `launchctl load`.
-- Other environments: install an equivalent cron entry that runs `.llm-wiki/refresh-wiki.sh` daily.
-
-Use a stable `<project-slug>` from the repository basename plus a short hash of the project root to avoid timer name collisions. Replace existing `llm-wiki-<project-slug>` scheduler files instead of adding duplicates. For cron, wrap the entry with `# BEGIN LLM WIKI <project-slug>` and `# END LLM WIKI <project-slug>` markers and replace that block on repeat bootstrap. If scheduler installation fails because the environment lacks systemd, launchd, cron, or permissions, keep `.llm-wiki/refresh-wiki.sh`, record the failure in `wiki/gaps.md`, and report the exact command the user can run.
-
-Also install post-commit wiki maintenance automation. Preserve existing hooks; do not overwrite unrelated hook logic. Install the canonical runtime in the shared Git directory and wire the common `post-commit` hook to pass the committing worktree explicitly.
-
-Install `.llm-wiki/post-commit-refresh.sh` AND `.llm-wiki/compile-log.sh` by copying the reference scripts bundled with this skill at `templates/post-commit-refresh.sh` and `templates/compile-log.sh` (resolve them relative to this SKILL.md), then `chmod +x` both. Also copy the same files verbatim to `$(git rev-parse --git-common-dir)/llm-wiki/post-commit-refresh.sh` and `compile-log.sh`, and copy the validated project config there as `config.json`. The hook must invoke that shared runner as `post-commit-refresh.sh --project "$(git rev-parse --show-toplevel)"`, falling back to the checkout-local runner only when the shared copy is absent. This makes one bootstrap or upgrade authoritative for every linked worktree, including older branches with stale ignored `.llm-wiki` files or config. `compile-log.sh` is the single source of truth for the changelog format: it regenerates `wiki/log.md` from the append-only `wiki/log.d/*.md` fragments, and the refresh runs it before committing. (Hive's `Hive::WikiLog` delegates here, so Ruby and shell callers share one implementation.) The bundled post-commit script reads the canonical shared `headless_agent` and dispatches to exactly one provider; never customize its provider function per project. Provider, QMD, and Git ref execution requires `timeout` or `gtimeout` so every potentially stuck command is bounded. When neither is available, the worker must fail before starting a provider. A repository-wide circuit stops automatic provider launches after two consecutive failed batches or when more than 25 sources are pending by default. A worker handles at most one batch of 10 sources with bounded path context; sources arriving outside that snapshot open a `deferred:<count>` circuit. New sources continue queueing until an operator explicitly runs `.llm-wiki/post-commit-refresh.sh --retry-failed <sha|all>` once per bounded batch.
+Preserve existing hooks and unrelated hook logic. The bundled runner reads the
+canonical shared owner config and dispatches to exactly one of Claude Code,
+Codex, Pi, or OpenClaw. It never falls back to a different provider. An
+OpenClaw owner requires a validated `openclaw_agent_id` and never uses delivery,
+channel, reply, or recipient flags. Provider, QMD, and Git ref execution is
+time-bounded. A repository-wide circuit stops automatic provider launches after
+two consecutive failed batches or more than 25 pending sources. Each worker
+handles at most one batch of 10 sources, while the scheduler keeps draining
+later batches without starting concurrent provider processes.
 The supported provider set is Claude Code, Codex, Pi, and OpenClaw. The copied
 config must preserve `openclaw_agent_id` when OpenClaw owns maintenance; the
 runtime rejects an unsupported owner or a missing/invalid OpenClaw agent ID
@@ -336,13 +312,13 @@ instead of falling back to another provider.
 Transactional refresh contract (the bundled script implements all of these; any hand-edit must keep them):
 
 - **User checkouts are read-only inputs.** Queue each relevant source SHA under `$(git rev-parse --git-common-dir)/llm-wiki/pending/` before attempting the worker lock. Never use the committing checkout or first/main checkout as an agent workspace, log destination, QMD cache, staging area, or commit target.
-- **Use one managed refresh branch and disposable worktree.** Drain queued commits on local branch `llm-wiki/refresh` in `<shared-git-dir>/llm-wiki/refresh-worktree`, based/rebased on the current default branch. The agent inspects source commits with `git show`; it writes only under the managed worktree's `wiki/`.
+- **Use one published refresh branch and disposable worktree.** Drain queued commits on `llm-wiki/refresh` in `<shared-git-dir>/llm-wiki/refresh-worktree`, based/rebased on the current remote default branch. The agent inspects source commits with `git show`; it writes only under the managed worktree's `wiki/`. Publish only this branch to `origin`; never dirty or push the protected default branch.
 - **Seed ignored local wikis once.** When a new refresh branch has no tracked `wiki/`, copy the committing checkout's untracked local wiki into the disposable worktree before invoking the agent. Never replace an already-established refresh-branch wiki, follow a top-level `wiki` symlink, or copy any path outside `wiki/`.
 - **Serialize and coalesce.** Hold one stale-reclaimable compare-and-swap lock at `refs/llm-wiki/refresh-lock`. Its Git blob records PID, time, process-start identity, and nonce; `git update-ref <ref> <new> <old>` makes stale replacement single-winner, while ownership-checked deletion prevents an old worker from releasing a successor's lock. Check the wait deadline and sleep after every failed acquisition attempt. One worker snapshots at most 10 queued SHAs and runs one refresh agent for that batch. A busy worker leaves new queue entries intact for a later worker instead of dropping them.
 - **Receipt completed sources.** Add one exact `LLM-Wiki-Source: <sha>` commit-message paragraph when the batch creates a wiki commit, then atomically update `refs/llm-wiki/receipts/<sha>` for every successful source before queue deletion. Check receipt refs first and commit history as migration fallback before invoking the agent. This makes both changed and no-op batches replay-safe after a crash between completion and acknowledgement.
-- **Pin queued commits.** Create `refs/llm-wiki/sources/<sha>` when a source is queued and delete it in the same ref transaction that writes its durable receipt. Backfill pins for pre-upgrade pending and quarantined records. Refuse to invoke or acknowledge a batch whose selected SHA is not an available commit.
+- **Pin queued commits in bounded transactions.** Create `refs/llm-wiki/sources/<sha>` when a source is queued and delete it in the same ref transaction that writes its durable receipt. Backfill pins for pre-upgrade pending and quarantined records in batches of 64 by default (`LLM_WIKI_MAX_SOURCE_PIN_BATCH`). Reconstruct empty crash-left `.<sha>.<pid>` queue files when their source commit is available; retain unavailable records for diagnosis. Refuse to invoke or acknowledge a batch whose selected SHA is not an available commit.
 - **Recover stale locks safely.** A live owner PID with the recorded process-start identity wins. Dead, PID-reused, or malformed owner blobs are replaceable only through the Git ref's compare-and-swap old-OID guard.
-- **Validate before committing.** Reject any tracked, untracked, or ignored change outside `wiki/`. Compile `wiki/log.md`, force-stage only `wiki/` so intentionally ignored wikis persist, and commit with both recursion guards (`HIVE_SKIP_LLM_WIKI_POST_COMMIT=1` and `git -c core.hooksPath=/dev/null`). Never push automatically.
+- **Validate before committing and publishing.** Reject any tracked, untracked, or ignored change outside `wiki/`. Compile `wiki/log.md`, force-stage only `wiki/` so intentionally ignored wikis persist, and commit with both recursion guards (`HIVE_SKIP_LLM_WIKI_POST_COMMIT=1` and `git -c core.hooksPath=/dev/null`). Fetch and merge the remote refresh branch, then push only `llm-wiki/refresh`; retain local work when fetch, merge, or push fails.
 - **Failure is clean and bounded.** If agent execution, wiki-only validation, compilation, staging, or commit fails, force-remove the disposable managed worktree. After two consecutive failed batches by default, move the active batch to `<shared-git-dir>/llm-wiki/failed/` and open the repository-wide circuit. Continue queueing new sources without launching a provider. Never delete failed source data or automatically run a quarantined source again. User checkout bytes and branch refs must remain unchanged.
 - **Subscription use is bounded.** Run provider overrides, Codex, Claude Code,
   Pi, QMD, and Git ref operations through `timeout` or `gtimeout`. If no bounded
