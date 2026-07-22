@@ -1,6 +1,6 @@
 {
   "name": "llm-wiki",
-  "version": "0.3.1",
+  "version": "0.3.5",
   "description": "Create and query project wikis with optional maintenance automation.",
   "author": {
     "name": "ivankuznetsov",

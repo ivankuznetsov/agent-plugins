@@ -174,7 +174,7 @@
     {
       "name": "llm-wiki",
       "path": "plugins/llm-wiki",
-      "version": "0.3.1",
+      "version": "0.3.5",
       "stability": "stable",
       "metadata": {
         "display_name": "LLM Wiki",

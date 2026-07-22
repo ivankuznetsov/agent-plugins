@@ -35,7 +35,7 @@ plugin directory so a copied package does not depend on the repository root.
 | Agent Reviewer | `0.3.1` | Stable | `skills/agent-reviewer/SKILL.md` | agents, references, scripts, eval harness |
 | Agent SEO | `2.0.1` | Stable | `skills/seo/SKILL.md` | agents, context, data sources, hooks, scripts |
 | Agent Writing | `0.5.2` | Stable | `skills/writing/SKILL.md` | agents, voice/style context |
-| LLM Wiki | `0.3.1` | Stable | five files under `skills/` | assets, consent-gated maintenance templates |
+| LLM Wiki | `0.3.5` | Stable | five files under `skills/` | assets, consent-gated maintenance templates |
 | Screenote | `3.0.1` | Stable | `skills/{screenote,snapshot,feedback}/SKILL.md` | CLI launcher, references, evals |
 
 ## Plugin invocations

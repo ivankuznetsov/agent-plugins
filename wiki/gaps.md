@@ -12,10 +12,13 @@
   knowledge remains authoritative here.
 - Automatic Screenote annotation resolution remains deferred until the
   mutation is explicitly approved in the CLI contract.
-- The queued source commits establish package versions Agent Reviewer 0.3.1,
-  Agent SEO 2.0.1, Agent Writing 0.5.2, LLM Wiki 0.3.1, and Screenote 3.0.1,
-  but do not establish upstream tag/release publication, successful ClawHub
-  scans, or public registry visibility for those exact versions.
+- LLM Wiki's standalone and four-host marketplace packages intentionally use
+  separate version lines (`0.1.x` upstream runtime and `0.3.x` consent-gated
+  marketplace package). A marketplace release must preserve the consent and
+  OpenClaw adaptations while vendoring the released runtime. Marketplace
+  0.3.5 vendors the released standalone 0.1.19 provider-only dispatch fix;
+  public ClawHub scan and catalog visibility remain release-time evidence
+  rather than source-tree facts.
 - Compatibility with OpenClaw releases older than `2026.7.1-beta.2` remains
   unverified. ClawHub packages therefore declare that tested version as their
   conservative plugin API floor while leaving the broader host minimum

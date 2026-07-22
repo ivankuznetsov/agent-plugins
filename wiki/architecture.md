@@ -44,9 +44,21 @@ diagnostic without guessing a recovery path.
 LLM Wiki's shared transactional refresh runner dispatches exactly one configured
 owner, including a validated OpenClaw workspace agent, from a disposable refresh
 worktree. Automatic dispatch requires both `automation_enabled` and
-`external_provider_access_approved`. The final 0.3 runner preserves the existing
-bounded direct provider transaction; it does not add a separate `bubblewrap` or
-`sandbox-exec` provider boundary.
+`external_provider_access_approved`. The primary checkout owns one
+repository-wide non-persistent systemd
+timer; linked worktrees cannot install independent timers. Services share a
+machine-wide provider lock, run with a 4 GiB memory ceiling and no swap, and
+drain durable commit-hook queues. Headless callers recover missing user-bus
+variables from the standard socket and retain the installed service marker
+after a transient signal failure. Compiled-`wiki/log.md`-only commits do not
+enter the queue. Successful wiki-only batches are merged with and pushed only
+to `origin/llm-wiki/refresh`, never the protected default branch.
+The runtime has no arbitrary command override: provider dispatch is limited to
+fixed Codex, Claude Code, Pi, and validated OpenClaw command shapes.
+Large queued-source pin sets are processed in bounded Git transactions, and
+recoverable interrupted queue files are rebuilt from their source commits.
+The final 0.3 runner preserves the bounded direct provider transaction; it does
+not add a separate `bubblewrap` or `sandbox-exec` provider boundary.
 
 Agent SEO writes new project artifacts by default. Its legacy `scrub` surface
 is a read-only formatting audit, while live analytics access requires an

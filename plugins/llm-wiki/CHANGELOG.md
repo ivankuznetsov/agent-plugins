@@ -4,6 +4,57 @@ All notable changes to **llm-wiki** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.5] - 2026-07-22
+
+### Security
+
+- Remove the undocumented `LLM_WIKI_REFRESH_CMD` arbitrary executable
+  override from the shipped worker. Headless refreshes now dispatch only to
+  the explicitly configured Codex, Claude Code, Pi, or validated OpenClaw
+  owner through fixed, bounded command shapes.
+- Vendor the standalone llm-wiki 0.1.19 provider-only dispatch fix while
+  retaining the marketplace consent gate and OpenClaw owner adaptation.
+
+## [0.3.4] - 2026-07-22
+
+### Fixed
+
+- Allow the managed Linux service four hours for a valid three-batch drain,
+  covering each batch's bounded agent and QMD phases without weakening the
+  memory, swap, or machine-wide serialization limits.
+- Vendor the standalone llm-wiki 0.1.18 scheduler-timeout fix across Claude,
+  Codex, Pi, and OpenClaw surfaces.
+
+## [0.3.3] - 2026-07-22
+
+### Fixed
+
+- Reconstruct the standard user-systemd bus environment in headless commit
+  hooks and scheduler upgrades, so the installed 4 GiB/no-swap worker remains
+  reachable without an interactive shell.
+- Preserve the repository scheduler marker when a best-effort service signal
+  fails, while retaining the machine-wide serialized fallback for the current
+  queue.
+- Skip commits whose only changed path is compiled `wiki/log.md`, preventing a
+  generated projection from launching another provider-backed refresh.
+- Preserve the four-agent consent and OpenClaw ownership adaptations while
+  vendoring the standalone 0.1.17 runtime fix.
+
+## [0.3.2] - 2026-07-22
+
+### Fixed
+
+- Reconcile all linked worktrees to one non-persistent, memory-bounded systemd
+  timer per repository and stop obsolete managed units instead of multiplying
+  jobs across temporary checkouts.
+- Drain queued commits under a machine-wide provider lock and publish wiki-only
+  results to `origin/llm-wiki/refresh`, leaving protected default checkouts
+  clean.
+- Bound large source-pin migrations to 64 refs per Git transaction and recover
+  empty crash-left queue records when their source commit remains available.
+- Preserve the four-agent consent gate and OpenClaw owner dispatch while
+  upgrading projects to the shared 0.1.16 transactional runtime.
+
 ## [0.3.1] - 2026-07-20
 
 ### Fixed

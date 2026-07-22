@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# LLM_WIKI_RUNNER_CAPABILITIES: drain
+
 # Transactional LLM-wiki post-commit refresh.
 #
 # Every relevant commit is queued in the shared Git directory. One worker
@@ -11,30 +13,44 @@ set -euo pipefail
 
 project_override=""
 retry_selector=""
+drain_mode=0
+
+usage() {
+  printf 'Usage: %s [--project <path>] [--drain | --retry-failed <sha|all>]\n' "$0"
+}
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --project)
       [ "$#" -ge 2 ] || {
-        printf 'Usage: %s [--project <path>] [--retry-failed <sha|all>]\n' "$0" >&2
+        usage >&2
         exit 2
       }
       project_override="$2"
       shift 2
       ;;
+    --drain)
+      drain_mode=1
+      shift
+      ;;
     --retry-failed)
       [ "$#" -ge 2 ] || {
-        printf 'Usage: %s [--project <path>] [--retry-failed <sha|all>]\n' "$0" >&2
+        usage >&2
         exit 2
       }
       retry_selector="$2"
       shift 2
       ;;
     *)
-      printf 'Usage: %s [--project <path>] [--retry-failed <sha|all>]\n' "$0" >&2
+      usage >&2
       exit 2
       ;;
   esac
 done
+if [ "$drain_mode" -eq 1 ] && [ -n "$retry_selector" ]; then
+  printf 'llm-wiki: --drain and --retry-failed are mutually exclusive\n' >&2
+  exit 2
+fi
 if [ "$retry_selector" != all ] && [ -n "$retry_selector" ] && \
    [[ ! "$retry_selector" =~ ^[0-9a-fA-F]{40,64}$ ]]; then
   printf 'llm-wiki: retry selector must be a full source SHA or all\n' >&2
@@ -87,6 +103,22 @@ run_with_timeout() {
   run_without_git_env "$timeout_bin" -k "$kill_after" "$seconds" "$@"
 }
 
+USER_SYSTEMCTL_COMMAND=(systemctl)
+configure_user_systemctl_command() {
+  local uid runtime_dir bus_address
+  uid="$(id -u)"
+  runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$uid}"
+  bus_address="${DBUS_SESSION_BUS_ADDRESS:-}"
+
+  USER_SYSTEMCTL_COMMAND=(systemctl)
+  if [ -S "$runtime_dir/bus" ]; then
+    bus_address="${bus_address:-unix:path=$runtime_dir/bus}"
+    USER_SYSTEMCTL_COMMAND=(
+      env "XDG_RUNTIME_DIR=$runtime_dir" "DBUS_SESSION_BUS_ADDRESS=$bus_address" systemctl
+    )
+  fi
+}
+
 clear_git_tool_environment() {
   local name
   for name in "${GIT_ENV_NAMES[@]}"; do
@@ -103,13 +135,19 @@ pending_dir="$state_dir/pending"
 failed_dir="$state_dir/failed"
 failure_count_file="$state_dir/consecutive-failures"
 breaker_file="$state_dir/refresh-disabled"
+publication_blocked_file="$state_dir/publication-blocked"
 canonical_config="$state_dir/config.json"
 lock_ref="${LLM_WIKI_LOCK_REF:-refs/llm-wiki/refresh-lock}"
 source_ref_prefix="refs/llm-wiki/sources"
 refresh_root="$state_dir/refresh-worktree"
 log_file="$state_dir/post-commit-refresh.log"
 refresh_branch="${LLM_WIKI_REFRESH_BRANCH:-llm-wiki/refresh}"
+refresh_remote="${LLM_WIKI_REFRESH_REMOTE:-origin}"
+remote_refresh_ref="refs/llm-wiki/remotes/refresh"
+remote_base_ref="refs/llm-wiki/remotes/base"
 lock_owner_oid=""
+global_lock_fd=""
+global_lock_keeper_pid=""
 owner_config="$canonical_config"
 [ -f "$owner_config" ] || owner_config="$committing_tree/.llm-wiki/config.json"
 if ! grep -Eq '"automation_enabled"[[:space:]]*:[[:space:]]*true' "$owner_config" 2>/dev/null || \
@@ -132,6 +170,7 @@ positive_integer_or_default() {
 
 max_auto_pending="$(positive_integer_or_default "${LLM_WIKI_MAX_AUTO_PENDING:-25}" 25)"
 max_batch_sources="$(positive_integer_or_default "${LLM_WIKI_MAX_BATCH_SOURCES:-10}" 10)"
+max_source_pin_batch="$(positive_integer_or_default "${LLM_WIKI_MAX_SOURCE_PIN_BATCH:-64}" 64)"
 max_paths_per_source="$(positive_integer_or_default "${LLM_WIKI_MAX_PATHS_PER_SOURCE:-20}" 20)"
 max_path_bytes="$(positive_integer_or_default "${LLM_WIKI_MAX_PATH_BYTES:-200}" 200)"
 
@@ -158,9 +197,15 @@ run_qmd() {
 
 sha="$(git rev-parse HEAD 2>/dev/null || true)"
 [ -n "$sha" ] || exit 0
-if [ -z "$retry_selector" ]; then
+if [ "$drain_mode" -eq 0 ] && [ -z "$retry_selector" ]; then
   changed_files="$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)"
   [ -n "$changed_files" ] || exit 0
+
+  # wiki/log.md is compiled from wiki/log.d fragments. A commit that only
+  # rewrites the compiled projection contains no new source for the wiki agent.
+  if ! printf '%s\n' "$changed_files" | grep -Fqvx 'wiki/log.md'; then
+    exit 0
+  fi
 
   if ! printf '%s\n' "$changed_files" | grep -Eq \
     '(^|/)(schema\.rb|structure\.sql|db/migrate/|migrations/|models/|entities/|prisma/schema\.prisma|routes|controllers|handlers|resolvers|app/|src/|lib/|test/|tests/|spec/|templates/|config/|bin/|README\.md|Gemfile|Gemfile\.lock|package\.json|package-lock\.json|go\.mod|go\.sum|Cargo\.toml|Cargo\.lock|requirements\.txt|pyproject\.toml|poetry\.lock|composer\.json|composer\.lock|docs/|wiki/|raw/notes/|plans/|todos/|CHANGELOG\.md|AGENTS\.md|CLAUDE\.md)'; then
@@ -193,6 +238,21 @@ if [ -z "$retry_selector" ]; then
     log_line "automatic refresh circuit is open; source $sha queued"
     exit 0
   fi
+
+  scheduler_service="$(sed -n '1p' "$state_dir/scheduler-service" 2>/dev/null || true)"
+  if [ "${LLM_WIKI_SKIP_SYSTEMCTL:-${HIVE_SKIP_LLM_WIKI_SYSTEMCTL:-}}" != "1" ] && \
+     [[ "$scheduler_service" =~ ^llm-wiki-[A-Za-z0-9_.-]+\.service$ ]]; then
+    configure_user_systemctl_command
+    if command -v systemctl >/dev/null 2>&1 && \
+       run_with_timeout "${LLM_WIKI_SYSTEMCTL_TIMEOUT:-10}" \
+         "${USER_SYSTEMCTL_COMMAND[@]}" --user start --no-block "$scheduler_service" \
+         >>"$log_file" 2>&1; then
+      log_line "queued source $sha for memory-bounded systemd worker $scheduler_service"
+      exit 0
+    else
+      log_line "WARN: memory-bounded systemd worker $scheduler_service could not be signalled; keeping its configured marker and using machine-wide serialized fallback"
+    fi
+  fi
 fi
 
 # From this point onward every Git command is nested maintenance work against
@@ -206,6 +266,46 @@ process_identity() {
   else
     ps -o lstart= -p "$pid" 2>/dev/null | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
   fi
+}
+
+acquire_global_provider_lock() {
+  local uid runtime_dir lock_file lock_status
+  [ "${LLM_WIKI_GLOBAL_LOCK_HELD:-}" = "1" ] && return 0
+
+  uid="${UID:-$(id -u)}"
+  runtime_dir="${XDG_RUNTIME_DIR:-}"
+  if [ -z "$runtime_dir" ] && [ -d "/run/user/$uid" ] && [ -w "/run/user/$uid" ]; then
+    runtime_dir="/run/user/$uid"
+  fi
+  runtime_dir="${runtime_dir:-${TMPDIR:-/tmp}}"
+  lock_file="$runtime_dir/llm-wiki-refresh.lock"
+
+  if [ "${LLM_WIKI_DISABLE_FLOCK:-}" != "1" ] && command -v flock >/dev/null 2>&1; then
+    exec {global_lock_fd}>"$lock_file"
+    flock --nonblock "$global_lock_fd"
+    return
+  fi
+
+  command -v ruby >/dev/null 2>&1 || return 1
+  coproc LLM_WIKI_GLOBAL_LOCK_KEEPER {
+    # Hooks can inherit Bundler/Coverage loader state even when PATH resolves a
+    # different system Ruby. This helper only needs Ruby's core File API.
+    unset RUBYOPT RUBYLIB BUNDLER_SETUP BUNDLE_GEMFILE BUNDLE_BIN_PATH \
+      GEM_HOME GEM_PATH RUBYGEMS_GEMDEPS
+    ruby -e '
+      lock = File.open(ARGV.fetch(0), File::RDWR | File::CREAT, 0o600)
+      if lock.flock(File::LOCK_EX | File::LOCK_NB)
+        STDOUT.puts("locked")
+        STDOUT.flush
+        STDIN.read
+      else
+        STDOUT.puts("busy")
+      end
+    ' "$lock_file"
+  }
+  global_lock_keeper_pid="$LLM_WIKI_GLOBAL_LOCK_KEEPER_PID"
+  IFS= read -r lock_status <&"${LLM_WIKI_GLOBAL_LOCK_KEEPER[0]}" || lock_status=""
+  [ "$lock_status" = "locked" ]
 }
 
 lock_owner_stale() {
@@ -266,17 +366,23 @@ pending_sources_present() {
   [ "$(pending_source_count)" -gt 0 ]
 }
 
+queue_temp_source_sha() {
+  local name
+  name="$(basename "$1")"
+  [[ "$name" =~ ^\.([0-9a-fA-F]{40,64})\.[0-9]+$ ]] || return 1
+  printf '%s\n' "${BASH_REMATCH[1]}"
+}
+
 recover_queue_temps() {
-  local path name queued_sha queued_sha_in_file queued_branch target
+  local path name queued_sha queued_sha_in_file queued_branch target recovery_tmp
   shopt -s nullglob
   for path in "$pending_dir"/.[0-9a-fA-F]*.*; do
     [ -f "$path" ] || continue
     name="$(basename "$path")"
-    if [[ ! "$name" =~ ^\.([0-9a-fA-F]{40,64})\.[0-9]+$ ]]; then
+    queued_sha="$(queue_temp_source_sha "$path")" || {
       log_line "WARN: unrecognized queue temp retained: $name"
       continue
-    fi
-    queued_sha="${BASH_REMATCH[1]}"
+    }
     target="$pending_dir/$queued_sha"
     if [ -f "$target" ]; then
       rm -f -- "$path"
@@ -285,7 +391,21 @@ recover_queue_temps() {
     fi
     IFS=$'\t' read -r queued_sha_in_file queued_branch <"$path" || true
     if [ "$queued_sha_in_file" != "$queued_sha" ]; then
-      log_line "WARN: incomplete queue temp retained: $name"
+      if ! git cat-file -e "${queued_sha}^{commit}" 2>/dev/null; then
+        log_line "WARN: incomplete queue temp retained because its source commit is unavailable: $name"
+        continue
+      fi
+      recovery_tmp="$state_dir/.queue-recovery.${queued_sha}.$$"
+      printf '%s\tinterrupted-write\n' "$queued_sha" >"$recovery_tmp"
+      if ! git diff-tree --no-commit-id --name-only -r "$queued_sha" \
+           >>"$recovery_tmp" 2>/dev/null; then
+        rm -f -- "$recovery_tmp"
+        log_line "WARN: incomplete queue temp retained because its source paths could not be read: $name"
+        continue
+      fi
+      mv -f -- "$recovery_tmp" "$target"
+      rm -f -- "$path"
+      log_line "reconstructed interrupted queue write for source $queued_sha"
       continue
     fi
     mv -f -- "$path" "$target"
@@ -305,27 +425,50 @@ open_backlog_circuit_if_needed() {
   return 0
 }
 
-pin_queued_sources() {
-  local path queued_sha queued_branch
+run_update_ref_transaction() {
+  [ "$#" -gt 0 ] || return 0
   {
     printf 'start\n'
-    shopt -s nullglob
-    for path in "$pending_dir"/* "$failed_dir"/*; do
-      [ -f "$path" ] || continue
-      queued_sha=""
-      queued_branch=""
-      IFS=$'\t' read -r queued_sha queued_branch <"$path" || true
-      if [[ "$queued_sha" =~ ^[0-9a-fA-F]{40,64}$ ]] && \
-         git cat-file -e "${queued_sha}^{commit}" 2>/dev/null; then
-        printf 'update %s/%s %s\n' "$source_ref_prefix" "$queued_sha" "$queued_sha"
-      else
-        log_line "ERROR: queued source is not an available commit: $queued_sha"
-      fi
-    done
-    shopt -u nullglob
+    printf '%s\n' "$@"
     printf 'commit\n'
   } | run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
     git update-ref --stdin >>"$log_file" 2>&1
+}
+
+pin_source_ref_batch() {
+  local queued_sha
+  local commands=()
+  for queued_sha in "$@"; do
+    commands+=("update $source_ref_prefix/$queued_sha $queued_sha")
+  done
+  run_update_ref_transaction "${commands[@]}"
+}
+
+pin_queued_sources() {
+  local path queued_sha queued_branch
+  local source_shas=()
+  shopt -s nullglob
+  for path in "$pending_dir"/* "$failed_dir"/*; do
+    [ -f "$path" ] || continue
+    queued_sha=""
+    queued_branch=""
+    IFS=$'\t' read -r queued_sha queued_branch <"$path" || true
+    if [[ "$queued_sha" =~ ^[0-9a-fA-F]{40,64}$ ]] && \
+       git cat-file -e "${queued_sha}^{commit}" 2>/dev/null; then
+      source_shas+=("$queued_sha")
+      if [ "${#source_shas[@]}" -ge "$max_source_pin_batch" ]; then
+        pin_source_ref_batch "${source_shas[@]}" || {
+          shopt -u nullglob
+          return 1
+        }
+        source_shas=()
+      fi
+    else
+      log_line "ERROR: queued source is not an available commit: $queued_sha"
+    fi
+  done
+  shopt -u nullglob
+  pin_source_ref_batch "${source_shas[@]}"
 }
 
 open_source_pin_circuit() {
@@ -350,6 +493,8 @@ reconcile_circuit_after_success() {
     printf 'quarantined:%s\n' "$failed_count" >"$breaker_tmp"
     mv -f "$breaker_tmp" "$breaker_file"
     log_line "refresh succeeded, but $failed_count quarantined source(s) remain; automatic refresh stays disabled"
+  elif [ "$pending_count" -gt 0 ] && [ "$drain_mode" -eq 1 ]; then
+    log_line "scheduled refresh left $pending_count newly arrived source(s) queued for the next bounded drain"
   elif [ "$pending_count" -gt 0 ]; then
     breaker_tmp="$state_dir/.refresh-disabled.$$"
     printf 'deferred:%s\n' "$pending_count" >"$breaker_tmp"
@@ -400,19 +545,6 @@ restore_failed_sources() {
   printf 'llm-wiki: retrying %s restored source(s) with queued work\n' "$restored"
 }
 
-failed_sources_present() {
-  local file
-  shopt -s nullglob
-  for file in "$failed_dir"/*; do
-    if [ -f "$file" ]; then
-      shopt -u nullglob
-      return 0
-    fi
-  done
-  shopt -u nullglob
-  return 1
-}
-
 failed_source_count() {
   local path count=0
   shopt -s nullglob
@@ -422,6 +554,36 @@ failed_source_count() {
   shopt -u nullglob
   printf '%s\n' "$count"
 }
+
+recoverable_queue_temps_present() {
+  local path queued_sha queued_sha_in_file
+  shopt -s nullglob
+  for path in "$pending_dir"/.[0-9a-fA-F]*.*; do
+    [ -f "$path" ] || continue
+    queued_sha="$(queue_temp_source_sha "$path")" || continue
+    queued_sha_in_file=""
+    IFS=$'\t' read -r queued_sha_in_file _ <"$path" || true
+    if [ "$queued_sha_in_file" = "$queued_sha" ] || \
+       git cat-file -e "${queued_sha}^{commit}" 2>/dev/null; then
+      shopt -u nullglob
+      return 0
+    fi
+  done
+  shopt -u nullglob
+  return 1
+}
+
+# Scheduled runs are queue consumers. Avoid taking the shared Git-ref lock or
+# preparing cache state when there is provably nothing they can consume. A
+# queued source must still be recovered and pinned while the circuit is open,
+# so the breaker is checked only after the worker owns the lock. The no-work
+# condition is checked again under the lock below for race safety.
+if [ "$drain_mode" -eq 1 ]; then
+  if ! pending_sources_present && ! recoverable_queue_temps_present; then
+    log_line "scheduled drain skipped; no queued sources"
+    exit 0
+  fi
+fi
 
 if ! acquire_lock; then
   log_line "refresh remains queued; worker lock was busy"
@@ -444,6 +606,8 @@ cleanup_refresh_worktree() {
 # shellcheck disable=SC2329
 cleanup() {
   cleanup_refresh_worktree
+  [ -n "$global_lock_keeper_pid" ] && kill "$global_lock_keeper_pid" 2>/dev/null || true
+  [ -n "$global_lock_keeper_pid" ] && wait "$global_lock_keeper_pid" 2>/dev/null || true
   [ -n "$lock_owner_oid" ] && \
     run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
       git update-ref -d "$lock_ref" "$lock_owner_oid" \
@@ -454,7 +618,7 @@ trap cleanup EXIT
 default_base_ref() {
   local candidate
   candidate="$(git symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null || true)"
-  for candidate in "$candidate" refs/remotes/origin/main refs/remotes/origin/master refs/heads/main refs/heads/master; do
+  for candidate in "$remote_base_ref" "$candidate" refs/remotes/origin/main refs/remotes/origin/master refs/heads/main refs/heads/master; do
     [ -n "$candidate" ] || continue
     if git rev-parse --verify --quiet "${candidate}^{commit}" >/dev/null; then
       printf '%s\n' "$candidate"
@@ -464,24 +628,138 @@ default_base_ref() {
   printf '%s\n' "$sha"
 }
 
+sync_remote_base_ref() {
+  local symref_output branch_ref candidate
+  git update-ref -d "$remote_base_ref" >/dev/null 2>&1 || true
+  publication_required || return 0
+
+  symref_output="$(
+    run_with_timeout "${LLM_WIKI_GIT_FETCH_TIMEOUT:-120}" \
+      git ls-remote --symref "$refresh_remote" HEAD 2>>"$log_file" || true
+  )"
+  branch_ref="$(printf '%s\n' "$symref_output" | awk '$1 == "ref:" && $3 == "HEAD" { print $2; exit }')"
+  if [ -z "$branch_ref" ]; then
+    for candidate in main master; do
+      if run_with_timeout "${LLM_WIKI_GIT_FETCH_TIMEOUT:-120}" \
+           git ls-remote --exit-code --heads "$refresh_remote" "refs/heads/$candidate" \
+           >>"$log_file" 2>&1; then
+        branch_ref="refs/heads/$candidate"
+        break
+      fi
+    done
+  fi
+  if [ -z "$branch_ref" ]; then
+    log_line "ERROR: could not resolve the default branch on $refresh_remote; queue retained"
+    return 1
+  fi
+
+  run_with_timeout "${LLM_WIKI_GIT_FETCH_TIMEOUT:-120}" \
+    git fetch --no-tags "$refresh_remote" "$branch_ref:$remote_base_ref" \
+    >>"$log_file" 2>&1 || {
+      log_line "ERROR: could not fetch $refresh_remote default branch; queue retained"
+      return 1
+    }
+}
+
+publication_required() {
+  [ "${LLM_WIKI_SKIP_PUSH:-}" != "1" ] && \
+    git remote get-url "$refresh_remote" >/dev/null 2>&1
+}
+
+sync_remote_refresh_ref() {
+  local remote_head status
+  git update-ref -d "$remote_refresh_ref" >/dev/null 2>&1 || true
+  publication_required || return 0
+
+  if remote_head="$(
+    run_with_timeout "${LLM_WIKI_GIT_FETCH_TIMEOUT:-120}" \
+      git ls-remote --exit-code --heads "$refresh_remote" \
+      "refs/heads/$refresh_branch" 2>>"$log_file"
+  )"; then
+    [ -n "$remote_head" ] || return 0
+  else
+    status=$?
+    if [ "$status" -eq 2 ]; then
+      return 0
+    fi
+    log_line "ERROR: could not inspect $refresh_remote/$refresh_branch; queue retained"
+    return 1
+  fi
+
+  run_with_timeout "${LLM_WIKI_GIT_FETCH_TIMEOUT:-120}" \
+    git fetch --no-tags "$refresh_remote" \
+    "refs/heads/$refresh_branch:$remote_refresh_ref" \
+    >>"$log_file" 2>&1 || {
+      log_line "ERROR: could not fetch $refresh_remote/$refresh_branch; queue retained"
+      return 1
+    }
+}
+
+merge_refresh_ref() {
+  local merge_ref="$1" description="$2" blocked_tmp
+  git -C "$refresh_root" merge-base --is-ancestor "$merge_ref" HEAD 2>/dev/null && return 0
+  if HIVE_SKIP_LLM_WIKI_POST_COMMIT=1 \
+       git -C "$refresh_root" -c core.hooksPath=/dev/null \
+       merge --no-edit "$merge_ref" >>"$log_file" 2>&1; then
+    return 0
+  fi
+
+  HIVE_SKIP_LLM_WIKI_POST_COMMIT=1 \
+    git -C "$refresh_root" -c core.hooksPath=/dev/null \
+    merge --abort >>"$log_file" 2>&1 || true
+  blocked_tmp="$state_dir/.publication-blocked.$$"
+  {
+    printf 'ref=%s\n' "$merge_ref"
+    printf 'description=%s\n' "$description"
+    printf 'recorded_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } >"$blocked_tmp"
+  mv -f "$blocked_tmp" "$publication_blocked_file"
+  log_line "ERROR: could not merge $description into $refresh_branch; queue retained"
+  return 1
+}
+
 prepare_refresh_worktree() {
   local base_ref
-  base_ref="$(default_base_ref)"
   cleanup_refresh_worktree
   mkdir -p "$state_dir"
+  sync_remote_refresh_ref || return 1
+  sync_remote_base_ref || return 1
+  base_ref="$(default_base_ref)"
 
   if git show-ref --verify --quiet "refs/heads/$refresh_branch"; then
     git worktree add "$refresh_root" "$refresh_branch" >>"$log_file" 2>&1 || return 1
-    if ! HIVE_SKIP_LLM_WIKI_POST_COMMIT=1 \
-         git -C "$refresh_root" -c core.hooksPath=/dev/null rebase "$base_ref" >>"$log_file" 2>&1; then
-      HIVE_SKIP_LLM_WIKI_POST_COMMIT=1 \
-        git -C "$refresh_root" -c core.hooksPath=/dev/null rebase --abort >>"$log_file" 2>&1 || true
-      log_line "ERROR: could not rebase $refresh_branch onto $base_ref; queue retained"
-      return 1
-    fi
+  elif git show-ref --verify --quiet "$remote_refresh_ref"; then
+    git worktree add -b "$refresh_branch" "$refresh_root" "$remote_refresh_ref" \
+      >>"$log_file" 2>&1 || return 1
   else
     git worktree add -b "$refresh_branch" "$refresh_root" "$base_ref" >>"$log_file" 2>&1 || return 1
   fi
+
+  if git show-ref --verify --quiet "$remote_refresh_ref"; then
+    merge_refresh_ref "$remote_refresh_ref" "$refresh_remote/$refresh_branch" || return 1
+  fi
+  merge_refresh_ref "$base_ref" "$base_ref" || return 1
+  rm -f -- "$publication_blocked_file"
+}
+
+publish_refresh_branch() {
+  if [ "${LLM_WIKI_SKIP_PUSH:-}" = "1" ]; then
+    log_line "refresh branch push skipped by LLM_WIKI_SKIP_PUSH"
+    return 0
+  fi
+  if ! git remote get-url "$refresh_remote" >/dev/null 2>&1; then
+    log_line "refresh branch kept locally; remote $refresh_remote is not configured"
+    return 0
+  fi
+
+  if ! HIVE_SKIP_LLM_WIKI_POST_COMMIT=1 \
+    run_with_timeout "${LLM_WIKI_GIT_PUSH_TIMEOUT:-120}" \
+      git -C "$refresh_root" -c core.hooksPath=/dev/null \
+      push "$refresh_remote" "HEAD:refs/heads/$refresh_branch" \
+      >>"$log_file" 2>&1; then
+    return 2
+  fi
+  git update-ref "$remote_refresh_ref" "$(git -C "$refresh_root" rev-parse HEAD)"
 }
 
 seed_untracked_local_wiki() {
@@ -522,12 +800,6 @@ wiki_only_changes() {
 
 run_refresh_agent() {
   local prompt="$1"
-  if [ -n "${LLM_WIKI_REFRESH_CMD:-}" ]; then
-    run_with_timeout "${LLM_WIKI_REFRESH_TIMEOUT:-1800}" \
-      "$LLM_WIKI_REFRESH_CMD" "$refresh_root" "$prompt" >>"$log_file" 2>&1
-    return $?
-  fi
-
   local headless_agent timeout_seconds owner_config openclaw_agent_id
   owner_config="$canonical_config"
   [ -f "$owner_config" ] || owner_config="$committing_tree/.llm-wiki/config.json"
@@ -592,26 +864,71 @@ snapshot_queue() {
   [ "${#QUEUE_FILES[@]}" -gt 0 ]
 }
 
-source_receipted() {
+local_source_commit() {
   local queued_sha="$1"
-  git show-ref --verify --quiet "refs/llm-wiki/receipts/$queued_sha" && return 0
-  git -C "$refresh_root" log --format=%B 2>/dev/null | \
-    grep -Fqx "LLM-Wiki-Source: $queued_sha"
+  git -C "$refresh_root" log -n 1 --format=%H --fixed-strings \
+    --grep="LLM-Wiki-Source: $queued_sha" 2>/dev/null || true
+}
+
+source_receipted() {
+  local queued_sha="$1" receipt_commit
+  receipt_commit="$(git rev-parse --verify "refs/llm-wiki/receipts/$queued_sha^{commit}" 2>/dev/null || true)"
+  if [ -n "$receipt_commit" ]; then
+    publication_required || return 0
+    if git show-ref --verify --quiet "$remote_refresh_ref" && \
+       git merge-base --is-ancestor "$receipt_commit" "$remote_refresh_ref"; then
+      return 0
+    fi
+  fi
+  receipt_commit="$(local_source_commit "$queued_sha")"
+  [ -n "$receipt_commit" ] || return 1
+  publication_required || return 0
+  git show-ref --verify --quiet "$remote_refresh_ref" || return 1
+  git merge-base --is-ancestor "$receipt_commit" "$remote_refresh_ref"
+}
+
+publish_retained_sources() {
+  local file queued_sha queued_branch status
+  local original=("${QUEUE_FILES[@]}") retained=() remaining=()
+  for file in "${QUEUE_FILES[@]}"; do
+    IFS=$'\t' read -r queued_sha queued_branch <"$file"
+    if [ -n "$(local_source_commit "$queued_sha")" ]; then
+      retained+=("$file")
+    else
+      remaining+=("$file")
+    fi
+  done
+  [ "${#retained[@]}" -gt 0 ] || return 0
+
+  QUEUE_FILES=("${retained[@]}")
+  if publish_refresh_branch; then
+    status=0
+  else
+    status=$?
+    QUEUE_FILES=("${original[@]}")
+    log_line "WARN: could not publish retained $refresh_branch commit; queue retained"
+    return "$status"
+  fi
+  if ! write_source_receipts; then
+    QUEUE_FILES=("${original[@]}")
+    log_line "ERROR: could not write retained source receipts; queue retained"
+    return 1
+  fi
+  rm -f -- "${retained[@]}"
+  QUEUE_FILES=("${remaining[@]}")
+  log_line "published ${#retained[@]} retained source(s) without another agent run"
 }
 
 write_source_receipts() {
   local refresh_head file queued_sha queued_branch
+  local commands=()
   refresh_head="$(git -C "$refresh_root" rev-parse HEAD)"
-  {
-    printf 'start\n'
-    for file in "${QUEUE_FILES[@]}"; do
-      IFS=$'\t' read -r queued_sha queued_branch <"$file"
-      printf 'update refs/llm-wiki/receipts/%s %s\n' "$queued_sha" "$refresh_head"
-      printf 'delete %s/%s\n' "$source_ref_prefix" "$queued_sha"
-    done
-    printf 'commit\n'
-  } | run_with_timeout "${LLM_WIKI_GIT_REF_TIMEOUT:-5}" \
-    git update-ref --stdin >>"$log_file" 2>&1
+  for file in "${QUEUE_FILES[@]}"; do
+    IFS=$'\t' read -r queued_sha queued_branch <"$file"
+    commands+=("update refs/llm-wiki/receipts/$queued_sha $refresh_head")
+    commands+=("delete $source_ref_prefix/$queued_sha")
+  done
+  run_update_ref_transaction "${commands[@]}"
 }
 
 prune_receipted_queue_files() {
@@ -633,7 +950,7 @@ prune_receipted_queue_files() {
 }
 
 record_batch_failure() {
-  local file queued_sha queued_branch count max_attempts count_tmp remaining=0
+  local file queued_sha queued_branch count max_attempts count_tmp unreceipted=0
   max_attempts="${LLM_WIKI_MAX_REFRESH_ATTEMPTS:-2}"
   [[ "$max_attempts" =~ ^[1-9][0-9]*$ ]] || max_attempts=2
 
@@ -648,9 +965,9 @@ record_batch_failure() {
       log_line "acknowledged committed source $queued_sha after receipt write failure"
       continue
     fi
-    remaining=1
+    unreceipted=1
   done
-  if [ "$remaining" -eq 0 ]; then
+  if [ "$unreceipted" -eq 0 ]; then
     rm -f -- "$failure_count_file"
     reconcile_circuit_after_success
     return 0
@@ -682,6 +999,13 @@ process_queue_batch() {
   local LC_ALL=C
   local commit_args=()
   prune_receipted_queue_files
+  if [ "${#QUEUE_FILES[@]}" -eq 0 ]; then
+    rm -f -- "$failure_count_file"
+    return 0
+  fi
+  retained_status=0
+  publish_retained_sources || retained_status=$?
+  [ "$retained_status" -eq 0 ] || return "$retained_status"
   if [ "${#QUEUE_FILES[@]}" -eq 0 ]; then
     rm -f -- "$failure_count_file"
     return 0
@@ -767,6 +1091,21 @@ PROMPT
       log_line "ERROR: refresh commit failed; queue retained"
       return 1
     fi
+  elif publication_required; then
+    short_source="$(basename "${QUEUE_FILES[0]}")"
+    if ! HIVE_SKIP_LLM_WIKI_POST_COMMIT=1 \
+         git -C "$refresh_root" -c core.hooksPath=/dev/null \
+         commit --allow-empty \
+         -m "docs(wiki): acknowledge ${#QUEUE_FILES[@]} commit(s) at ${short_source:0:12}" \
+         "${commit_args[@]}" >>"$log_file" 2>&1; then
+      log_line "ERROR: empty refresh acknowledgement commit failed; queue retained"
+      return 1
+    fi
+  fi
+
+  if ! publish_refresh_branch; then
+    log_line "WARN: could not push $refresh_branch to $refresh_remote; generated commit and queue retained"
+    return 2
   fi
 
   if ! write_source_receipts; then
@@ -780,8 +1119,19 @@ PROMPT
   return 0
 }
 
-configure_qmd_environment
 recover_queue_temps
+
+# A scheduled drain is a queue consumer, never a source-discovery trigger.
+# Check for work before pinning sources or preparing the managed worktree so an
+# idle timer cannot mutate refresh state. Circuit-blocked work is deliberately
+# pinned first, preserving queued commits until a later bounded retry.
+if [ "$drain_mode" -eq 1 ]; then
+  if ! pending_sources_present; then
+    log_line "scheduled drain skipped; no queued sources"
+    exit 0
+  fi
+fi
+
 if ! pin_queued_sources; then
   open_source_pin_circuit
   if [ -n "$retry_selector" ]; then
@@ -794,14 +1144,30 @@ if [ -n "$retry_selector" ]; then
   if ! restore_failed_sources; then
     exit 1
   fi
+  rm -f -- "$publication_blocked_file"
 # A worker can pass the pre-lock check and then wait while its predecessor opens
 # the circuit. Re-check under the lock before any worktree or provider action.
 elif [ -f "$breaker_file" ]; then
   log_line "automatic refresh circuit remains open; queued sources retained"
   exit 0
+elif [ -f "$publication_blocked_file" ]; then
+  log_line "automatic refresh publication remains blocked by a merge conflict; queued sources retained; run --retry-failed all after resolving the branch"
+  exit 0
 elif open_backlog_circuit_if_needed; then
   exit 0
 fi
+if ! pending_sources_present; then
+  exit 0
+fi
+if ! acquire_global_provider_lock; then
+  log_line "refresh remains queued; machine-wide provider lock was busy"
+  if [ -n "$retry_selector" ]; then
+    printf 'llm-wiki: retry deferred; machine-wide refresh worker is busy\n' >&2
+    exit 1
+  fi
+  exit 0
+fi
+configure_qmd_environment
 if ! prepare_refresh_worktree; then
   log_line "ERROR: could not prepare managed refresh worktree; queue retained"
   if [ -n "$retry_selector" ]; then
@@ -818,8 +1184,19 @@ if ! seed_untracked_local_wiki; then
   exit 0
 fi
 
-if snapshot_queue; then
-  if ! process_queue_batch; then
+drain_batch_count=0
+max_drain_batches="$(positive_integer_or_default "${LLM_WIKI_MAX_DRAIN_BATCHES:-3}" 3)"
+while snapshot_queue; do
+  batch_status=0
+  process_queue_batch || batch_status=$?
+  if [ "$batch_status" -eq 2 ]; then
+    log_line "refresh publication deferred; it will retry without opening the provider circuit"
+    if [ -n "$retry_selector" ]; then
+      printf 'llm-wiki: retry generated the refresh but publication is still deferred; see %s\n' "$log_file" >&2
+      exit 1
+    fi
+    exit 0
+  elif [ "$batch_status" -ne 0 ]; then
     record_batch_failure
     if [ -n "$retry_selector" ]; then
       printf 'llm-wiki: retry failed; see %s\n' "$log_file" >&2
@@ -827,7 +1204,12 @@ if snapshot_queue; then
     fi
     exit 0
   fi
-fi
+  drain_batch_count=$((drain_batch_count + 1))
+  if [ "$drain_mode" -ne 1 ] || [ "$drain_batch_count" -ge "$max_drain_batches" ]; then
+    break
+  fi
+  sleep "${LLM_WIKI_DRAIN_SETTLE_SECONDS:-1}"
+done
 
 reconcile_circuit_after_success
 
