@@ -55,9 +55,10 @@ The live smoke requires these names and schemas, exercises all three canonical v
 
 ## Capture Contract
 
-The adapter is a local capture engine only. The skills preflight every
-requested dimension before browser navigation or any Screenote publication.
-Normal settling consumes numeric-only metrics rather than page text.
+The adapter is a local capture engine only. Browser-backed workflows preflight
+every requested dimension before navigation or publication. Explicit existing
+PNG/JPEG files publish through the CLI without starting this adapter. Normal
+settling consumes numeric-only metrics rather than page text.
 Lazy-load traversal stops at the actual bottom/no-advance condition or the
 5000 px/10-scroll cap, and capture writes the first 5000 px directly to a new
 PNG below the system temp directory. The upstream base64 image response and

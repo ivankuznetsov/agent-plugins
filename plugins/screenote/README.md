@@ -4,8 +4,9 @@ Give your AI coding agent eyes. Capture a page or your whole app, publish it to
 Screenote, annotate visually, and let Claude Code or Codex retrieve the
 feedback from the terminal.
 
-Screenote account operations use the public `screenote` CLI and OAuth. A
-bundled, pinned Browser Use adapter is used only to create local PNG files; it
+Screenote account operations use the public `screenote` CLI and OAuth. Existing
+PNG/JPEG files publish directly through the CLI. A bundled, pinned Browser Use
+adapter is used only when the agent needs to create new local PNG files; it
 never talks to the Screenote API.
 
 **Supports Claude Code and Codex.**
@@ -91,16 +92,16 @@ For a whole application:
 ## Architecture
 
 ```text
-page ── Browser Use adapter ── local PNG files
-                                    │
-                                    ▼
-                         screenote snapshot (OAuth CLI)
-                                    │
-                                    ▼
-                       Screenote review and annotations
-                                    │
-                                    ▼
-                   screenote annotation/comment (OAuth CLI)
+page ── Browser Use adapter ── local PNG files ─┐
+existing PNG/JPEG files ────────────────────────┤
+                                               ▼
+                                    screenote snapshot (OAuth CLI)
+                                               │
+                                               ▼
+                                  Screenote review and annotations
+                                               │
+                                               ▼
+                              screenote annotation/comment (OAuth CLI)
 ```
 
 The boundary is deliberate:
@@ -145,6 +146,27 @@ Natural-language targets also work:
 /screenote the signup page
 ```
 
+### Publish existing screenshots
+
+Pass a local PNG or JPEG path when a screenshot already exists:
+
+```bash
+/screenote desktop ./tmp/dashboard.png
+```
+
+For responsive variants, pass files whose names or canonical widths identify
+desktop, tablet, and mobile. The skill validates and inspects the files, copies
+them into a private manifest directory, and publishes them without starting
+Browser Use:
+
+```bash
+/screenote ./tmp/dashboard-desktop.png ./tmp/dashboard-mobile.png
+```
+
+File-backed conversation attachments work the same way when the host exposes a
+readable local path. The skill never scans the filesystem to choose a
+screenshot implicitly.
+
 ### Snapshot the entire app
 
 ```bash
@@ -188,7 +210,8 @@ asks you to choose or offers to create a project through the CLI.
 - The [Screenote CLI](https://github.com/ivankuznetsov/screenote-cli), installed
   with Go 1.26+
 - OAuth completed with `screenote login` or `screenote login --device`
-- Python 3.11+, `uv`, and Chromium/Chrome for local Browser Use capture
+- Python 3.11+, `uv`, and Chromium/Chrome only when capturing a page with
+  Browser Use; publishing existing images does not require them
 
 ## License
 

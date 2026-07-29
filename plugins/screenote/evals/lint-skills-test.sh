@@ -1,5 +1,5 @@
 #!/bin/bash
-# Regression fixtures: capture-contract drift and Screenote MCP transport must fail lint.
+# Regression fixtures: capture drift, browser-gated files, and MCP transport fail lint.
 
 set -euo pipefail
 
@@ -88,6 +88,26 @@ if (cd "$capture_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
   exit 1
 fi
 echo "PASS: lint rejects Browser Use capture-contract drift"
+
+existing_image_case="$TMP_DIR/existing-image-browser-gate/repo/plugins/screenote"
+make_case "$existing_image_case"
+python3 - "$existing_image_case/references/cli.md" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+path.write_text(
+    path.read_text().replace(
+        "does not start Browser Use or call any `browser_*` tool",
+        "still requires Browser Use preflight",
+    )
+)
+PY
+if (cd "$existing_image_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  echo "FAIL: lint accepted a browser gate for existing-image publication" >&2
+  exit 1
+fi
+echo "PASS: lint rejects browser-gated existing-image publication"
 
 shell_case="$TMP_DIR/shell-safety/repo/plugins/screenote"
 make_case "$shell_case"

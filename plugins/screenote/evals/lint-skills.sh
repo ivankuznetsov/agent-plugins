@@ -83,6 +83,10 @@ require_text "$CLI_CONTRACT" 'screenote --base-url "${SCREENOTE_BASE_URL:-https:
 require_text "$CLI_CONTRACT" 'stdout and stderr as separate JSON Lines streams' "device OAuth documents its streaming output"
 require_text "$CLI_CONTRACT" 'event as failure; use the process exit status' "device OAuth distinguishes authorization from terminal output"
 require_text "$CLI_CONTRACT" 'command runner merges the two streams' "device OAuth supports merged-output command runners"
+require_text "$CLI_CONTRACT" 'Existing-image publication' "CLI contract separates existing-image publication from browser capture"
+require_text "$CLI_CONTRACT" 'does not start Browser Use or call any `browser_*` tool' "existing images bypass the browser runtime"
+require_text skills/screenote/SKILL.md '## Existing-image mode' "screenote supports explicit local image files"
+require_text skills/screenote/SKILL.md 'Skip Browser Use discovery, preflight, navigation, and capture entirely.' "existing-image mode cannot be blocked by browser startup"
 require_text skills/feedback/SKILL.md '`crop_unavailable`' "feedback handles unavailable crops"
 require_text skills/feedback/SKILL.md 'Continue with the remaining annotations' "one missing crop does not hide other feedback"
 

@@ -2,6 +2,16 @@
 
 All notable changes to the Screenote plugin are documented here.
 
+## Unreleased
+
+### Fixed
+
+- Allow explicit existing PNG/JPEG files and file-backed attachments to publish
+  through the manifest CLI without starting or verifying Browser Use.
+- Keep strict viewport verification for fresh browser captures while validating
+  existing files by readability, size, byte type, decoding, and viewport
+  assignment.
+
 ## [2.0.1] - 2026-07-13
 
 ### Fixed

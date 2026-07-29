@@ -6,6 +6,8 @@
   {"query": "desktop screenshot of /dashboard", "should_trigger": "screenote"},
   {"query": "Screenshot the signup page at all viewports", "should_trigger": "screenote"},
   {"query": "screenote the pricing page", "should_trigger": "screenote"},
+  {"query": "Upload ./tmp/dashboard.png to Screenote for review", "should_trigger": "screenote"},
+  {"query": "Share these existing desktop and mobile screenshots in Screenote", "should_trigger": "screenote"},
   {"query": "Snapshot the entire app", "should_trigger": "snapshot"},
   {"query": "snapshot mobile http://localhost:3000", "should_trigger": "snapshot"},
   {"query": "snapshot tablet http://localhost:3000", "should_trigger": "snapshot"},
