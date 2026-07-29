@@ -1,8 +1,8 @@
 # Screenote
 
 Give an AI coding agent a visual feedback loop: capture a page or a route set,
-publish private PNGs through the external Screenote JSON CLI, retrieve visual
-annotations, and comment after applying a fix.
+publish new or existing PNG/JPEG images through the external Screenote JSON
+CLI, retrieve visual annotations, and comment after applying a fix.
 
 The plugin ships the same `screenote`, `snapshot`, and `feedback` workflows for
 Claude Code, Codex, Pi, and OpenClaw. It detects the `screenote` executable but
@@ -70,6 +70,23 @@ Capture one viewport:
 /screenote mobile https://example.test/login
 ```
 
+Publish an existing image without starting browser automation:
+
+```text
+/screenote desktop ./tmp/login.png
+```
+
+Multiple explicitly named files may be published serially:
+
+```text
+/screenote ./tmp/login-desktop.png ./tmp/login-mobile.png
+```
+
+The helper validates file type, extension, image structure, dimensions, size,
+and every source-path component for symlinks, then uploads a new private copy.
+It never passes the original path or basename in CLI file or metadata arguments,
+and never deletes the source file.
+
 Discover, confirm, and capture an application route set:
 
 ```text
@@ -88,6 +105,8 @@ does not perform the final resolution mutation.
 ## Safety and failure behavior
 
 - Navigation is limited to user-specified or locally discovered HTTP(S) URLs.
+- Explicit PNG/JPEG paths bypass browser capture only after safe local
+  validation and copying into the plugin-owned private directory.
 - Native browser automation captures serially to a unique mode-`0700`
   directory with mode-`0600` files.
 - `scripts/screenote-cli.sh` accepts only project/page/screenshot/annotation
@@ -108,7 +127,8 @@ error mapping, project precedence, capture boundary, cleanup rules, and the
 
 - A compatible `screenote` executable on `PATH`
 - A Screenote account and an accessible project
-- A supported agent host with native browser automation for capture workflows
+- A supported agent host with native browser automation only for fresh capture
+  workflows; existing-image publication does not need a browser runtime
 
 ## License
 

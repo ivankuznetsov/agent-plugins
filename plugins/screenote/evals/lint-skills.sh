@@ -62,6 +62,14 @@ for required in \
   grep -R -Fq -- "$required" references skills || fail "shared workflow is missing: $required"
 done
 
+require_text skills/screenote/SKILL.md 'Existing-image upload mode'
+require_text skills/screenote/SKILL.md 'prepare-existing-image'
+require_text skills/screenote/SKILL.md 'never copy'
+require_text skills/screenote/SKILL.md 'source path or basename'
+require_text references/cli.md 'does not start browser automation'
+require_text references/cli.md 'private copy'
+require_text scripts/screenote_flow.py 'prepare_existing_image'
+
 [[ ! -e .mcp.json ]] || fail ".mcp.json must not exist"
 
 active_files=(references skills .claude-plugin/plugin.json .codex-plugin/plugin.json scripts/screenote-cli.sh scripts/screenote_flow.py)

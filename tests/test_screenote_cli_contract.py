@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import stat
@@ -8,10 +9,12 @@ from pathlib import Path
 
 from scripts.screenote_flow import (
     CaptureSafetyError,
+    MAX_IMAGE_BYTES,
     ProjectResolutionError,
     WORKFLOW_CONTRACT,
     create_private_directory,
     create_private_file,
+    prepare_existing_image,
     resolve_project,
     run_flow,
     validate_http_url,
@@ -25,6 +28,23 @@ SHIPPED_FLOW = PLUGIN_ROOT / "scripts/screenote_flow.py"
 FIXTURE_ROOT = REPO_ROOT / "tests/fixtures/screenote-cli"
 SCENARIOS = FIXTURE_ROOT / "scenarios"
 APPROVED = {tuple(command.split()) for command in WORKFLOW_CONTRACT["commands"]}
+PNG_1X1 = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg=="
+)
+JPEG_1X1 = base64.b64decode(
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a"
+    "HBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy"
+    "MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIA"
+    "AhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQA"
+    "AAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3"
+    "ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWm"
+    "p6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEA"
+    "AwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSEx"
+    "BhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElK"
+    "U1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3"
+    "uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iii"
+    "gD//2Q=="
+)
 
 
 class ScreenoteCliContractTests(unittest.TestCase):
@@ -195,6 +215,10 @@ class ScreenoteCliContractTests(unittest.TestCase):
         self.assertEqual(SHIPPED_FLOW.resolve(), Path(run_flow.__code__.co_filename).resolve())
         contract_path = PLUGIN_ROOT / "references/workflows.json"
         self.assertTrue(contract_path.is_file())
+        self.assertEqual(
+            ["browser_capture", "existing_image"],
+            WORKFLOW_CONTRACT["workflows"]["screenote"]["input_modes"],
+        )
         for workflow, specification in WORKFLOW_CONTRACT["workflows"].items():
             skill_path = PLUGIN_ROOT / specification["skill"]
             body = skill_path.read_text(encoding="utf-8")
@@ -390,6 +414,155 @@ class ScreenoteCliContractTests(unittest.TestCase):
         symlink.symlink_to(private / "capture.png")
         with self.assertRaises(CaptureSafetyError):
             create_private_file(private, "linked.png")
+
+    def test_existing_images_are_validated_and_copied_to_private_paths(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        source = root / "shared.png"
+        source.write_bytes(PNG_1X1)
+        private = create_private_directory(root / "captures")
+
+        prepared = prepare_existing_image(source, private)
+
+        self.assertEqual(private / "existing-desktop.png", prepared.path)
+        self.assertEqual("desktop", prepared.viewport)
+        self.assertEqual("image/png", prepared.content_type)
+        self.assertEqual((1, 1), (prepared.width, prepared.height))
+        self.assertEqual(PNG_1X1, prepared.path.read_bytes())
+        self.assertEqual(0o600, stat.S_IMODE(prepared.path.stat().st_mode))
+        self.assertEqual(PNG_1X1, source.read_bytes(), "the user-owned source must remain unchanged")
+
+        jpeg_source = root / "shared.jpeg"
+        jpeg_source.write_bytes(JPEG_1X1)
+        jpeg = prepare_existing_image(jpeg_source, private, viewport="tablet")
+        self.assertEqual(private / "existing-tablet.jpg", jpeg.path)
+        self.assertEqual("image/jpeg", jpeg.content_type)
+        self.assertEqual((1, 1), (jpeg.width, jpeg.height))
+
+    def test_existing_image_helper_rejects_unsafe_or_invalid_sources(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        private = create_private_directory(root / "captures")
+
+        valid = root / "valid.png"
+        valid.write_bytes(PNG_1X1)
+        linked = root / "linked.png"
+        linked.symlink_to(valid)
+        linked_parent = root / "linked-parent"
+        actual_parent = root / "actual-parent"
+        actual_parent.mkdir()
+        (actual_parent / "nested.png").write_bytes(PNG_1X1)
+        linked_parent.symlink_to(actual_parent, target_is_directory=True)
+        mismatched = root / "mismatched.jpg"
+        mismatched.write_bytes(PNG_1X1)
+        malformed = root / "malformed.png"
+        malformed.write_bytes(b"not-an-image")
+        empty = root / "empty.png"
+        empty.touch()
+        bad_png_crc = root / "bad-crc.png"
+        bad_png_crc.write_bytes(PNG_1X1[:29] + bytes([PNG_1X1[29] ^ 1]) + PNG_1X1[30:])
+        header_only_jpeg = root / "header-only.jpg"
+        header_only_jpeg.write_bytes(
+            b"\xff\xd8\xff\xc0\x00\x11\x08\x00\x01\x00\x01\x03"
+            b"\x01\x11\x00\x02\x11\x00\x03\x11\x00\xff\xd9"
+        )
+        fifo = root / "blocking.png"
+        os.mkfifo(fifo)
+        oversized = root / "oversized.png"
+        with oversized.open("wb") as handle:
+            handle.truncate(MAX_IMAGE_BYTES + 1)
+
+        for source in (
+            linked,
+            linked_parent / "nested.png",
+            mismatched,
+            malformed,
+            empty,
+            bad_png_crc,
+            header_only_jpeg,
+            fifo,
+            oversized,
+            root / "missing.png",
+        ):
+            with self.subTest(source=source.name), self.assertRaises(CaptureSafetyError):
+                prepare_existing_image(source, private)
+
+        first = prepare_existing_image(valid, private, viewport="mobile")
+        second = prepare_existing_image(valid, private, viewport="mobile")
+        self.assertEqual(private / "existing-mobile.png", first.path)
+        self.assertEqual(private / "existing-mobile-2.png", second.path)
+        self.assertEqual(PNG_1X1, first.path.read_bytes())
+        self.assertEqual(PNG_1X1, second.path.read_bytes())
+        with self.assertRaises(CaptureSafetyError):
+            prepare_existing_image(valid, private, viewport="watch")
+
+    def test_existing_image_prepare_command_returns_only_private_metadata(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        source = root / "private-name.png"
+        source.write_bytes(PNG_1X1)
+        private = create_private_directory(root / "captures")
+
+        result = subprocess.run(
+            [
+                str(SHIPPED_FLOW),
+                "prepare-existing-image",
+                "--source",
+                str(source),
+                "--directory",
+                str(private),
+                "--viewport",
+                "mobile",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(str(private / "existing-mobile.png"), payload["path"])
+        self.assertEqual("mobile", payload["viewport"])
+        self.assertNotIn(str(source), result.stdout)
+
+        rejected = subprocess.run(
+            [
+                str(SHIPPED_FLOW),
+                "prepare-existing-image",
+                "--source",
+                str(root / "missing.png"),
+                "--directory",
+                str(private),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(64, rejected.returncode)
+        self.assertEqual("", rejected.stdout)
+        self.assertEqual("unsafe_existing_image", json.loads(rejected.stderr)["code"])
+        self.assertNotIn(str(root / "missing.png"), rejected.stderr)
+
+        upload, argv = self._run(
+            [
+                "--project",
+                "project-7",
+                "screenshot",
+                "create",
+                "--title",
+                "Existing screenshot",
+                "--page",
+                "dashboard",
+                "--file",
+                payload["path"],
+            ]
+        )
+        self.assertEqual(0, upload.returncode, upload.stderr)
+        self.assertIn(payload["path"], argv)
+        self.assertNotIn(str(source), argv)
 
     def test_capture_targets_must_be_safe_http_urls(self):
         self.assertEqual("https://example.test/login?q=one", validate_http_url("https://example.test/login?q=one"))

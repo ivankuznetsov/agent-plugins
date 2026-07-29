@@ -848,15 +848,16 @@
       "version": "3.0.1",
       "canonical": {
         "skills/screenote/SKILL.md": {
-          "sha256": "ec1a80d416d4352b0768e19797cf1d446c6425b3b98ebc462b20678386883f5e",
-          "semantic_sha256": "025a2d75e82340d55f58d8423d3804e2301c9eec8113847fd4ff3dfcdcafec87",
+          "sha256": "28ae0e482177daa54f3131213db1eaffce8eafc4d71008b116ebf6119df9258e",
+          "semantic_sha256": "ac6c122e1cc07b6b471fe25960eb388d12347dbdea8f4c95231f6bded3ba94fa",
           "sections": {
             "1:screenote — one-page visual review": "f2a3832ce0f91c507992d65ac8a5d9dc5362a8b42ddca0df021f1b82f46e29bc",
-            "2:parse the request": "2683013a33c9bf71664bcba6d695b8577a9f96ef06551fff1c835fc6a78f7c3f",
-            "2:resolve a safe target": "c3dbbdf761976ebf50940dcaa84370f5795483a2feb6b6779e23c2db44b39f08",
+            "2:parse the request": "38485a573382dad4b7297c049ec4ee43e74be316bef5c3dba11b5abdb4ab3cf2",
+            "2:resolve a safe target": "329d16bfb9bfa3862ad531e0392ca12ead8ac4d58e175bbcf47abfb516d5be24",
             "2:establish the cli and project": "6c66c3fe176811ab90a4106ba5080be0f4e81244fbf1ac904dbda9069ef2d190",
-            "2:capture and upload serially": "e29c07647b5b989ea776688845b0735efc267495d789e30ac17f833205f45018",
-            "2:report and clean up": "e1999c80e834092abaa1e10960ee96724388bb71384f6ce6b1b14499a96957e6"
+            "2:existing-image upload mode": "4aeda494603c2484d04bc02a6676c0c188ee851726d1b889ebd9f25c210aa12f",
+            "2:browser capture and upload mode": "b95ba86e59c30d6f0efde6f3cc460c7cdabd21509012fe065836c21ea904ee02",
+            "2:report and clean up": "38b91358340d6cc84e27ae602c0489b12b7e6c32062fa2ac2cde81cbb91dd910"
           }
         },
         "skills/snapshot/SKILL.md": {
@@ -883,7 +884,7 @@
       "resources": {
         "references": {
           "exists": true,
-          "sha256": "a9b2e69f773aec5baaba810dfdbb70128f919c2b059227e3cdbc978a58db55bb",
+          "sha256": "54c1794d0bf08f154d341987922890cede96e33f431141fb6f3765698d483647",
           "files": [
             "references/cli.md",
             "references/workflows.json"
@@ -891,7 +892,7 @@
         },
         "evals": {
           "exists": true,
-          "sha256": "e9f37b676852c11b6409c05ff4e26abacb9be84959f5948b5b350c10951edff6",
+          "sha256": "0ffe1e6d07882cbc11b5976ccefd6a5b87b66ba5574d71673922dc220fddb2aa",
           "files": [
             "evals/README.md",
             "evals/lint-skills-test.sh",
@@ -906,14 +907,14 @@
         },
         "scripts/screenote_flow.py": {
           "exists": true,
-          "sha256": "381fab460436715862cf5bd83a33d3c0f1c3758b94eb394ee0042241cecf2b2f"
+          "sha256": "4070946a4706d2c0b60900501750b204167e0c6df57bed3eb4f6257eb6714d85"
         }
       },
       "adapters": {
         "pi/skills/screenote/SKILL.md": {
-          "sha256": "d10b4ab8ecfd914c10524ce8171bcf85f88e9e2f5c020000d078ce35545e2af2",
+          "sha256": "6acc53b130d691fe0fe3288e2079904d52bbb76065b6620524cdcbad7f03be3f",
           "canonical": "skills/screenote/SKILL.md",
-          "canonical_semantic_sha256": "025a2d75e82340d55f58d8423d3804e2301c9eec8113847fd4ff3dfcdcafec87",
+          "canonical_semantic_sha256": "ac6c122e1cc07b6b471fe25960eb388d12347dbdea8f4c95231f6bded3ba94fa",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -921,9 +922,9 @@
           ]
         },
         "openclaw/skills/screenote/SKILL.md": {
-          "sha256": "3bea1f4277b920c043eb1f32aefff0c763224439a31f75e7976c6f8c709b92e7",
+          "sha256": "a8e0378d09299bc70297800080e348ad928ea914327b3a761ec5804a6a12f018",
           "canonical": "skills/screenote/SKILL.md",
-          "canonical_semantic_sha256": "025a2d75e82340d55f58d8423d3804e2301c9eec8113847fd4ff3dfcdcafec87",
+          "canonical_semantic_sha256": "ac6c122e1cc07b6b471fe25960eb388d12347dbdea8f4c95231f6bded3ba94fa",
           "overlays": [
             "frontmatter",
             "invocation",

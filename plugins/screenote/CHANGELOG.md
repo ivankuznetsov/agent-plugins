@@ -2,6 +2,16 @@
 
 All notable changes to the Screenote plugin are documented here.
 
+## Unreleased
+
+### Fixed
+
+- Publish explicitly named existing PNG/JPEG files without requiring browser
+  startup or viewport verification.
+- Validate and copy user-owned images into a private mode-`0600` path before
+  invoking the CLI, preserving source files and rejecting symlinks, malformed
+  bytes, mismatched extensions, and files over 20 MB.
+
 ## [3.0.1] - 2026-07-20
 
 ### Fixed
