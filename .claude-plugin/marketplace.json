@@ -42,7 +42,7 @@
       "name": "screenote",
       "source": "./plugins/screenote",
       "description": "Capture pages, publish OAuth-authenticated snapshots with the Screenote CLI, and retrieve visual feedback from Claude Code or Codex.",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "author": {
         "name": "ivankuznetsov",
         "url": "https://github.com/ivankuznetsov"
