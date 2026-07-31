@@ -5,6 +5,8 @@
 declare -ar SCREENOTE_APPROVED_COMMANDS=(
   project
   list
+  project
+  create
   page
   list
   screenshot

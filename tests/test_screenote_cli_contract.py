@@ -62,7 +62,7 @@ class ScreenoteCliContractTests(unittest.TestCase):
             "    print('Usage: screenote --base-url URL --project PROJECT --config PATH')\n"
             "elif '--help' in args:\n"
             "    flags = {\n"
-            "      'project list': [], 'page list': [],\n"
+            "      'project list': [], 'project create': ['--name'], 'page list': [],\n"
             "      'screenshot list': ['--page', '--status', '--limit', '--offset'],\n"
             "      'screenshot create': ['--title', '--page', '--file'],\n"
             "      'annotation list': ['--screenshot', '--status', '--viewport', '--limit', '--offset'],\n"
@@ -114,6 +114,8 @@ class ScreenoteCliContractTests(unittest.TestCase):
     def test_launcher_allows_only_approved_tuples_and_preserves_argv(self):
         hostile = "Fixed user's $(layout); still data"
         for noun, verb in APPROVED:
+            if (noun, verb) == ("project", "create"):
+                continue
             with self.subTest(command=f"{noun} {verb}"):
                 result, argv = self._run(["--project", "project-7", noun, verb, "--body", hostile])
                 self.assertEqual(0, result.returncode, result.stderr)
@@ -123,12 +125,29 @@ class ScreenoteCliContractTests(unittest.TestCase):
                 )
                 self.assertEqual('{"ok":true}\n', result.stdout)
 
-        for command in (("snapshot", "create"), ("project", "create"), ("annotation", "resolve"), ("login", "--device")):
+        for command in (("snapshot", "create"), ("annotation", "resolve"), ("login", "--device")):
             with self.subTest(rejected=" ".join(command)):
                 result, argv = self._run(list(command))
                 self.assertNotEqual(0, result.returncode)
                 self.assertEqual([], argv)
                 self.assertIn("command_not_allowed", result.stderr)
+
+    def test_launcher_allows_explicit_project_creation_only_with_an_exact_name(self):
+        result, argv = self._run(["project", "create", "--name", "rabata.io"])
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(["project", "create", "--name", "rabata.io"], argv)
+
+        for arguments in (
+            ["project", "create"],
+            ["project", "create", "--name"],
+            ["project", "create", "--name", ""],
+            ["--project", "project-7", "project", "create", "--name", "rabata.io"],
+        ):
+            with self.subTest(arguments=arguments):
+                rejected, rejected_argv = self._run(arguments)
+                self.assertEqual(64, rejected.returncode)
+                self.assertEqual([], rejected_argv)
+                self.assertIn("invalid_arguments", rejected.stderr)
 
     def test_launcher_rejects_every_runtime_endpoint_or_config_override(self):
         attacks = (
@@ -225,12 +244,14 @@ class ScreenoteCliContractTests(unittest.TestCase):
             self.assertIn("../../references/workflows.json", body)
             for command in specification["ordered_commands"]:
                 self.assertIn(command, body, f"{skill_path}: canonical workflow lost {command}")
+            for command in specification.get("conditional_commands", []):
+                self.assertIn(command, body, f"{skill_path}: conditional workflow lost {command}")
 
     def test_screenote_manifests_and_repository_have_no_mcp_transport(self):
         self.assertFalse((PLUGIN_ROOT / ".mcp.json").exists())
         for manifest in (PLUGIN_ROOT / ".claude-plugin/plugin.json", PLUGIN_ROOT / ".codex-plugin/plugin.json"):
             self.assertNotIn("mcpServers", json.loads(manifest.read_text()))
-        forbidden = ("mcpServers", "screenote_browser_use_mcp", "Browser Use MCP", "annotation resolve", "project create")
+        forbidden = ("mcpServers", "screenote_browser_use_mcp", "Browser Use MCP", "annotation resolve")
         scanned = [
             *PLUGIN_ROOT.glob("skills/*/SKILL.md"),
             PLUGIN_ROOT / "references/cli.md",

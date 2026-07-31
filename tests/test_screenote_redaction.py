@@ -93,7 +93,6 @@ class ScreenoteRedactionTests(unittest.TestCase):
             "/mcp/messages",
             "create_multi_viewport_screenshot",
             "annotation resolve",
-            "project create",
             "snapshot --manifest",
             "--token ",
         )

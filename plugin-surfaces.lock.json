@@ -9,6 +9,10 @@
         "list"
       ],
       [
+        "project",
+        "create"
+      ],
+      [
         "page",
         "list"
       ],
@@ -34,7 +38,7 @@
       ]
     ],
     "artifact": "plugins/screenote/scripts/screenote-approved-commands.sh",
-    "sha256": "18163fe9062ccb7250ec845b101b8f2084c50eb5fe5ea44a6bae980f9d22c54a"
+    "sha256": "e1ca68f4a7d55bba5f6325b68ef770aef52b33210347b101f31a26f5ac29cdfc"
   },
   "plugins": {
     "agent-reviewer": {
@@ -845,27 +849,27 @@
       }
     },
     "screenote": {
-      "version": "3.0.2",
+      "version": "3.1.0",
       "canonical": {
         "skills/screenote/SKILL.md": {
-          "sha256": "28ae0e482177daa54f3131213db1eaffce8eafc4d71008b116ebf6119df9258e",
-          "semantic_sha256": "ac6c122e1cc07b6b471fe25960eb388d12347dbdea8f4c95231f6bded3ba94fa",
+          "sha256": "118b0da106447ed69eba5343f5f730b5bcff1a087691af07eeb47b4f31bc9291",
+          "semantic_sha256": "5a3cfe3c9e550d70327832513a4caa656c949da4640f83ff6170ff7c514927d1",
           "sections": {
-            "1:screenote — one-page visual review": "f2a3832ce0f91c507992d65ac8a5d9dc5362a8b42ddca0df021f1b82f46e29bc",
+            "1:screenote — one-page visual review": "37a69d0026e5d9f01b90e4a325920bf1ce411d42142a41f9c9ce9f36e58deca9",
             "2:parse the request": "38485a573382dad4b7297c049ec4ee43e74be316bef5c3dba11b5abdb4ab3cf2",
             "2:resolve a safe target": "329d16bfb9bfa3862ad531e0392ca12ead8ac4d58e175bbcf47abfb516d5be24",
-            "2:establish the cli and project": "6c66c3fe176811ab90a4106ba5080be0f4e81244fbf1ac904dbda9069ef2d190",
+            "2:establish the cli and project": "3e721f75c2d0227fb1522d224de9d573d31ad57480f33cfbece0e6b8d5cf0e2b",
             "2:existing-image upload mode": "4aeda494603c2484d04bc02a6676c0c188ee851726d1b889ebd9f25c210aa12f",
             "2:browser capture and upload mode": "b95ba86e59c30d6f0efde6f3cc460c7cdabd21509012fe065836c21ea904ee02",
             "2:report and clean up": "38b91358340d6cc84e27ae602c0489b12b7e6c32062fa2ac2cde81cbb91dd910"
           }
         },
         "skills/snapshot/SKILL.md": {
-          "sha256": "9880fb48fbfb11e1b3b75ce3d7e274c095cf1ecb8bf8fef80c1d6ac360046797",
-          "semantic_sha256": "d7314f2c8a0807e1c2f4f650e899d6050c8fd887d531ef43d5c9026f667a1cf5",
+          "sha256": "7fd2470860cdb8a1de036c1498dd051a94655ddbb2c668afee1100fa4c62c1ce",
+          "semantic_sha256": "08f65cf3ccfb978237d5b7c7ff1aebc65a56ab6aac665e91279ee3fcc17628a7",
           "sections": {
-            "1:snapshot — multi-page visual review": "cc19b6e91862f2c785543aa5bc9223102b72305451981d73b487ea4970af27c1",
-            "2:preflight": "089c8c90cacb45fe3bb0320e7cc284fe7d3dbb18d3a1b91774b658abea47d279",
+            "1:snapshot — multi-page visual review": "cf0f569c8f218283f98815967f07a895c63f579c1359b4be5fb5543b15f0d11b",
+            "2:preflight": "4a0dd546789198a62058792ec0866f08ac3e9c65d35fc3d856b44a42479c5629",
             "2:discover and confirm routes": "219ca5b16548cebf0204c299f51946b257eff32eee3c2c8f1bf7b1a55faf75bb",
             "2:capture and publish": "81d60f088f7aeb3e4b7f7e96c50f1e4236ce5fbdea444c3beb243e2a102b06e1"
           }
@@ -884,7 +888,7 @@
       "resources": {
         "references": {
           "exists": true,
-          "sha256": "54c1794d0bf08f154d341987922890cede96e33f431141fb6f3765698d483647",
+          "sha256": "83c9cefcc74ff9ad3f6940fd34e6f73e9cc1b1fd10eda17d282ce8a870992cba",
           "files": [
             "references/cli.md",
             "references/workflows.json"
@@ -892,7 +896,7 @@
         },
         "evals": {
           "exists": true,
-          "sha256": "0ffe1e6d07882cbc11b5976ccefd6a5b87b66ba5574d71673922dc220fddb2aa",
+          "sha256": "dae11cf4ea1ce3dda00a8c08d742c89bb00afc2ef0c9dadc009fcc0e46718cff",
           "files": [
             "evals/README.md",
             "evals/lint-skills-test.sh",
@@ -903,7 +907,7 @@
         },
         "scripts/screenote-cli.sh": {
           "exists": true,
-          "sha256": "dd76457972f7426917763c635a2ed832ed4c9ed3ec8828b6aa41a3a93146fcd7"
+          "sha256": "9f54e4717158e2e9ec1485ed7c610951a671fbfaa688c201d82af127e6f29d41"
         },
         "scripts/screenote_flow.py": {
           "exists": true,
@@ -914,7 +918,7 @@
         "pi/skills/screenote/SKILL.md": {
           "sha256": "6acc53b130d691fe0fe3288e2079904d52bbb76065b6620524cdcbad7f03be3f",
           "canonical": "skills/screenote/SKILL.md",
-          "canonical_semantic_sha256": "ac6c122e1cc07b6b471fe25960eb388d12347dbdea8f4c95231f6bded3ba94fa",
+          "canonical_semantic_sha256": "5a3cfe3c9e550d70327832513a4caa656c949da4640f83ff6170ff7c514927d1",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -924,7 +928,7 @@
         "openclaw/skills/screenote/SKILL.md": {
           "sha256": "a8e0378d09299bc70297800080e348ad928ea914327b3a761ec5804a6a12f018",
           "canonical": "skills/screenote/SKILL.md",
-          "canonical_semantic_sha256": "ac6c122e1cc07b6b471fe25960eb388d12347dbdea8f4c95231f6bded3ba94fa",
+          "canonical_semantic_sha256": "5a3cfe3c9e550d70327832513a4caa656c949da4640f83ff6170ff7c514927d1",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -934,7 +938,7 @@
         "pi/skills/snapshot/SKILL.md": {
           "sha256": "a7291d9e71b30e440a94b9b2d9d6e2cb001c9ff656fb2bc4e93c659325b4159d",
           "canonical": "skills/snapshot/SKILL.md",
-          "canonical_semantic_sha256": "d7314f2c8a0807e1c2f4f650e899d6050c8fd887d531ef43d5c9026f667a1cf5",
+          "canonical_semantic_sha256": "08f65cf3ccfb978237d5b7c7ff1aebc65a56ab6aac665e91279ee3fcc17628a7",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -944,7 +948,7 @@
         "openclaw/skills/snapshot/SKILL.md": {
           "sha256": "d0bbf6f51de399d7b63fb0cd23ab1f1f097160d4dbe9dca7a0fa11c9e205b763",
           "canonical": "skills/snapshot/SKILL.md",
-          "canonical_semantic_sha256": "d7314f2c8a0807e1c2f4f650e899d6050c8fd887d531ef43d5c9026f667a1cf5",
+          "canonical_semantic_sha256": "08f65cf3ccfb978237d5b7c7ff1aebc65a56ab6aac665e91279ee3fcc17628a7",
           "overlays": [
             "frontmatter",
             "invocation",

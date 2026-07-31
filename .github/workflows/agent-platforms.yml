@@ -120,7 +120,7 @@ jobs:
           "$launcher" --project "$SCREENOTE_PROJECT" screenshot create \
             --title "Agent plugin release probe" --page "ci-release-probe" \
             --file "$integration_dir/capture.png" >"$integration_dir/capture.json"
-          "$launcher" --project "$SCREENOTE_PROJECT" page list --limit 100 --offset 0 >"$integration_dir/pages.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" page list >"$integration_dir/pages.json"
           "$launcher" --project "$SCREENOTE_PROJECT" screenshot list \
             --page "$SCREENOTE_TEST_PAGE_ID" --limit 100 --offset 0 >"$integration_dir/screenshots.json"
           "$launcher" --project "$SCREENOTE_PROJECT" annotation list \

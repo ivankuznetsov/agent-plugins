@@ -48,6 +48,7 @@ accepts only these command tuples:
 | Tuple | Purpose |
 | --- | --- |
 | `project list` | Validate authentication and accessible projects. |
+| `project create` | Create one explicitly named project before capture or snapshot publication. |
 | `page list` | List captured pages in the selected project. |
 | `screenshot list` | List versions for a selected page. |
 | `screenshot create` | Upload one user-approved local capture file. |
@@ -70,6 +71,24 @@ Do not maintain a plugin-owned project cache. Run `project list` before a
 project-scoped flow and validate that the resolved project is accessible. An
 ambiguous name, inaccessible id, or empty list is an error; never guess.
 
+For `screenote` and `snapshot`, an interactive request that explicitly asks to
+create an exact project name may run:
+
+```text
+screenote-cli.sh project create --name EXACT_NAME
+```
+
+Do not pass global `--project` to this command. Require exit zero plus a
+`project` object containing an id and the exact requested name, then select the
+returned id for the remaining project-scoped calls. If the exact name is
+already accessible, select it and do not create a duplicate. A named but
+missing destination without explicit create intent requires confirmation;
+`missing_project`, an empty project list, an inferred repository name, and an
+ambiguous name never authorize creation. Noninteractive creation requires an
+exact name and an explicit create directive in its input. Project creation
+requires user-scoped OAuth authorization; on exit 3, stop without trying a
+project-scoped token or another auth mechanism.
+
 Ordinary CLI commands are noninteractive. In an interactive agent session,
 after a `missing_project` error, show the accessible projects and ask the user
 which explicit `--project` to use. In a noninteractive run, never read stdin,
@@ -86,7 +105,8 @@ credential-shaped value before quoting surrounding prose.
   `screenote --base-url https://screenote.ai login` for the hosted service;
   noninteractively require `SCREENOTE_TOKEN`. Do not run login automatically.
 - Exit 2 with `missing_project`: stop and explain the three project sources
-  above. Only an interactive agent may present accessible choices.
+  above. Only an interactive agent may present accessible choices; the error
+  alone never authorizes `project create`.
 - Exit 3: stop and report invalid/expired authentication or authorization. Do
   not retry with another auth mechanism.
 - Every other nonzero exit, including not-found and rate-limit results: stop

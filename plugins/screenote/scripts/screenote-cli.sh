@@ -81,6 +81,7 @@ if [[ ${1-} == --check-contract ]]; then
     }
     required_flags=()
     case "$noun $verb" in
+      'project create') required_flags=(--name) ;;
       'screenshot list') required_flags=(--page --status --limit --offset) ;;
       'screenshot create') required_flags=(--title --page --file) ;;
       'annotation list') required_flags=(--screenshot --status --viewport --limit --offset) ;;
@@ -99,6 +100,7 @@ if [[ ${1-} == --check-contract ]]; then
 fi
 
 screenote_argv=()
+project_was_supplied=false
 while (($# > 0)); do
   case "$1" in
     --project)
@@ -107,6 +109,7 @@ while (($# > 0)); do
         exit 64
       fi
       screenote_argv+=("$1" "$2")
+      project_was_supplied=true
       shift 2
       ;;
     *)
@@ -127,6 +130,14 @@ shift 2
 if ! screenote_command_is_approved "$noun" "$verb"; then
   json_error '{"error":{"code":"command_not_allowed","message":"Only approved Screenote command tuples are allowed."}}'
   exit 64
+fi
+
+if [[ $noun == project && $verb == create ]]; then
+  if [[ $project_was_supplied == true ]] || (($# != 2)) ||
+    [[ $1 != --name || -z ${2//[[:space:]]/} || $2 == -* ]]; then
+    json_error '{"error":{"code":"invalid_arguments","message":"Project creation requires exactly: project create --name NAME, without a global --project."}}'
+    exit 64
+  fi
 fi
 
 for argument in "$@"; do
