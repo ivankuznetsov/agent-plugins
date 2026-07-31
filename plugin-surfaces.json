@@ -228,7 +228,7 @@
         ]
       },
       "legacy_entrypoints": [
-        {"platform": "claude", "name": "screenote", "path": "skills/screenote/SKILL.md", "mode": "screenote", "usage": ["screenote [desktop|tablet|mobile] <URL-or-page>"], "arguments": "[desktop|tablet|mobile] <URL-or-page>", "pass_arguments": true},
+        {"platform": "claude", "name": "screenote", "path": "skills/screenote/SKILL.md", "mode": "screenote", "usage": ["screenote [desktop|tablet|mobile] <URL-or-page|image-path...>"], "arguments": "[desktop|tablet|mobile] <URL-or-page|image-path...>", "pass_arguments": true},
         {"platform": "claude", "name": "snapshot", "path": "skills/snapshot/SKILL.md", "mode": "snapshot", "usage": ["snapshot [desktop|tablet|mobile] <base-URL>"], "arguments": "[desktop|tablet|mobile] <base-URL>", "pass_arguments": true},
         {"platform": "claude", "name": "feedback", "path": "skills/feedback/SKILL.md", "mode": "feedback", "usage": ["feedback [desktop|tablet|mobile] [filter]"], "arguments": "[desktop|tablet|mobile] [filter]", "pass_arguments": true}
       ],

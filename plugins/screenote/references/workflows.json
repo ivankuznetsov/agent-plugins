@@ -45,6 +45,7 @@
   "workflows": {
     "screenote": {
       "skill": "skills/screenote/SKILL.md",
+      "input_modes": ["browser_capture", "existing_image"],
       "ordered_commands": ["project list", "screenshot create"]
     },
     "snapshot": {

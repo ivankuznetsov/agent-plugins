@@ -8,6 +8,7 @@ private-file behavior shared by the canonical Screenote skills.
 
 from __future__ import annotations
 
+import argparse
 from dataclasses import dataclass, field
 import json
 import os
@@ -15,7 +16,9 @@ from pathlib import Path
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
+import zlib
 from typing import Any, Mapping, Sequence
 from urllib.parse import urlsplit
 
@@ -31,6 +34,27 @@ def load_workflow_contract() -> dict[str, Any]:
 
 
 WORKFLOW_CONTRACT = load_workflow_contract()
+MAX_IMAGE_BYTES = 20 * 1024 * 1024
+CANONICAL_VIEWPORT_WIDTHS = {1280: "desktop", 768: "tablet", 390: "mobile"}
+VALID_VIEWPORTS = frozenset(CANONICAL_VIEWPORT_WIDTHS.values())
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+JPEG_SOF_MARKERS = frozenset(
+    {
+        0xC0,
+        0xC1,
+        0xC2,
+        0xC3,
+        0xC5,
+        0xC6,
+        0xC7,
+        0xC9,
+        0xCA,
+        0xCB,
+        0xCD,
+        0xCE,
+        0xCF,
+    }
+)
 
 
 class CaptureSafetyError(ValueError):
@@ -74,6 +98,16 @@ class FlowReport:
     review_urls: list[str] = field(default_factory=list)
     recovery_paths: list[str] = field(default_factory=list)
     stopped: bool = False
+
+
+@dataclass(frozen=True)
+class PreparedExistingImage:
+    path: Path
+    viewport: str
+    content_type: str
+    width: int
+    height: int
+    size_bytes: int
 
 
 def _json_payload(stream: str) -> tuple[bool, Any]:
@@ -172,6 +206,211 @@ def create_private_file(directory: Path, name: str, content: bytes = b"screenote
         handle.write(content)
     path.chmod(0o600)
     return path
+
+
+def _png_dimensions(content: bytes) -> tuple[int, int]:
+    if len(content) < 45 or not content.startswith(PNG_SIGNATURE):
+        raise CaptureSafetyError("PNG structure is incomplete or malformed")
+
+    offset = len(PNG_SIGNATURE)
+    dimensions: tuple[int, int] | None = None
+    idat_bytes = 0
+    while offset + 12 <= len(content):
+        data_length = int.from_bytes(content[offset : offset + 4], "big")
+        chunk_end = offset + 12 + data_length
+        if chunk_end > len(content):
+            raise CaptureSafetyError("PNG chunk length is invalid")
+        chunk_type = content[offset + 4 : offset + 8]
+        chunk_data = content[offset + 8 : offset + 8 + data_length]
+        expected_crc = int.from_bytes(content[offset + 8 + data_length : chunk_end], "big")
+        actual_crc = zlib.crc32(chunk_data, zlib.crc32(chunk_type)) & 0xFFFFFFFF
+        if actual_crc != expected_crc:
+            raise CaptureSafetyError("PNG chunk checksum is invalid")
+
+        if dimensions is None:
+            if chunk_type != b"IHDR" or data_length != 13:
+                raise CaptureSafetyError("PNG must begin with one IHDR chunk")
+            width = int.from_bytes(chunk_data[0:4], "big")
+            height = int.from_bytes(chunk_data[4:8], "big")
+            if width <= 0 or height <= 0:
+                raise CaptureSafetyError("image dimensions must be positive")
+            dimensions = (width, height)
+        elif chunk_type == b"IHDR":
+            raise CaptureSafetyError("PNG contains more than one IHDR chunk")
+        elif chunk_type == b"IDAT":
+            idat_bytes += data_length
+        elif chunk_type == b"IEND":
+            if data_length != 0 or chunk_end != len(content) or idat_bytes == 0:
+                raise CaptureSafetyError("PNG structure is incomplete or malformed")
+            return dimensions
+        offset = chunk_end
+
+    raise CaptureSafetyError("PNG structure is incomplete or malformed")
+
+
+def _jpeg_dimensions(content: bytes) -> tuple[int, int]:
+    if len(content) < 4 or not content.startswith(b"\xff\xd8") or not content.endswith(b"\xff\xd9"):
+        raise CaptureSafetyError("JPEG structure is incomplete or malformed")
+    offset = 2
+    dimensions: tuple[int, int] | None = None
+    saw_scan_data = False
+    while offset < len(content) - 1:
+        if content[offset] != 0xFF:
+            raise CaptureSafetyError("JPEG marker sequence is invalid")
+        while offset < len(content) and content[offset] == 0xFF:
+            offset += 1
+        if offset >= len(content):
+            break
+        marker = content[offset]
+        offset += 1
+        if marker in {0x01, 0xD8, 0xD9} or 0xD0 <= marker <= 0xD7:
+            continue
+        if offset + 2 > len(content):
+            break
+        segment_length = int.from_bytes(content[offset : offset + 2], "big")
+        if segment_length < 2 or offset + segment_length > len(content):
+            raise CaptureSafetyError("JPEG segment length is invalid")
+        if marker in JPEG_SOF_MARKERS:
+            if segment_length < 7:
+                raise CaptureSafetyError("JPEG dimensions are missing")
+            height = int.from_bytes(content[offset + 3 : offset + 5], "big")
+            width = int.from_bytes(content[offset + 5 : offset + 7], "big")
+            if width <= 0 or height <= 0:
+                raise CaptureSafetyError("image dimensions must be positive")
+            dimensions = (width, height)
+        if marker == 0xDA:
+            if dimensions is None:
+                raise CaptureSafetyError("JPEG scan appears before image dimensions")
+            scan_offset = offset + segment_length
+            while scan_offset < len(content) - 1:
+                marker_offset = content.find(b"\xff", scan_offset)
+                if marker_offset == -1:
+                    break
+                if marker_offset > scan_offset:
+                    saw_scan_data = True
+                next_offset = marker_offset + 1
+                while next_offset < len(content) and content[next_offset] == 0xFF:
+                    next_offset += 1
+                if next_offset >= len(content):
+                    break
+                scan_marker = content[next_offset]
+                if scan_marker == 0x00 or 0xD0 <= scan_marker <= 0xD7:
+                    saw_scan_data = True
+                    scan_offset = next_offset + 1
+                    continue
+                if scan_marker == 0xD9:
+                    if saw_scan_data and next_offset == len(content) - 1:
+                        return dimensions
+                    raise CaptureSafetyError("JPEG scan data is missing or incomplete")
+                offset = marker_offset
+                break
+            else:
+                raise CaptureSafetyError("JPEG end marker is missing")
+            if offset != marker_offset:
+                break
+            continue
+        offset += segment_length
+    raise CaptureSafetyError("JPEG dimensions are missing")
+
+
+def _existing_image_metadata(source: Path, content: bytes) -> tuple[str, str, int, int]:
+    suffix = source.suffix.casefold()
+    if content.startswith(PNG_SIGNATURE):
+        if suffix != ".png":
+            raise CaptureSafetyError("PNG bytes require a .png source filename")
+        width, height = _png_dimensions(content)
+        return "image/png", "png", width, height
+    if content.startswith(b"\xff\xd8"):
+        if suffix not in {".jpg", ".jpeg"}:
+            raise CaptureSafetyError("JPEG bytes require a .jpg or .jpeg source filename")
+        width, height = _jpeg_dimensions(content)
+        return "image/jpeg", "jpg", width, height
+    raise CaptureSafetyError("existing image must contain PNG or JPEG bytes")
+
+
+def _open_existing_image(source: Path) -> int:
+    if not all((hasattr(os, "O_DIRECTORY"), hasattr(os, "O_NOFOLLOW"), os.open in os.supports_dir_fd)):
+        raise CaptureSafetyError("this platform cannot safely inspect existing-image paths")
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    directory = os.open("/" if source.is_absolute() else ".", directory_flags)
+    try:
+        for component in source.parent.parts:
+            if component in {"", ".", os.sep}:
+                continue
+            child = os.open(component, directory_flags, dir_fd=directory)
+            os.close(directory)
+            directory = child
+        if not source.name:
+            raise OSError("source has no filename")
+        source_flags = os.O_RDONLY | os.O_NOFOLLOW
+        if hasattr(os, "O_NONBLOCK"):
+            source_flags |= os.O_NONBLOCK
+        return os.open(source.name, source_flags, dir_fd=directory)
+    except OSError as exc:
+        raise CaptureSafetyError("existing image is missing or unreadable") from exc
+    finally:
+        os.close(directory)
+
+
+def _read_existing_image(source: Path) -> bytes:
+    descriptor = _open_existing_image(source)
+    with os.fdopen(descriptor, "rb") as handle:
+        before = os.fstat(handle.fileno())
+        if not stat.S_ISREG(before.st_mode):
+            raise CaptureSafetyError("existing image must be a regular file, not a symlink")
+        if before.st_size <= 0 or before.st_size > MAX_IMAGE_BYTES:
+            raise CaptureSafetyError("existing image size must be between 1 byte and 20 MB")
+        content = handle.read(MAX_IMAGE_BYTES + 1)
+        after = os.fstat(handle.fileno())
+    if len(content) != before.st_size or len(content) > MAX_IMAGE_BYTES:
+        raise CaptureSafetyError("existing image changed while it was being prepared")
+    if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_size,
+        after.st_mtime_ns,
+    ):
+        raise CaptureSafetyError("existing image changed while it was being prepared")
+    return content
+
+
+def prepare_existing_image(
+    source: Path,
+    directory: Path,
+    *,
+    viewport: str | None = None,
+) -> PreparedExistingImage:
+    if directory.is_symlink() or not directory.is_dir():
+        raise CaptureSafetyError("private image directory must be a real directory")
+    if stat.S_IMODE(directory.stat().st_mode) != 0o700:
+        raise CaptureSafetyError("private image directory must have mode 0700")
+    if viewport is not None and viewport not in VALID_VIEWPORTS:
+        raise CaptureSafetyError("viewport must be desktop, tablet, or mobile")
+
+    content = _read_existing_image(source)
+    content_type, extension, width, height = _existing_image_metadata(source, content)
+    selected_viewport = viewport or CANONICAL_VIEWPORT_WIDTHS.get(width, "desktop")
+    stem = f"existing-{selected_viewport}"
+    for index in range(1, 10_001):
+        suffix = "" if index == 1 else f"-{index}"
+        candidate = directory / f"{stem}{suffix}.{extension}"
+        try:
+            destination = create_private_file(directory, candidate.name, content)
+            break
+        except CaptureSafetyError:
+            if os.path.lexists(candidate):
+                continue
+            raise
+    else:
+        raise CaptureSafetyError("private image directory has no available destination name")
+    return PreparedExistingImage(
+        path=destination,
+        viewport=selected_viewport,
+        content_type=content_type,
+        width=width,
+        height=height,
+        size_bytes=len(content),
+    )
 
 
 def find_secret_artifacts(root: Path, secrets: Sequence[str]) -> list[str]:
@@ -460,10 +699,52 @@ def run_flow(
     return report
 
 
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Screenote private-file workflow helper")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    prepare = subparsers.add_parser(
+        "prepare-existing-image",
+        help="validate an explicit PNG/JPEG and copy it into a private Screenote directory",
+    )
+    prepare.add_argument("--source", required=True, type=Path)
+    prepare.add_argument("--directory", required=True, type=Path)
+    prepare.add_argument("--viewport", choices=sorted(VALID_VIEWPORTS))
+    arguments = parser.parse_args(argv)
+
+    try:
+        prepared = prepare_existing_image(
+            arguments.source,
+            arguments.directory,
+            viewport=arguments.viewport,
+        )
+    except CaptureSafetyError as exc:
+        print(
+            json.dumps({"code": "unsafe_existing_image", "error": str(exc)}, separators=(",", ":")),
+            file=sys.stderr,
+        )
+        return 64
+    print(
+        json.dumps(
+            {
+                "path": str(prepared.path),
+                "viewport": prepared.viewport,
+                "content_type": prepared.content_type,
+                "width": prepared.width,
+                "height": prepared.height,
+                "size_bytes": prepared.size_bytes,
+            },
+            separators=(",", ":"),
+        )
+    )
+    return 0
+
+
 __all__ = [
     "CaptureSafetyError",
+    "MAX_IMAGE_BYTES",
     "ClassifiedResult",
     "FlowReport",
+    "PreparedExistingImage",
     "ProjectResolutionError",
     "ResponseContractError",
     "WORKFLOW_CONTRACT",
@@ -473,7 +754,12 @@ __all__ = [
     "create_private_file",
     "find_secret_artifacts",
     "load_workflow_contract",
+    "prepare_existing_image",
     "resolve_project",
     "run_flow",
     "validate_http_url",
 ]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

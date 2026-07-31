@@ -67,3 +67,39 @@ if (cd "$credential_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
   exit 1
 fi
 printf 'PASS: lint rejects credential arguments\n'
+
+browser_gate_case=$(make_case browser-gated-existing-image)
+python3 - "$browser_gate_case/references/cli.md" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+body = path.read_text()
+changed = body.replace("does not start browser automation", "requires browser automation")
+if changed == body:
+    raise SystemExit("existing-image mutation did not match")
+path.write_text(changed)
+PY
+if (cd "$browser_gate_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  printf 'FAIL: lint accepted browser-gated existing-image upload\n' >&2
+  exit 1
+fi
+printf 'PASS: lint rejects browser-gated existing-image upload\n'
+
+metadata_leak_case=$(make_case source-path-metadata)
+python3 - "$metadata_leak_case/skills/screenote/SKILL.md" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+body = path.read_text()
+changed = body.replace("never copy", "copy")
+if changed == body:
+    raise SystemExit("source-path metadata mutation did not match")
+path.write_text(changed)
+PY
+if (cd "$metadata_leak_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  printf 'FAIL: lint accepted source-path disclosure through remote metadata\n' >&2
+  exit 1
+fi
+printf 'PASS: lint rejects source-path disclosure through remote metadata\n'
