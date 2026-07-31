@@ -2,7 +2,7 @@
 
 All notable changes to the Screenote plugin are documented here.
 
-## Unreleased
+## [3.0.2] - 2026-07-31
 
 ### Fixed
 
