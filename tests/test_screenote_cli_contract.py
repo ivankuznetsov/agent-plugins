@@ -25,6 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = REPO_ROOT / "plugins/screenote"
 LAUNCHER = PLUGIN_ROOT / "scripts/screenote-cli.sh"
 SHIPPED_FLOW = PLUGIN_ROOT / "scripts/screenote_flow.py"
+AGENT_PLATFORMS_WORKFLOW = REPO_ROOT / ".github/workflows/agent-platforms.yml"
 FIXTURE_ROOT = REPO_ROOT / "tests/fixtures/screenote-cli"
 SCENARIOS = FIXTURE_ROOT / "scenarios"
 APPROVED = {tuple(command.split()) for command in WORKFLOW_CONTRACT["commands"]}
@@ -48,6 +49,13 @@ JPEG_1X1 = base64.b64decode(
 
 
 class ScreenoteCliContractTests(unittest.TestCase):
+    def test_protected_integration_configures_the_trusted_production_endpoint(self):
+        workflow = AGENT_PLATFORMS_WORKFLOW.read_text(encoding="utf-8")
+        screenote_job = workflow.split("\n  screenote-live:\n", 1)[1]
+        job_configuration = screenote_job.split("\n    steps:\n", 1)[0]
+
+        self.assertIn('SCREENOTE_BASE_URL: "https://screenote.ai"', job_configuration)
+
     def _run(self, arguments):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

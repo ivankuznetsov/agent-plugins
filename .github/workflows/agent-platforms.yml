@@ -82,6 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: screenote-integration
     env:
+      SCREENOTE_BASE_URL: "https://screenote.ai"
       SCREENOTE_TOKEN: ${{ secrets.SCREENOTE_TOKEN }}
       SCREENOTE_PROJECT: ${{ secrets.SCREENOTE_PROJECT }}
       SCREENOTE_TEST_PAGE_ID: ${{ secrets.SCREENOTE_TEST_PAGE_ID }}
