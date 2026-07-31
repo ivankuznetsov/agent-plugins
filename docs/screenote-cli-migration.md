@@ -53,6 +53,18 @@ An ambiguous or inaccessible project stops. Interactive agents may show
 accessible choices after a `missing_project` response; noninteractive runs do
 not read stdin, prompt, guess, or launch a browser.
 
+Capture and snapshot workflows may create a project when the input explicitly
+requests an exact new name:
+
+```bash
+plugins/screenote/scripts/screenote-cli.sh project create --name rabata.io
+```
+
+The command deliberately rejects global `--project`. It uses user-scoped OAuth
+authorization, returns the created project object, and never runs merely
+because project resolution failed. Exact accessible matches are reused instead
+of duplicated.
+
 ## JSON errors
 
 | Exit | Error | Behavior |

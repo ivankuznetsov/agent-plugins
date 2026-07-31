@@ -37,6 +37,7 @@ done
 
 for tuple in \
   'project list' \
+  'project create' \
   'page list' \
   'screenshot list' \
   'screenshot create' \
@@ -79,7 +80,6 @@ for forbidden in \
   'screenote_browser_use_mcp' \
   'create_multi_viewport_screenshot' \
   'annotation resolve' \
-  'project create' \
   'snapshot --manifest' \
   '--token'; do
   if grep -R -n -i -F -- "$forbidden" "${active_files[@]}" >/dev/null 2>&1; then

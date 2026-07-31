@@ -12,7 +12,8 @@ Load [the shipped workflow contract](../../references/workflows.json) and use
 its `screenote` command sequence and response keys as the authority for the
 deterministic CLI portion. This skill remains authoritative for browser capture
 and user intent.
-Canonical CLI order: `project list`, then one `screenshot create` per capture.
+Canonical CLI order: `project list`, optional explicit `project create`, then
+one `screenshot create` per capture.
 Use the bundled `../../scripts/screenote-cli.sh`; do not invoke unapproved CLI
 commands or another transport.
 
@@ -58,6 +59,16 @@ Detect `screenote` on `PATH`; never install it. Run the launcher's non-secret
 `--check-contract`, then the allowlisted `project list` preflight. Project precedence is explicit `--project`, then
 `SCREENOTE_PROJECT`, then CLI config. Validate accessibility and never guess an
 ambiguous project.
+
+If the user explicitly asks to create an exact missing project, invoke
+`project create --name <exact-name>` without global `--project`, validate the
+returned `project.id` and exact `project.name`, and use that id for uploads. If
+the exact project already exists, select it without creating a duplicate. If a
+request merely names a missing upload destination, ask before creating it.
+Never create from `missing_project` alone, an inferred repository name, an
+empty list, or an ambiguous name. Noninteractive input must contain an exact
+name and explicit create directive. Exit 3 during creation stops the flow;
+project-scoped credentials cannot be substituted for user-scoped OAuth.
 
 Handle JSON failures exactly: exit 2 `missing_token` suggests
 `screenote --base-url https://screenote.ai login` only as separate interactive

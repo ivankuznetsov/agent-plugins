@@ -12,7 +12,8 @@ Load [the shipped workflow contract](../../references/workflows.json) and use
 its `snapshot` command sequence and response keys as the authority for the
 deterministic CLI portion. This skill remains authoritative for route discovery,
 browser capture, and user confirmation.
-Canonical CLI order: `project list`, then repeated `screenshot create` calls.
+Canonical CLI order: `project list`, optional explicit `project create`, then
+repeated `screenshot create` calls.
 The public grammar remains:
 
 ```text
@@ -34,6 +35,15 @@ Detect the external CLI without installing it, run the launcher's non-secret
 `--check-contract`, then `project list`, and apply the shared project/error contract. Respect `--project` over
 `SCREENOTE_PROJECT` over CLI config. Noninteractive execution never prompts or
 opens a browser.
+
+If the user explicitly asks to create an exact missing project, run `project
+create --name <exact-name>` without global `--project`, validate the returned
+`project.id` and exact `project.name`, and select that id. Reuse an accessible
+exact-name match rather than creating a duplicate. A merely missing
+destination requires interactive confirmation; never create from
+`missing_project`, an empty list, an inferred name, or ambiguity alone.
+Noninteractive creation requires an exact name and an explicit create
+directive. Stop on exit 3 because creation requires user-scoped OAuth.
 
 Create one private invocation directory with `mktemp -d`, mode `0700`, and a
 mode `0600` PNG per route/viewport. Never reuse an existing destination.

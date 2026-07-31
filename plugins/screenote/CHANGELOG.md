@@ -2,6 +2,18 @@
 
 All notable changes to the Screenote plugin are documented here.
 
+## [3.1.0] - 2026-07-31
+
+### Added
+
+- Create an exactly named Screenote project during capture or snapshot setup
+  when the user explicitly requests that mutation.
+
+### Fixed
+
+- Stop passing unsupported pagination flags to `page list` in the protected
+  integration workflow.
+
 ## [3.0.2] - 2026-07-31
 
 ### Fixed

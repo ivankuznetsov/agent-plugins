@@ -32,6 +32,7 @@ def main() -> int:
     if "--help" in arguments:
         flags = {
             "project list": [],
+            "project create": ["--name"],
             "page list": [],
             "screenshot list": ["--page", "--status", "--limit", "--offset"],
             "screenshot create": ["--title", "--page", "--file"],
