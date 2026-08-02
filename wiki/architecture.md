@@ -34,8 +34,12 @@ capabilities. Native discovery runs from isolated home/config directories for
 all four hosts.
 
 Screenote's bearer-safe launcher reads its approved command tuples from the
-generated contract artifact, while a shipped workflow runtime validates JSON
-collections, pagination, and identifiers before canonical skills act on them.
+generated contract artifact. Its shipped workflow runtime validates JSON
+collections, pagination, identifiers, private image paths, and manifest-backed
+viewport groups before canonical skills act on them. Browser captures and
+explicit existing images publish through one resumable snapshot per logical
+screen, with desktop, tablet, and mobile represented as child variants rather
+than separate versions.
 LLM Wiki's shared transactional refresh runner dispatches exactly one configured
 owner, including a validated OpenClaw workspace agent, from a disposable refresh
 worktree. The primary checkout owns one repository-wide non-persistent systemd

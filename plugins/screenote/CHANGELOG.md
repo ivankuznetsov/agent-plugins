@@ -4,6 +4,8 @@ All notable changes to the Screenote plugin are documented here.
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-08-02
+
 ### Fixed
 
 - Publish all selected viewport captures through one resumable snapshot
