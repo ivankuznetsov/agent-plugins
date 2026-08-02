@@ -75,7 +75,11 @@ if [[ ${1-} == --check-contract ]]; then
   for ((command_index = 0; command_index < ${#SCREENOTE_APPROVED_COMMANDS[@]}; command_index += 2)); do
     noun=${SCREENOTE_APPROVED_COMMANDS[command_index]}
     verb=${SCREENOTE_APPROVED_COMMANDS[command_index + 1]}
-    command_help=$("$screenote_path" "$noun" "$verb" --help 2>/dev/null) || {
+    command_parts=("$noun" "$verb")
+    if [[ $noun == snapshot && $verb == --manifest ]]; then
+      command_parts=("snapshot")
+    fi
+    command_help=$("$screenote_path" "${command_parts[@]}" --help 2>/dev/null) || {
       json_error '{"error":{"code":"screenote_contract_incompatible","message":"The Screenote CLI does not expose every command required by the recorded compatibility baseline.","action":"Install or update to the pinned compatible ref and retry."}}'
       exit 65
     }
@@ -87,6 +91,7 @@ if [[ ${1-} == --check-contract ]]; then
       'annotation list') required_flags=(--screenshot --status --viewport --limit --offset) ;;
       'annotation get') required_flags=(--annotation --crop-file) ;;
       'comment add') required_flags=(--annotation --body) ;;
+      'snapshot --manifest') required_flags=(--manifest --wait) ;;
     esac
     for required_flag in "${required_flags[@]}"; do
       if ! grep -Fq -- "$required_flag" <<<"$command_help"; then

@@ -2,6 +2,19 @@
 
 All notable changes to the Screenote plugin are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- Publish all selected viewport captures through one resumable snapshot
+  manifest so desktop, tablet, and mobile appear as variants of one version
+  instead of separate desktop-labeled versions.
+- Pass the snapshot processing wait explicitly, retain the complete manifest
+  directory on timeouts or malformed terminal events, and exercise the
+  manifest-backed path in protected integration tests.
+- Accept explicit commit provenance for existing-image and capture publication
+  outside a Git worktree.
+
 ## [3.1.0] - 2026-07-31
 
 ### Added

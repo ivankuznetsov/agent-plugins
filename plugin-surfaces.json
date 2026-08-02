@@ -30,7 +30,8 @@
       ["screenshot", "create"],
       ["annotation", "list"],
       ["annotation", "get"],
-      ["comment", "add"]
+      ["comment", "add"],
+      ["snapshot", "--manifest"]
     ]
   },
   "plugins": [

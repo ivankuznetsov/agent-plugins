@@ -6,7 +6,7 @@
   },
   "success": {
     "exit_code": 0,
-    "output": "one complete JSON value on stdout"
+    "output": "one complete JSON value on stdout unless the command declares json_lines"
   },
   "commands": {
     "project list": {
@@ -45,6 +45,12 @@
     "comment add": {
       "required_flags": ["--annotation", "--body"],
       "paginated": false
+    },
+    "snapshot --manifest": {
+      "required_flags": ["--manifest", "--wait"],
+      "output": "json_lines",
+      "terminal_event": "snapshot_ready",
+      "paginated": false
     }
   },
   "workflows": {
@@ -52,12 +58,12 @@
       "skill": "skills/screenote/SKILL.md",
       "input_modes": ["browser_capture", "existing_image"],
       "conditional_commands": ["project create"],
-      "ordered_commands": ["project list", "screenshot create"]
+      "ordered_commands": ["project list", "snapshot --manifest"]
     },
     "snapshot": {
       "skill": "skills/snapshot/SKILL.md",
       "conditional_commands": ["project create"],
-      "ordered_commands": ["project list", "screenshot create"]
+      "ordered_commands": ["project list", "snapshot --manifest"]
     },
     "feedback": {
       "skill": "skills/feedback/SKILL.md",

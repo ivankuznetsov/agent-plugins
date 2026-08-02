@@ -43,7 +43,8 @@ for tuple in \
   'screenshot create' \
   'annotation list' \
   'annotation get' \
-  'comment add'; do
+  'comment add' \
+  'snapshot --manifest'; do
   read -r noun verb <<<"$tuple"
   bash -c 'source scripts/screenote-approved-commands.sh; screenote_command_is_approved "$1" "$2"' _ "$noun" "$verb" ||
     fail "generated launcher allowlist is missing: $tuple"
@@ -70,6 +71,9 @@ require_text skills/screenote/SKILL.md 'source path or basename'
 require_text references/cli.md 'does not start browser automation'
 require_text references/cli.md 'private copy'
 require_text scripts/screenote_flow.py 'prepare_existing_image'
+require_text scripts/screenote_flow.py 'create_snapshot_manifest'
+require_text skills/screenote/SKILL.md 'prepare-snapshot-manifest'
+require_text skills/snapshot/SKILL.md 'prepare-snapshot-manifest'
 
 [[ ! -e .mcp.json ]] || fail ".mcp.json must not exist"
 
@@ -80,7 +84,6 @@ for forbidden in \
   'screenote_browser_use_mcp' \
   'create_multi_viewport_screenshot' \
   'annotation resolve' \
-  'snapshot --manifest' \
   '--token'; do
   if grep -R -n -i -F -- "$forbidden" "${active_files[@]}" >/dev/null 2>&1; then
     fail "active plugin surface contains forbidden text: $forbidden"
