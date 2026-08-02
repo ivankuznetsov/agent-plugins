@@ -853,7 +853,7 @@
       }
     },
     "screenote": {
-      "version": "3.1.0",
+      "version": "3.1.1",
       "canonical": {
         "skills/screenote/SKILL.md": {
           "sha256": "2944db045534e4d6f45f9637d26c0b117fb96e3595c584cdf4155a635c875782",
