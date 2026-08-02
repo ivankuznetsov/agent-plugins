@@ -1,0 +1,6 @@
+{
+  "commands": {
+    "project list": {"exit": 0, "stdout": {"projects": [{"id": 7, "name": "demo", "role": "owner"}]}},
+    "snapshot --manifest": {"exit": 0, "delay_seconds": 1.0, "stdout": {"event": "snapshot_ready", "review_url": "https://screenote.test/late"}}
+  }
+}

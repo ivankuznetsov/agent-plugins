@@ -1,6 +1,6 @@
 {
   "commands": {
     "project list": {"exit": 0, "stdout": {"projects": [{"id": 7, "name": "demo"}]}},
-    "screenshot create": {"exit": 2, "stderr": {"code": "missing_project", "error": "project is required; set --project, SCREENOTE_PROJECT, or config project"}}
+    "snapshot --manifest": {"exit": 2, "stderr": {"code": "missing_project", "error": "project is required; set --project, SCREENOTE_PROJECT, or config project"}}
   }
 }

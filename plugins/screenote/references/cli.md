@@ -24,7 +24,7 @@ credentials as arguments or copy, read, print, trace, or cache their values.
 All workflows invoke `../../scripts/screenote-cli.sh` with an argv array:
 
 ```text
-screenote-cli.sh [--project PROJECT] <noun> <verb> [arguments]
+screenote-cli.sh [--project PROJECT] <noun> <verb-or-required-flag> [arguments]
 ```
 
 The launcher rejects `--base-url`, `--base-url=...`, `--config`, and
@@ -55,6 +55,7 @@ accepts only these command tuples:
 | `annotation list` | List feedback for a screenshot. |
 | `annotation get` | Retrieve detail and an optional private crop. |
 | `comment add` | Reply after applying or explaining a fix. |
+| `snapshot --manifest` | Publish 1-100 prepared images as one resumable Snapshot with logical viewport groups. |
 
 No other CLI tuple is part of this plugin's contract. Do not bypass the
 launcher with direct HTTP calls or another transport.
@@ -97,9 +98,11 @@ prompt, or launch a browser: return guidance for `--project`,
 
 ## JSON and exit handling
 
-Parse complete JSON from stdout on success and stderr on failure. Preserve the
-original machine-readable diagnostic in the response, but redact any
-credential-shaped value before quoting surrounding prose.
+Parse complete JSON from stdout on ordinary success and stderr on failure.
+`snapshot --manifest` is the success-stream exception: parse stdout as JSON
+Lines and require its final event to be `snapshot_ready`. Preserve the original
+machine-readable diagnostic in the response, but redact any credential-shaped
+value before quoting surrounding prose.
 
 - Exit 2 with `missing_token`: stop. Interactively suggest
   `screenote --base-url https://screenote.ai login` for the hosted service;
@@ -112,10 +115,11 @@ credential-shaped value before quoting surrounding prose.
 - Every other nonzero exit, including not-found and rate-limit results: stop
   immediately and preserve the JSON diagnostic.
 
-Success requires exit zero and valid JSON. Do not infer success from human
-text, an HTTP status embedded in prose, or a partially written local file.
-Exit zero with invalid or partial JSON is a contract failure and stops the
-workflow.
+Success requires exit zero and valid JSON, plus the terminal
+`snapshot_ready.review_url` for snapshot publication. Do not infer success from
+human text, an HTTP status embedded in prose, or a partially written local
+file. Exit zero with invalid or partial JSON is a contract failure and stops
+the workflow.
 
 ## Capture, existing-image, and URL safety
 
@@ -170,24 +174,53 @@ reports only the prepared path and non-secret image metadata; it does not echo
 the original path. Preparation failure happens before any Screenote command.
 The source file remains unchanged and is never deleted.
 
-For each approved capture or private copy, call:
+After all approved captures or private copies are ready, obtain one 7-40
+character hexadecimal Git commit and one ISO 8601 timestamp with an explicit
+offset. Build one manifest with the shipped helper, passing each value as a
+separate argv element and repeating `--entry`:
 
 ```text
-screenote-cli.sh [global flags] screenshot create --title TITLE --page PAGE --file PRIVATE_PNG
+screenote_flow.py prepare-snapshot-manifest \
+  --directory PRIVATE_DIRECTORY --git-commit GIT_COMMIT --taken-at TAKEN_AT \
+  --entry PAGE TITLE VIEWPORT PRIVATE_BASENAME [--entry ...]
 ```
 
-Every value is a separate argv element. `--file` must be a freshly generated
-capture or prepared private copy, never the original user-owned source path.
-For an existing image, use a user-supplied remote label or a generic
-viewport-based label. Never copy its source path or basename into `--title`,
-`--page`, comments, or other remote metadata. Never pipe credential material,
-use a signed upload URL, or call `curl`.
+The helper requires 1-100 new or prepared mode-`0600` image files directly
+beneath the private directory and writes a new mode-`0600` `snapshot.json`.
+Viewport variants of one logical screen must repeat the exact same `page` and
+`title`; only `viewport` and `file` differ. It rejects path escapes, symlinks,
+missing files, duplicate `(page, title, viewport)` tuples, and invalid manifest
+metadata.
 
-On success, return the CLI's JSON review URL and delete the plugin-owned
-capture/copy plus the private directory unless the user explicitly requested
-retention. On failure, keep the unchanged private capture/copy, confirm it
-remains mode `0600`, and report its exact recovery path. A retry uses a new
-output name and never overwrites the retained file.
+Publish the whole manifest once:
+
+```text
+screenote-cli.sh [global flags] snapshot --manifest PRIVATE_MANIFEST --wait 2m
+```
+
+The CLI defaults to a two-minute processing wait, but canonical skills pass it
+explicitly so the invocation matches the workflow contract. Success still
+requires the final `snapshot_ready.review_url`; a timeout preserves the
+unchanged manifest for a resumable retry.
+
+Manifest publication requires a 7-40 hexadecimal `git_commit`. Use an explicit
+validated commit supplied in the request when present, otherwise use the
+current worktree commit. If neither exists, ask interactively or return a
+missing-input error noninteractively; never fabricate provenance.
+
+Never pass the original user-owned source path to the CLI. For an existing
+image, use a user-supplied remote label or a generic label; never copy its
+source path or basename into `title`, `page`, comments, or other remote
+metadata. Never pipe credential material, use a signed upload URL, or call
+`curl`. `screenshot create` remains allowlisted for compatibility, but capture
+and existing-image skills use manifest publication so viewport identity and
+grouping are preserved.
+
+On `snapshot_ready`, return the review URL and delete the plugin-owned
+captures/copies, manifest, and private directory unless the user explicitly
+requested retention. On failure, keep the unchanged mode-`0700` directory and
+mode-`0600` files, and report its exact recovery path. Retry the unchanged
+manifest to resume without creating duplicate logical versions.
 
 Annotation crop files follow the same private-path rules. Remove them after a
 successful feedback flow; preserve them only when they help diagnose a stopped

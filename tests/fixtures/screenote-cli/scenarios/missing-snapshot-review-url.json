@@ -1,0 +1,9 @@
+{
+  "commands": {
+    "project list": {"exit": 0, "stdout": {"projects": [{"id": 7, "name": "demo", "role": "owner"}]}},
+    "snapshot --manifest": {
+      "exit": 0,
+      "stdout_raw": "{\"event\":\"snapshot_ready\",\"snapshot_id\":41,\"state\":\"ready\"}"
+    }
+  }
+}

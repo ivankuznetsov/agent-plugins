@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import time
 
 
 def main() -> int:
@@ -39,7 +40,10 @@ def main() -> int:
             "annotation list": ["--screenshot", "--status", "--viewport", "--limit", "--offset"],
             "annotation get": ["--annotation", "--crop-file"],
             "comment add": ["--annotation", "--body"],
+            "snapshot": ["--manifest", "--wait"],
         }
+        if arguments[command_index] == "snapshot":
+            command = "snapshot"
         if command not in flags:
             return 2
         print("Usage: screenote " + command + " " + " ".join(flags[command]))
@@ -58,6 +62,8 @@ def main() -> int:
         response = responses[prior_count] if prior_count < len(responses) else None
     if not isinstance(response, dict):
         response = {"exit": 1, "stderr": {"code": "unexpected_command", "error": command}}
+    if response.get("delay_seconds"):
+        time.sleep(float(response["delay_seconds"]))
     exit_code = int(response.get("exit", 0))
     stream_name = "stdout" if exit_code == 0 else "stderr"
     raw_output = response.get(stream_name + "_raw")

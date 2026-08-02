@@ -19,6 +19,8 @@ declare -ar SCREENOTE_APPROVED_COMMANDS=(
   get
   comment
   add
+  snapshot
+  --manifest
 )
 
 screenote_command_is_approved() {

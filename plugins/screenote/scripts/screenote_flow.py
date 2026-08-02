@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
+from datetime import datetime
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import stat
 import subprocess
@@ -35,8 +37,10 @@ def load_workflow_contract() -> dict[str, Any]:
 
 WORKFLOW_CONTRACT = load_workflow_contract()
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
+COMMAND_TIMEOUT_SECONDS = 150
 CANONICAL_VIEWPORT_WIDTHS = {1280: "desktop", 768: "tablet", 390: "mobile"}
 VALID_VIEWPORTS = frozenset(CANONICAL_VIEWPORT_WIDTHS.values())
+GIT_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 JPEG_SOF_MARKERS = frozenset(
     {
@@ -129,11 +133,31 @@ def _error_code(payload: Any) -> str | None:
     return None
 
 
-def classify_result(result: subprocess.CompletedProcess[str], *, interactive: bool = False) -> ClassifiedResult:
+def classify_result(
+    result: subprocess.CompletedProcess[str],
+    *,
+    interactive: bool = False,
+    json_lines: bool = False,
+) -> ClassifiedResult:
     stream = result.stdout if result.returncode == 0 else result.stderr
-    valid_json, payload = _json_payload(stream)
+    if result.returncode == 0 and json_lines:
+        records: list[dict[str, Any]] = []
+        valid_json = True
+        for line in stream.splitlines():
+            if not line.strip():
+                continue
+            valid_record, record = _json_payload(line)
+            if not valid_record or not isinstance(record, dict):
+                valid_json = False
+                break
+            records.append(record)
+        valid_json = valid_json and bool(records)
+        payload: Any = records if valid_json else None
+    else:
+        valid_json, payload = _json_payload(stream)
     if not valid_json:
-        payload = {"code": "invalid_json", "error": "CLI output was not one complete JSON value."}
+        expectation = "one JSON object per non-empty line" if json_lines else "one complete JSON value"
+        payload = {"code": "invalid_json", "error": f"CLI output was not {expectation}."}
         diagnostic = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return ClassifiedResult(
             False,
@@ -189,6 +213,17 @@ def create_private_directory(parent: Path) -> Path:
     return directory
 
 
+def _validate_private_directory(directory: Path, resource_name: str) -> None:
+    try:
+        directory_status = directory.lstat()
+    except OSError as exc:
+        raise CaptureSafetyError(f"private {resource_name} directory must be a real directory") from exc
+    if not stat.S_ISDIR(directory_status.st_mode):
+        raise CaptureSafetyError(f"private {resource_name} directory must be a real directory")
+    if stat.S_IMODE(directory_status.st_mode) != 0o700:
+        raise CaptureSafetyError(f"private {resource_name} directory must have mode 0700")
+
+
 def create_private_file(directory: Path, name: str, content: bytes = b"screenote-test-png") -> Path:
     if not name or Path(name).name != name or name in {".", ".."}:
         raise CaptureSafetyError("capture name must be a new basename inside the private directory")
@@ -206,6 +241,70 @@ def create_private_file(directory: Path, name: str, content: bytes = b"screenote
         handle.write(content)
     path.chmod(0o600)
     return path
+
+
+def create_snapshot_manifest(
+    directory: Path,
+    *,
+    git_commit: str,
+    taken_at: str,
+    entries: Sequence[Mapping[str, str]],
+    name: str = "snapshot.json",
+) -> Path:
+    _validate_private_directory(directory, "manifest")
+
+    normalized_commit = git_commit.strip().casefold()
+    if not GIT_COMMIT_PATTERN.fullmatch(normalized_commit):
+        raise CaptureSafetyError("git commit must contain 7-40 hexadecimal characters")
+    try:
+        parsed_taken_at = datetime.fromisoformat(taken_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise CaptureSafetyError("capture timestamp must be ISO 8601 with an explicit offset") from exc
+    if parsed_taken_at.tzinfo is None or parsed_taken_at.utcoffset() is None:
+        raise CaptureSafetyError("capture timestamp must be ISO 8601 with an explicit offset")
+    if not 1 <= len(entries) <= 100:
+        raise CaptureSafetyError("snapshot manifest must contain 1-100 images")
+
+    normalized_entries: list[dict[str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for entry in entries:
+        page = str(entry.get("page", "")).strip()
+        title = str(entry.get("title", "")).strip()
+        viewport = str(entry.get("viewport", "")).strip().casefold()
+        filename = str(entry.get("file", ""))
+        if not page or len(page) > 255 or not title or len(title) > 255:
+            raise CaptureSafetyError("snapshot page and title must contain 1-255 characters")
+        if viewport not in VALID_VIEWPORTS:
+            raise CaptureSafetyError("viewport must be desktop, tablet, or mobile")
+        if not filename or Path(filename).name != filename or filename in {".", ".."}:
+            raise CaptureSafetyError("snapshot image file must be a basename inside the private directory")
+        image_path = directory / filename
+        try:
+            image_status = image_path.lstat()
+        except OSError as exc:
+            raise CaptureSafetyError("snapshot image must be a real file inside the private directory") from exc
+        if not stat.S_ISREG(image_status.st_mode):
+            raise CaptureSafetyError("snapshot image must be a real file inside the private directory")
+        if stat.S_IMODE(image_status.st_mode) != 0o600:
+            raise CaptureSafetyError("snapshot image files must have mode 0600")
+
+        key = (page, title, viewport)
+        if key in seen:
+            raise CaptureSafetyError("viewport must be unique within each page and title group")
+        seen.add(key)
+        normalized_entries.append({"page": page, "title": title, "file": filename, "viewport": viewport})
+
+    body = json.dumps(
+        {
+            "version": 1,
+            "git_commit": normalized_commit,
+            "taken_at": taken_at,
+            "images": normalized_entries,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode()
+    return create_private_file(directory, name, body)
 
 
 def _png_dimensions(content: bytes) -> tuple[int, int]:
@@ -380,10 +479,7 @@ def prepare_existing_image(
     *,
     viewport: str | None = None,
 ) -> PreparedExistingImage:
-    if directory.is_symlink() or not directory.is_dir():
-        raise CaptureSafetyError("private image directory must be a real directory")
-    if stat.S_IMODE(directory.stat().st_mode) != 0o700:
-        raise CaptureSafetyError("private image directory must have mode 0700")
+    _validate_private_directory(directory, "image")
     if viewport is not None and viewport not in VALID_VIEWPORTS:
         raise CaptureSafetyError("viewport must be desktop, tablet, or mobile")
 
@@ -443,16 +539,36 @@ def _run(
     *,
     interactive: bool,
 ) -> ClassifiedResult:
-    result = subprocess.run(
-        [str(launcher), *arguments],
-        text=True,
-        capture_output=True,
-        env=dict(env),
-        check=False,
-    )
     command_index = _command_index(arguments)
     report.commands.append((arguments[command_index], arguments[command_index + 1]))
-    classified = classify_result(result, interactive=interactive)
+    command = " ".join(arguments[command_index : command_index + 2])
+    try:
+        result = subprocess.run(
+            [str(launcher), *arguments],
+            text=True,
+            capture_output=True,
+            env=dict(env),
+            check=False,
+            timeout=COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        payload = {"code": "command_timeout", "error": f"{command} exceeded the bounded execution time."}
+        classified = ClassifiedResult(
+            False,
+            124,
+            "command_timeout",
+            json.dumps(payload, sort_keys=True, separators=(",", ":")),
+            "The Screenote CLI timed out; keep unchanged recovery artifacts and retry only when the runtime is healthy.",
+            payload,
+        )
+        report.outputs.append(classified)
+        report.stopped = True
+        return classified
+    classified = classify_result(
+        result,
+        interactive=interactive,
+        json_lines=WORKFLOW_CONTRACT["commands"].get(command, {}).get("output") == "json_lines",
+    )
     report.outputs.append(classified)
     if not classified.ok:
         report.stopped = True
@@ -580,13 +696,29 @@ def run_flow(
     report = FlowReport(workflow)
     globals_: list[str] = ["--project", project] if project else []
 
-    contract_process = subprocess.run(
-        [str(launcher), "--check-contract"],
-        text=True,
-        capture_output=True,
-        env=dict(env),
-        check=False,
-    )
+    try:
+        contract_process = subprocess.run(
+            [str(launcher), "--check-contract"],
+            text=True,
+            capture_output=True,
+            env=dict(env),
+            check=False,
+            timeout=COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        payload = {"code": "command_timeout", "error": "CLI contract verification exceeded the bounded execution time."}
+        report.outputs.append(
+            ClassifiedResult(
+                False,
+                124,
+                "command_timeout",
+                json.dumps(payload, sort_keys=True, separators=(",", ":")),
+                "The Screenote CLI timed out before publication; retry only when the runtime is healthy.",
+                payload,
+            )
+        )
+        report.stopped = True
+        return report
     contract_result = classify_result(contract_process, interactive=interactive)
     report.outputs.append(contract_result)
     if not contract_result.ok:
@@ -601,30 +733,44 @@ def run_flow(
         captures = [("login", "Login")]
         if workflow == "snapshot":
             captures.append(("dashboard", "Dashboard"))
+        directory = create_private_directory(workspace)
+        entries = []
         for index, (page, title) in enumerate(captures):
-            directory = create_private_directory(workspace)
-            capture = create_private_file(directory, f"capture-{index}.png")
-            result = _run(
-                launcher,
-                [*globals_, "screenshot", "create", "--title", title, "--page", page, "--file", str(capture)],
-                env,
-                report,
-                interactive=interactive,
-            )
-            if not result.ok:
-                report.recovery_paths.append(str(capture))
-                return report
-            if not isinstance(result.payload, dict):
-                _contract_failure(report, "invalid_response", "screenshot create must return a JSON object")
-                report.recovery_paths.append(str(capture))
-                return report
-            review_url = result.payload.get("review_url") or result.payload.get("url")
-            if isinstance(review_url, str):
-                report.review_urls.append(review_url)
-            if not retain:
-                shutil.rmtree(directory)
-            else:
-                report.recovery_paths.append(str(capture))
+            for viewport in ("desktop", "tablet", "mobile"):
+                filename = f"capture-{index}-{viewport}.png"
+                create_private_file(directory, filename)
+                entries.append({"page": page, "title": title, "file": filename, "viewport": viewport})
+        manifest = create_snapshot_manifest(
+            directory,
+            git_commit="abc1234",
+            taken_at="2026-07-10T10:00:00Z",
+            entries=entries,
+        )
+        result = _run(
+            launcher,
+            [*globals_, "snapshot", "--manifest", str(manifest), "--wait", "2m"],
+            env,
+            report,
+            interactive=interactive,
+        )
+        if not result.ok:
+            report.recovery_paths.append(str(directory))
+            return report
+        terminal_event = WORKFLOW_CONTRACT["commands"]["snapshot --manifest"]["terminal_event"]
+        if not isinstance(result.payload, list) or result.payload[-1].get("event") != terminal_event:
+            _contract_failure(report, "invalid_response", f"snapshot must end with a {terminal_event} JSON Lines event")
+            report.recovery_paths.append(str(directory))
+            return report
+        review_url = result.payload[-1].get("review_url")
+        if not isinstance(review_url, str) or not review_url:
+            _contract_failure(report, "invalid_response", f"{terminal_event} must contain a review_url")
+            report.recovery_paths.append(str(directory))
+            return report
+        report.review_urls.append(review_url)
+        if not retain:
+            shutil.rmtree(directory)
+        else:
+            report.recovery_paths.append(str(directory))
         return report
 
     page_result = _run(launcher, [*globals_, "page", "list"], env, report, interactive=interactive)
@@ -709,37 +855,63 @@ def main(argv: Sequence[str] | None = None) -> int:
     prepare.add_argument("--source", required=True, type=Path)
     prepare.add_argument("--directory", required=True, type=Path)
     prepare.add_argument("--viewport", choices=sorted(VALID_VIEWPORTS))
+    manifest = subparsers.add_parser(
+        "prepare-snapshot-manifest",
+        help="write a private Screenote snapshot manifest from prepared image files",
+    )
+    manifest.add_argument("--directory", required=True, type=Path)
+    manifest.add_argument("--git-commit", required=True)
+    manifest.add_argument("--taken-at", required=True)
+    manifest.add_argument(
+        "--entry",
+        action="append",
+        nargs=4,
+        required=True,
+        metavar=("PAGE", "TITLE", "VIEWPORT", "FILE"),
+    )
     arguments = parser.parse_args(argv)
 
     try:
-        prepared = prepare_existing_image(
-            arguments.source,
-            arguments.directory,
-            viewport=arguments.viewport,
-        )
+        if arguments.command == "prepare-existing-image":
+            prepared = prepare_existing_image(
+                arguments.source,
+                arguments.directory,
+                viewport=arguments.viewport,
+            )
+        else:
+            manifest_path = create_snapshot_manifest(
+                arguments.directory,
+                git_commit=arguments.git_commit,
+                taken_at=arguments.taken_at,
+                entries=[
+                    {"page": page, "title": title, "viewport": viewport, "file": filename}
+                    for page, title, viewport, filename in arguments.entry
+                ],
+            )
     except CaptureSafetyError as exc:
+        error_code = "unsafe_existing_image" if arguments.command == "prepare-existing-image" else "unsafe_snapshot_manifest"
         print(
-            json.dumps({"code": "unsafe_existing_image", "error": str(exc)}, separators=(",", ":")),
+            json.dumps({"code": error_code, "error": str(exc)}, separators=(",", ":")),
             file=sys.stderr,
         )
         return 64
-    print(
-        json.dumps(
-            {
-                "path": str(prepared.path),
-                "viewport": prepared.viewport,
-                "content_type": prepared.content_type,
-                "width": prepared.width,
-                "height": prepared.height,
-                "size_bytes": prepared.size_bytes,
-            },
-            separators=(",", ":"),
-        )
-    )
+    if arguments.command == "prepare-existing-image":
+        payload = {
+            "path": str(prepared.path),
+            "viewport": prepared.viewport,
+            "content_type": prepared.content_type,
+            "width": prepared.width,
+            "height": prepared.height,
+            "size_bytes": prepared.size_bytes,
+        }
+    else:
+        payload = {"path": str(manifest_path), "image_count": len(arguments.entry)}
+    print(json.dumps(payload, separators=(",", ":")))
     return 0
 
 
 __all__ = [
+    "COMMAND_TIMEOUT_SECONDS",
     "CaptureSafetyError",
     "MAX_IMAGE_BYTES",
     "ClassifiedResult",
@@ -752,6 +924,7 @@ __all__ = [
     "classify_result",
     "create_private_directory",
     "create_private_file",
+    "create_snapshot_manifest",
     "find_secret_artifacts",
     "load_workflow_contract",
     "prepare_existing_image",

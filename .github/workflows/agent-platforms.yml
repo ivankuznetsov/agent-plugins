@@ -97,7 +97,7 @@ jobs:
         run: >-
           go install
           github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
-      - name: Exercise noninteractive project, capture, and feedback commands
+      - name: Exercise noninteractive project, snapshot, capture, and feedback commands
         shell: bash
         run: |
           set -euo pipefail
@@ -107,20 +107,33 @@ jobs:
           integration_dir=$(mktemp -d "${RUNNER_TEMP}/screenote-live-XXXXXX")
           chmod 700 "$integration_dir"
           trap 'rm -rf "$integration_dir"' EXIT
-          python3 - "$integration_dir/capture.png" <<'PY'
+          python3 - "$integration_dir" <<'PY'
           import base64
           from pathlib import Path
           import sys
 
-          Path(sys.argv[1]).write_bytes(base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nWQAAAAASUVORK5CYII="))
-          Path(sys.argv[1]).chmod(0o600)
+          root = Path(sys.argv[1])
+          content = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nWQAAAAASUVORK5CYII=")
+          for viewport in ("desktop", "tablet", "mobile"):
+              path = root / f"capture-{viewport}.png"
+              path.write_bytes(content)
+              path.chmod(0o600)
           PY
           launcher=plugins/screenote/scripts/screenote-cli.sh
           "$launcher" --check-contract >"$integration_dir/contract.json"
           "$launcher" --project "$SCREENOTE_PROJECT" project list >"$integration_dir/projects.json"
+          python3 plugins/screenote/scripts/screenote_flow.py prepare-snapshot-manifest \
+            --directory "$integration_dir" --git-commit "$GITHUB_SHA" \
+            --taken-at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --entry "ci-release-probe" "Agent plugin release probe" desktop "capture-desktop.png" \
+            --entry "ci-release-probe" "Agent plugin release probe" tablet "capture-tablet.png" \
+            --entry "ci-release-probe" "Agent plugin release probe" mobile "capture-mobile.png" \
+            >"$integration_dir/manifest-result.json"
+          "$launcher" --project "$SCREENOTE_PROJECT" snapshot \
+            --manifest "$integration_dir/snapshot.json" --wait 2m >"$integration_dir/snapshot.jsonl"
           "$launcher" --project "$SCREENOTE_PROJECT" screenshot create \
             --title "Agent plugin release probe" --page "ci-release-probe" \
-            --file "$integration_dir/capture.png" >"$integration_dir/capture.json"
+            --file "$integration_dir/capture-desktop.png" >"$integration_dir/capture.json"
           "$launcher" --project "$SCREENOTE_PROJECT" page list >"$integration_dir/pages.json"
           "$launcher" --project "$SCREENOTE_PROJECT" screenshot list \
             --page "$SCREENOTE_TEST_PAGE_ID" --limit 100 --offset 0 >"$integration_dir/screenshots.json"
@@ -133,11 +146,15 @@ jobs:
             --annotation "$SCREENOTE_TEST_ANNOTATION_ID" \
             --body "Automated release compatibility probe completed." >"$integration_dir/comment.json"
           python3 - "$integration_dir" <<'PY'
+          import json
           import os
           from pathlib import Path
           import sys
 
           root = Path(sys.argv[1])
+          snapshot_events = [json.loads(line) for line in (root / "snapshot.jsonl").read_text().splitlines() if line]
+          if not snapshot_events or snapshot_events[-1].get("event") != "snapshot_ready" or not snapshot_events[-1].get("review_url"):
+              raise SystemExit("Screenote snapshot integration did not return snapshot_ready.review_url")
           sentinel = os.environ["SCREENOTE_TOKEN"].encode()
           contaminated = []
           for path in root.rglob("*"):

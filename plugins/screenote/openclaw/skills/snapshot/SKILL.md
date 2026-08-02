@@ -1,6 +1,6 @@
 ---
 name: snapshot
-description: "Discover approved HTTP(S) application routes and publish serial per-route captures through allowlisted screenshot create calls."
+description: "Discover approved HTTP(S) application routes and publish one manifest-backed multi-viewport Screenote snapshot."
 metadata:
   generated-from: skills/snapshot/SKILL.md
   generated-for: openclaw

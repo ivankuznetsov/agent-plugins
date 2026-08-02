@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.screenote_flow import (
     CaptureSafetyError,
@@ -14,6 +15,7 @@ from scripts.screenote_flow import (
     WORKFLOW_CONTRACT,
     create_private_directory,
     create_private_file,
+    create_snapshot_manifest,
     prepare_existing_image,
     resolve_project,
     run_flow,
@@ -76,8 +78,9 @@ class ScreenoteCliContractTests(unittest.TestCase):
             "      'annotation list': ['--screenshot', '--status', '--viewport', '--limit', '--offset'],\n"
             "      'annotation get': ['--annotation', '--crop-file'],\n"
             "      'comment add': ['--annotation', '--body'],\n"
+            "      'snapshot': ['--manifest', '--wait'],\n"
             "    }\n"
-            "    command = ' '.join(args[:2])\n"
+            "    command = 'snapshot' if args[0] == 'snapshot' else ' '.join(args[:2])\n"
             "    if command not in flags: raise SystemExit(2)\n"
             "    print('Usage: screenote ' + command + ' ' + ' '.join(flags[command]))\n"
             "else:\n"
@@ -187,7 +190,7 @@ class ScreenoteCliContractTests(unittest.TestCase):
         self.assertEqual(0, compatible.returncode, compatible.stderr)
         self.assertIn("screenote-cli-pr-6", compatible.stdout)
         self.assertIn("c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b", compatible.stdout)
-        self.assertEqual(["comment", "add", "--help"], argv)
+        self.assertEqual(["snapshot", "--help"], argv)
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -282,7 +285,7 @@ class ScreenoteCliContractTests(unittest.TestCase):
             "mktemp",
             "0700",
             "0600",
-            "screenshot create",
+            "snapshot --manifest",
             "comment add",
             "Screenote UI",
         ):
@@ -304,10 +307,11 @@ class ScreenoteCliContractTests(unittest.TestCase):
                 workflow_tuples = tuples
                 self.assertEqual(("project", "list"), workflow_tuples[0])
                 if workflow == "screenote":
-                    self.assertEqual(1, workflow_tuples.count(("screenshot", "create")))
+                    self.assertEqual(1, workflow_tuples.count(("snapshot", "--manifest")))
+                    self.assertNotIn(("screenshot", "create"), workflow_tuples)
                 elif workflow == "snapshot":
-                    self.assertEqual(2, workflow_tuples.count(("screenshot", "create")))
-                    self.assertNotIn(("snapshot", "create"), workflow_tuples)
+                    self.assertEqual(1, workflow_tuples.count(("snapshot", "--manifest")))
+                    self.assertNotIn(("screenshot", "create"), workflow_tuples)
                 else:
                     self.assertEqual(
                         [
@@ -320,6 +324,46 @@ class ScreenoteCliContractTests(unittest.TestCase):
                         ],
                         workflow_tuples,
                     )
+
+    def test_capture_workflows_publish_viewports_in_one_manifest(self):
+        for workflow, expected_pages in (("screenote", 1), ("snapshot", 2)):
+            with self.subTest(workflow=workflow):
+                _, report, records = self._run_flow("success.json", workflow, retain=True)
+
+                self.assertFalse(report.stopped)
+                snapshot_call = next(record for record in records if record[:2] == ["snapshot", "--manifest"])
+                self.assertEqual(["--wait", "2m"], snapshot_call[-2:])
+                manifest_path = Path(snapshot_call[snapshot_call.index("--manifest") + 1])
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                grouped = {}
+                for image in manifest["images"]:
+                    grouped.setdefault((image["page"], image["title"]), set()).add(image["viewport"])
+
+                self.assertEqual(expected_pages, len(grouped))
+                self.assertTrue(all(viewports == {"desktop", "tablet", "mobile"} for viewports in grouped.values()))
+                self.assertEqual(expected_pages * 3, len(manifest["images"]))
+                self.assertEqual(["https://screenote.test/projects/7?snapshot_id=41"], report.review_urls)
+
+    def test_snapshot_terminal_contract_failures_preserve_recovery_directory(self):
+        for scenario in ("missing-snapshot-terminal.json", "missing-snapshot-review-url.json"):
+            with self.subTest(scenario=scenario):
+                _, report, _ = self._run_flow(scenario)
+
+                self.assertTrue(report.stopped)
+                self.assertEqual("invalid_response", report.outputs[-1].error_code)
+                self.assertEqual([], report.review_urls)
+                self.assertEqual(1, len(report.recovery_paths))
+                self.assertTrue(Path(report.recovery_paths[0]).is_dir())
+
+    def test_snapshot_timeout_preserves_recovery_directory(self):
+        with patch.dict(run_flow.__globals__, {"COMMAND_TIMEOUT_SECONDS": 0.5}):
+            _, report, _ = self._run_flow("snapshot-timeout.json")
+
+        self.assertTrue(report.stopped)
+        self.assertEqual("command_timeout", report.outputs[-1].error_code)
+        self.assertEqual(124, report.outputs[-1].exit_code)
+        self.assertEqual(1, len(report.recovery_paths))
+        self.assertTrue(Path(report.recovery_paths[0]).is_dir())
 
     def test_invalid_success_json_and_malformed_collections_fail_closed(self):
         for scenario, code in (
@@ -421,15 +465,17 @@ class ScreenoteCliContractTests(unittest.TestCase):
         _, retained, _ = self._run_flow("success.json", retain=True)
         self.assertEqual(1, len(retained.recovery_paths))
         retained_path = Path(retained.recovery_paths[0])
-        self.assertTrue(retained_path.is_file())
-        self.assertEqual(0o600, stat.S_IMODE(retained_path.stat().st_mode))
-        self.assertEqual(0o700, stat.S_IMODE(retained_path.parent.stat().st_mode))
+        self.assertTrue(retained_path.is_dir())
+        self.assertEqual(0o700, stat.S_IMODE(retained_path.stat().st_mode))
+        self.assertTrue((retained_path / "snapshot.json").is_file())
+        self.assertTrue(all(stat.S_IMODE(path.stat().st_mode) == 0o600 for path in retained_path.iterdir()))
 
         _, failed, _ = self._run_flow("upload-failure.json")
         self.assertTrue(failed.stopped)
         failed_path = Path(failed.recovery_paths[0])
-        self.assertTrue(failed_path.is_file())
-        self.assertEqual(0o600, stat.S_IMODE(failed_path.stat().st_mode))
+        self.assertTrue(failed_path.is_dir())
+        self.assertEqual(0o700, stat.S_IMODE(failed_path.stat().st_mode))
+        self.assertTrue((failed_path / "snapshot.json").is_file())
 
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -575,23 +621,70 @@ class ScreenoteCliContractTests(unittest.TestCase):
         self.assertEqual("unsafe_existing_image", json.loads(rejected.stderr)["code"])
         self.assertNotIn(str(root / "missing.png"), rejected.stderr)
 
+        manifest = create_snapshot_manifest(
+            private,
+            git_commit="abc1234",
+            taken_at="2026-07-10T10:00:00Z",
+            entries=[
+                {
+                    "page": "dashboard",
+                    "title": "Existing screenshot",
+                    "file": Path(payload["path"]).name,
+                    "viewport": payload["viewport"],
+                }
+            ],
+        )
         upload, argv = self._run(
             [
                 "--project",
                 "project-7",
-                "screenshot",
-                "create",
-                "--title",
-                "Existing screenshot",
-                "--page",
-                "dashboard",
-                "--file",
-                payload["path"],
+                "snapshot",
+                "--manifest",
+                str(manifest),
             ]
         )
         self.assertEqual(0, upload.returncode, upload.stderr)
-        self.assertIn(payload["path"], argv)
+        self.assertIn(str(manifest), argv)
         self.assertNotIn(str(source), argv)
+
+    def test_snapshot_manifest_helper_preserves_logical_viewport_groups(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        private = create_private_directory(Path(temporary.name))
+        for viewport in ("desktop", "tablet", "mobile"):
+            create_private_file(private, f"capture-{viewport}.png")
+
+        manifest_path = create_snapshot_manifest(
+            private,
+            git_commit="abc1234",
+            taken_at="2026-07-10T10:00:00Z",
+            entries=[
+                {
+                    "page": "/admin",
+                    "title": "Admin users workspace",
+                    "file": f"capture-{viewport}.png",
+                    "viewport": viewport,
+                }
+                for viewport in ("desktop", "tablet", "mobile")
+            ],
+        )
+
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(0o600, stat.S_IMODE(manifest_path.stat().st_mode))
+        self.assertEqual({"/admin"}, {entry["page"] for entry in manifest["images"]})
+        self.assertEqual({"Admin users workspace"}, {entry["title"] for entry in manifest["images"]})
+        self.assertEqual({"desktop", "tablet", "mobile"}, {entry["viewport"] for entry in manifest["images"]})
+
+        with self.assertRaises(CaptureSafetyError):
+            create_snapshot_manifest(
+                private,
+                git_commit="abc1234",
+                taken_at="2026-07-10T10:00:00Z",
+                entries=[
+                    {"page": "/admin", "title": "Admin", "file": "../escape.png", "viewport": "desktop"}
+                ],
+                name="other.json",
+            )
 
     def test_capture_targets_must_be_safe_http_urls(self):
         self.assertEqual("https://example.test/login?q=one", validate_http_url("https://example.test/login?q=one"))

@@ -76,16 +76,22 @@ Publish an existing image without starting browser automation:
 /screenote desktop ./tmp/login.png
 ```
 
-Multiple explicitly named files may be published serially:
+Multiple explicitly named files may be published together:
 
 ```text
 /screenote ./tmp/login-desktop.png ./tmp/login-mobile.png
 ```
 
 The helper validates file type, extension, image structure, dimensions, size,
-and every source-path component for symlinks, then uploads a new private copy.
-It never passes the original path or basename in CLI file or metadata arguments,
-and never deletes the source file.
+and every source-path component for symlinks, then publishes new private copies
+through one manifest. Files identified as viewport variants share one logical
+version and appear behind Screenote's desktop/tablet/mobile switcher. The
+workflow never passes the original path or basename in CLI file or metadata
+arguments, and never deletes the source file.
+
+Snapshot manifests require immutable commit provenance. The workflows use the
+current Git commit by default and accept an explicit `git_commit=<7-40 hex>`
+value for uploads invoked outside a worktree.
 
 Discover, confirm, and capture an application route set:
 
@@ -109,9 +115,10 @@ does not perform the final resolution mutation.
   validation and copying into the plugin-owned private directory.
 - Native browser automation captures serially to a unique mode-`0700`
   directory with mode-`0600` files.
-- `scripts/screenote-cli.sh` accepts only project/page/screenshot/annotation
-  reads, screenshot creation, and comment creation; endpoint/config overrides
-  are forbidden and arguments remain separate argv elements.
+- `scripts/screenote-cli.sh` accepts only approved project/page/screenshot/
+  annotation reads, snapshot publication, screenshot compatibility upload, and
+  comment creation; endpoint/config overrides are forbidden and arguments
+  remain separate argv elements.
 - Credentials stay in the CLI's environment or config channels, never command
   arguments, generated files, or diagnostics.
 - Exit 2 reports missing authentication/project setup, exit 3 reports rejected
@@ -127,6 +134,7 @@ error mapping, project precedence, capture boundary, cleanup rules, and the
 
 - A compatible `screenote` executable on `PATH`
 - A Screenote account and an accessible project
+- A Git worktree commit or an explicit `git_commit` value for manifest provenance
 - A supported agent host with native browser automation only for fresh capture
   workflows; existing-image publication does not need a browser runtime
 

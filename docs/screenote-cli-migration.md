@@ -74,23 +74,26 @@ of duplicated.
 | `3` | Invalid/expired authentication or authorization | Stop without trying another auth mechanism |
 | Any other nonzero | JSON error code from the CLI | Stop immediately and preserve the machine-readable diagnostic |
 
-Success requires exit zero and one complete valid JSON value. Collection keys,
-pagination metadata, and identifiers must match the shipped pinned workflow
-contract; the plugin stops rather than inventing missing IDs.
+Success requires exit zero and one complete valid JSON value for ordinary
+commands. Snapshot publication emits JSON Lines and additionally requires a
+final `snapshot_ready` event with `review_url`. Collection keys, pagination
+metadata, and identifiers must match the shipped pinned workflow contract; the
+plugin stops rather than inventing missing IDs.
 
 ## Capture and recovery
 
 `screenote` captures an explicit HTTP(S) page. `snapshot` discovers and
 confirms same-origin HTTP(S) routes, then performs repeated per-route captures.
-Both use serial native browser automation and one approved `screenshot create`
-call per private PNG; the plugin does not invoke a bulk snapshot command.
+Both use serial native browser automation, build one complete manifest, and
+invoke `snapshot --manifest` once so viewport variants share one logical
+version.
 
 Each run creates a unique mode-`0700` directory and mode-`0600` capture files.
 User-supplied local upload paths, symlinks, existing destinations, path escapes,
 and non-HTTP(S) navigation are rejected. A successful upload deletes its
-temporary capture unless retention was requested. A failed capture/upload
-retains the unchanged private file and reports its exact recovery path; retries
-use a new name.
+temporary captures and manifest unless retention was requested. A failed
+capture/upload retains the unchanged private directory and reports its exact
+recovery path; an unchanged manifest retry resumes the same Snapshot.
 
 ## Feedback resolution
 
