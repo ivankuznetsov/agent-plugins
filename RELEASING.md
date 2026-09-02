@@ -93,6 +93,7 @@ matching `agent-seo-vX.Y.Z` release here.
 The Screenote plugin is released here, while its external CLI is released from
 [`ivankuznetsov/screenote-cli`](https://github.com/ivankuznetsov/screenote-cli).
 Keep the contract PR, merge SHA, public test ref, and eventual minimum release
-as separate fields in `plugin-surfaces.json`. When a tagged CLI release first
-contains PR 6, update the single `minimum_release` field and compatibility
-docs, rerun offline/live tests, and do not copy the baseline into skills.
+as separate fields in `plugin-surfaces.json`. The current plugin baseline is
+CLI v0.4.0 from PR 17. When that baseline advances, update all four provenance
+fields and compatibility docs, rerun offline/live tests, and do not copy the
+CLI implementation into skills.

@@ -8,12 +8,13 @@ The exact native discovery pins are Claude Code `2.1.179`, Codex CLI
 `0.144.3`, Pi `0.80.10`, and OpenClaw `2026.7.1-beta.2`. These are tested
 versions, not claimed formal minimums.
 
-Screenote depends on the external `screenote` executable. The current
-OAuth-first JSON baseline is the reachable merged PR 6 at
-`c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b`. No containing CLI release is
-tagged, so `plugin-surfaces.json#screenote_cli.minimum_release` remains null.
-The plugin detects the executable but never installs it. Its generated
-allowlist and shipped workflow contract share that pinned public provenance.
+Screenote depends on the external `screenote` executable. The current JSON
+baseline is Screenote CLI v0.4.0, merged by PR 17 at
+`bc45930aae38acc892324a5e80e097a1761fa17b`. The plugin records `0.4.0` as its
+minimum release because feedback now requires attachment export and optional
+image-comment support. It detects the executable but never installs it. Its
+generated allowlist and shipped workflow contract share that pinned public
+provenance.
 
 Workflow-specific optional dependencies remain local to their plugins:
 

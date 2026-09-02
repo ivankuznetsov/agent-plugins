@@ -1,0 +1,15 @@
+{
+  "commands": {
+    "project list": {"exit": 0, "stdout": {"projects": [{"id": 7, "name": "demo", "role": "owner"}]}},
+    "page list": {"exit": 0, "stdout": {"pages": [{"id": 11, "name": "login"}]}},
+    "screenshot list": {"exit": 0, "stdout": {"screenshots": [{"id": 21, "title": "Login"}], "pagination": {"total": 1, "limit": 100, "offset": 0}}},
+    "annotation list": {"exit": 0, "stdout": {"annotations": [{"id": 31, "screenshot_id": 21}], "pagination": {"total": 1, "limit": 100, "offset": 0}}},
+    "annotation get": {
+      "responses": [
+        {"exit": 1, "stderr": {"code": "crop_unavailable", "error": "annotation crop is unavailable"}},
+        {"exit": 0, "stdout": {"id": 31, "status": "open", "attachments": [], "comments": []}}
+      ]
+    },
+    "comment add": {"exit": 0, "stdout": {"success": true}}
+  }
+}

@@ -38,8 +38,8 @@ def main() -> int:
             "screenshot list": ["--page", "--status", "--limit", "--offset"],
             "screenshot create": ["--title", "--page", "--file"],
             "annotation list": ["--screenshot", "--status", "--viewport", "--limit", "--offset"],
-            "annotation get": ["--annotation", "--crop-file"],
-            "comment add": ["--annotation", "--body"],
+            "annotation get": ["--annotation", "--crop-file", "--attachments-dir"],
+            "comment add": ["--annotation", "--body", "--image"],
             "snapshot": ["--manifest", "--wait"],
         }
         if arguments[command_index] == "snapshot":

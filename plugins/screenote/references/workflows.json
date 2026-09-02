@@ -1,8 +1,9 @@
 {
-  "contract_version": 1,
+  "contract_version": 2,
   "provenance": {
-    "pull_request": "https://github.com/ivankuznetsov/screenote-cli/pull/6",
-    "merge_sha": "c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b"
+    "pull_request": "https://github.com/ivankuznetsov/screenote-cli/pull/17",
+    "merge_sha": "bc45930aae38acc892324a5e80e097a1761fa17b",
+    "minimum_release": "0.4.0"
   },
   "success": {
     "exit_code": 0,
@@ -39,11 +40,11 @@
       "paginated": true
     },
     "annotation get": {
-      "required_flags": ["--annotation", "--crop-file"],
+      "required_flags": ["--annotation", "--crop-file", "--attachments-dir"],
       "paginated": false
     },
     "comment add": {
-      "required_flags": ["--annotation", "--body"],
+      "required_flags": ["--annotation", "--body", "--image"],
       "paginated": false
     },
     "snapshot --manifest": {

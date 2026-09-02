@@ -812,16 +812,44 @@ def run_flow(
         annotation_id = str(annotation["id"])
         crop_directory = create_private_directory(workspace)
         crop_path = crop_directory / f"annotation-{index}.png"
+        attachment_directory = crop_directory / "attachments"
         detail_result = _run(
             launcher,
-            [*globals_, "annotation", "get", "--annotation", annotation_id, "--crop-file", str(crop_path)],
+            [
+                *globals_,
+                "annotation",
+                "get",
+                "--annotation",
+                annotation_id,
+                "--crop-file",
+                str(crop_path),
+                "--attachments-dir",
+                str(attachment_directory),
+            ],
             env,
             report,
             interactive=interactive,
         )
+        if not detail_result.ok and detail_result.error_code == "crop_unavailable":
+            report.stopped = False
+            detail_result = _run(
+                launcher,
+                [
+                    *globals_,
+                    "annotation",
+                    "get",
+                    "--annotation",
+                    annotation_id,
+                    "--attachments-dir",
+                    str(attachment_directory),
+                ],
+                env,
+                report,
+                interactive=interactive,
+            )
         if not detail_result.ok:
-            if crop_path.exists():
-                report.recovery_paths.append(str(crop_path))
+            if any(crop_directory.iterdir()):
+                report.recovery_paths.append(str(crop_directory))
             else:
                 shutil.rmtree(crop_directory)
             return report
@@ -833,15 +861,15 @@ def run_flow(
             interactive=interactive,
         )
         if not comment_result.ok:
-            if crop_path.exists():
-                report.recovery_paths.append(str(crop_path))
+            if any(crop_directory.iterdir()):
+                report.recovery_paths.append(str(crop_directory))
             else:
                 shutil.rmtree(crop_directory)
             return report
         if not retain:
             shutil.rmtree(crop_directory)
-        elif crop_path.exists():
-            report.recovery_paths.append(str(crop_path))
+        elif any(crop_directory.iterdir()):
+            report.recovery_paths.append(str(crop_directory))
     return report
 
 

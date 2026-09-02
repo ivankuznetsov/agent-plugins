@@ -2,7 +2,8 @@
 
 Give an AI coding agent a visual feedback loop: capture a page or a route set,
 publish new or existing PNG/JPEG images through the external Screenote JSON
-CLI, retrieve visual annotations, and comment after applying a fix.
+CLI, retrieve visual annotations and their attachments, and comment with an
+optional image after applying a fix.
 
 The plugin ships the same `screenote`, `snapshot`, and `feedback` workflows for
 Claude Code, Codex, Pi, and OpenClaw. It detects the `screenote` executable but
@@ -31,11 +32,10 @@ openclaw plugins install /path/to/agent-plugins/plugins/screenote
 
 ## Prerequisite
 
-Until a tagged Screenote CLI release contains the OAuth-first command contract,
-install the recorded public baseline:
+Install Screenote CLI v0.4.0 or later:
 
 ```bash
-go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.0
 ```
 
 For an interactive machine using the hosted service, authenticate separately
@@ -105,6 +105,12 @@ Retrieve feedback, apply a fix, and add a comment:
 /feedback mobile login
 ```
 
+The feedback workflow downloads root and reply attachments into private local
+files for inspection. When the request explicitly calls for an image reply, it
+can attach one approved PNG, JPEG, or WebP file. It never silently turns a
+failed image reply into a text-only comment or retries an ambiguous result that
+could duplicate the comment.
+
 After the comment succeeds, resolve the item in the Screenote UI. The plugin
 does not perform the final resolution mutation.
 
@@ -122,13 +128,13 @@ does not perform the final resolution mutation.
 - Credentials stay in the CLI's environment or config channels, never command
   arguments, generated files, or diagnostics.
 - Exit 2 reports missing authentication/project setup, exit 3 reports rejected
-  authentication, and every other nonzero result stops the flow.
+  authentication, and every other nonzero result stops the flow except the
+  documented read-only retry when an annotation crop is unavailable.
 - Successful temporary captures are removed unless retention was requested.
   Failed captures remain private and their exact recovery path is reported.
 
 See [the shared CLI contract](references/cli.md) for the complete allowlist,
-error mapping, project precedence, capture boundary, cleanup rules, and the
-2.x setup migration.
+error mapping, project precedence, capture boundary, and cleanup rules.
 
 ## Requirements
 

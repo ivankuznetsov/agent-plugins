@@ -58,6 +58,23 @@ class ScreenoteCliContractTests(unittest.TestCase):
 
         self.assertIn('SCREENOTE_BASE_URL: "https://screenote.ai"', job_configuration)
 
+    def test_protected_integration_embeds_a_valid_upload_image(self):
+        workflow = AGENT_PLATFORMS_WORKFLOW.read_text(encoding="utf-8")
+        marker = 'content = base64.b64decode("'
+        self.assertEqual(1, workflow.count(marker))
+        encoded = workflow.split(marker, 1)[1].split('")', 1)[0]
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "workflow-fixture.png"
+            source.write_bytes(base64.b64decode(encoded, validate=True))
+            private = create_private_directory(root / "captures")
+
+            prepared = prepare_existing_image(source, private)
+
+        self.assertEqual("image/png", prepared.content_type)
+        self.assertEqual((1, 1), (prepared.width, prepared.height))
+
     def _run(self, arguments):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -76,8 +93,8 @@ class ScreenoteCliContractTests(unittest.TestCase):
             "      'screenshot list': ['--page', '--status', '--limit', '--offset'],\n"
             "      'screenshot create': ['--title', '--page', '--file'],\n"
             "      'annotation list': ['--screenshot', '--status', '--viewport', '--limit', '--offset'],\n"
-            "      'annotation get': ['--annotation', '--crop-file'],\n"
-            "      'comment add': ['--annotation', '--body'],\n"
+            "      'annotation get': ['--annotation', '--crop-file', '--attachments-dir'],\n"
+            "      'comment add': ['--annotation', '--body', '--image'],\n"
             "      'snapshot': ['--manifest', '--wait'],\n"
             "    }\n"
             "    command = 'snapshot' if args[0] == 'snapshot' else ' '.join(args[:2])\n"
@@ -160,6 +177,40 @@ class ScreenoteCliContractTests(unittest.TestCase):
                 self.assertEqual([], rejected_argv)
                 self.assertIn("invalid_arguments", rejected.stderr)
 
+    def test_launcher_preserves_an_explicit_image_comment_path_as_one_argument(self):
+        image = "/private/review images/verified.png"
+        result, argv = self._run(
+            [
+                "--project",
+                "project-7",
+                "comment",
+                "add",
+                "--annotation",
+                "31",
+                "--body",
+                "Verified the requested fix.",
+                "--image",
+                image,
+            ]
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(
+            [
+                "--project",
+                "project-7",
+                "comment",
+                "add",
+                "--annotation",
+                "31",
+                "--body",
+                "Verified the requested fix.",
+                "--image",
+                image,
+            ],
+            argv,
+        )
+
     def test_launcher_rejects_every_runtime_endpoint_or_config_override(self):
         attacks = (
             ["--base-url", "https://attacker.example", "project", "list"],
@@ -188,8 +239,9 @@ class ScreenoteCliContractTests(unittest.TestCase):
     def test_launcher_detects_missing_and_incompatible_cli_contracts(self):
         compatible, argv = self._run(["--check-contract"])
         self.assertEqual(0, compatible.returncode, compatible.stderr)
-        self.assertIn("screenote-cli-pr-6", compatible.stdout)
-        self.assertIn("c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b", compatible.stdout)
+        self.assertIn("screenote-cli-v0.4.0", compatible.stdout)
+        self.assertIn("bc45930aae38acc892324a5e80e097a1761fa17b", compatible.stdout)
+        self.assertIn('"minimum_release":"0.4.0"', compatible.stdout)
         self.assertEqual(["snapshot", "--help"], argv)
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -223,23 +275,28 @@ class ScreenoteCliContractTests(unittest.TestCase):
             self.assertIn("screenote_contract_incompatible", rejected.stderr)
 
             missing_flag = root / "screenote"
-            missing_flag.write_text(
-                "#!/bin/sh\n"
-                "if [ \"$1\" = \"--help\" ]; then printf '%s\\n' '--base-url --project --config'; exit 0; fi\n"
-                "if [ \"$1 $2\" = \"annotation get\" ]; then printf '%s\\n' '--annotation'; exit 0; fi\n"
-                "printf '%s\\n' '--page --status --limit --offset --title --file --screenshot --viewport --annotation --crop-file --body'\n",
-                encoding="utf-8",
-            )
-            missing_flag.chmod(missing_flag.stat().st_mode | stat.S_IXUSR)
-            rejected_flag = subprocess.run(
-                ["/bin/bash", str(LAUNCHER), "--check-contract"],
-                text=True,
-                capture_output=True,
-                env={**os.environ, "PATH": str(root)},
-                check=False,
-            )
-            self.assertEqual(65, rejected_flag.returncode)
-            self.assertIn("screenote_contract_incompatible", rejected_flag.stderr)
+            for command, incomplete_flags in (
+                ("annotation get", "--annotation --crop-file"),
+                ("comment add", "--annotation --body"),
+            ):
+                with self.subTest(missing_flag=command):
+                    missing_flag.write_text(
+                        "#!/bin/sh\n"
+                        "if [ \"$1\" = \"--help\" ]; then printf '%s\\n' '--base-url --project --config'; exit 0; fi\n"
+                        f"if [ \"$1 $2\" = \"{command}\" ]; then printf '%s\\n' '{incomplete_flags}'; exit 0; fi\n"
+                        "printf '%s\\n' '--page --status --limit --offset --title --file --screenshot --viewport --annotation --crop-file --attachments-dir --body --image --manifest --wait --name'\n",
+                        encoding="utf-8",
+                    )
+                    missing_flag.chmod(missing_flag.stat().st_mode | stat.S_IXUSR)
+                    rejected_flag = subprocess.run(
+                        ["/bin/bash", str(LAUNCHER), "--check-contract"],
+                        text=True,
+                        capture_output=True,
+                        env={**os.environ, "PATH": str(root)},
+                        check=False,
+                    )
+                    self.assertEqual(65, rejected_flag.returncode)
+                    self.assertIn("screenote_contract_incompatible", rejected_flag.stderr)
 
     def test_shipped_workflow_contract_is_the_canonical_cli_authority(self):
         self.assertEqual(SHIPPED_FLOW.resolve(), Path(run_flow.__code__.co_filename).resolve())
@@ -287,6 +344,10 @@ class ScreenoteCliContractTests(unittest.TestCase):
             "0600",
             "snapshot --manifest",
             "comment add",
+            "--attachments-dir",
+            "--image",
+            "comment_result_unknown",
+            "image_comments_unsupported",
             "Screenote UI",
         ):
             self.assertIn(phrase, combined)
@@ -399,6 +460,32 @@ class ScreenoteCliContractTests(unittest.TestCase):
         self.assertEqual([["--offset", "0"], ["--offset", "1"]], [call[-2:] for call in annotation_calls])
         self.assertEqual(["31", "32"], [call[call.index("--annotation") + 1] for call in detail_calls])
         self.assertEqual(["31", "32"], [call[call.index("--annotation") + 1] for call in comment_calls])
+        for call in detail_calls:
+            self.assertIn("--crop-file", call)
+            self.assertIn("--attachments-dir", call)
+            attachment_directory = Path(call[call.index("--attachments-dir") + 1])
+            crop_file = Path(call[call.index("--crop-file") + 1])
+            self.assertEqual(crop_file.parent, attachment_directory.parent)
+            self.assertEqual("attachments", attachment_directory.name)
+        self.assertTrue(all("--image" not in call for call in comment_calls))
+
+    def test_feedback_recovers_attachments_when_the_crop_is_unavailable(self):
+        _, report, records = self._run_flow("crop-unavailable.json", workflow="feedback")
+
+        self.assertFalse(report.stopped)
+        detail_calls = [record for record in records if record[:2] == ["annotation", "get"] and "--help" not in record]
+        self.assertEqual(2, len(detail_calls))
+        self.assertIn("--crop-file", detail_calls[0])
+        self.assertNotIn("--crop-file", detail_calls[1])
+        self.assertIn("--attachments-dir", detail_calls[0])
+        self.assertIn("--attachments-dir", detail_calls[1])
+        first_directory = detail_calls[0][detail_calls[0].index("--attachments-dir") + 1]
+        second_directory = detail_calls[1][detail_calls[1].index("--attachments-dir") + 1]
+        self.assertEqual(first_directory, second_directory)
+        self.assertEqual(
+            1,
+            sum(record[:2] == ["comment", "add"] and "--help" not in record for record in records),
+        )
 
     def test_error_scenarios_stop_and_preserve_json_codes(self):
         cases = {

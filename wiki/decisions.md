@@ -25,10 +25,12 @@ general host minimum.
 ## Screenote uses the JSON CLI only
 
 Screenote has no alternate transport or hidden compatibility fallback. Its
-launcher accepts only the seven command tuples in `plugin-surfaces.json`,
+launcher accepts only the nine command tuples in `plugin-surfaces.json`,
 passes untrusted values as separate argv elements, and leaves credentials in
-CLI-supported environment/config channels. The final annotation resolution is
-a UI action until it enters the approved command contract.
+CLI-supported environment/config channels. Image attachment and export flags
+do not expand that tuple allowlist: they are checked capabilities on
+`comment add` and `annotation get`. The final annotation resolution is a UI
+action until it enters the approved command contract.
 
 ## Packages are plain self-contained directories
 

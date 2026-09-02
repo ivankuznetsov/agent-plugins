@@ -89,8 +89,8 @@ if [[ ${1-} == --check-contract ]]; then
       'screenshot list') required_flags=(--page --status --limit --offset) ;;
       'screenshot create') required_flags=(--title --page --file) ;;
       'annotation list') required_flags=(--screenshot --status --viewport --limit --offset) ;;
-      'annotation get') required_flags=(--annotation --crop-file) ;;
-      'comment add') required_flags=(--annotation --body) ;;
+      'annotation get') required_flags=(--annotation --crop-file --attachments-dir) ;;
+      'comment add') required_flags=(--annotation --body --image) ;;
       'snapshot --manifest') required_flags=(--manifest --wait) ;;
     esac
     for required_flag in "${required_flags[@]}"; do
@@ -100,7 +100,7 @@ if [[ ${1-} == --check-contract ]]; then
       fi
     done
   done
-  printf '%s\n' '{"ok":true,"contract":"screenote-cli-pr-6","merge":"c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b"}'
+  printf '%s\n' '{"ok":true,"contract":"screenote-cli-v0.4.0","merge":"bc45930aae38acc892324a5e80e097a1761fa17b","minimum_release":"0.4.0"}'
   exit 0
 fi
 

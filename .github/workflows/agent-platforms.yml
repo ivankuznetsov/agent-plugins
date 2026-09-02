@@ -96,7 +96,7 @@ jobs:
       - name: Install the recorded public Screenote CLI baseline
         run: >-
           go install
-          github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
+          github.com/ivankuznetsov/screenote-cli/cmd/screenote@bc45930aae38acc892324a5e80e097a1761fa17b
       - name: Exercise noninteractive project, snapshot, capture, and feedback commands
         shell: bash
         run: |
@@ -113,7 +113,7 @@ jobs:
           import sys
 
           root = Path(sys.argv[1])
-          content = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nWQAAAAASUVORK5CYII=")
+          content = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==")
           for viewport in ("desktop", "tablet", "mobile"):
               path = root / f"capture-{viewport}.png"
               path.write_bytes(content)
@@ -140,11 +140,14 @@ jobs:
           "$launcher" --project "$SCREENOTE_PROJECT" annotation list \
             --screenshot "$SCREENOTE_TEST_SCREENSHOT_ID" --limit 100 --offset 0 >"$integration_dir/annotations.json"
           "$launcher" --project "$SCREENOTE_PROJECT" annotation get \
-            --annotation "$SCREENOTE_TEST_ANNOTATION_ID" --crop-file "$integration_dir/crop.png" \
+            --annotation "$SCREENOTE_TEST_ANNOTATION_ID" \
+            --crop-file "$integration_dir/crop.png" \
+            --attachments-dir "$integration_dir/attachments" \
             >"$integration_dir/annotation.json"
           "$launcher" --project "$SCREENOTE_PROJECT" comment add \
             --annotation "$SCREENOTE_TEST_ANNOTATION_ID" \
-            --body "Automated release compatibility probe completed." >"$integration_dir/comment.json"
+            --body "Automated release compatibility probe completed." \
+            --image "$integration_dir/capture-desktop.png" >"$integration_dir/comment.json"
           python3 - "$integration_dir" <<'PY'
           import json
           import os
@@ -152,6 +155,11 @@ jobs:
           import sys
 
           root = Path(sys.argv[1])
+          comment = json.loads((root / "comment.json").read_text())
+          if comment.get("operation") not in {"created", "replayed"}:
+              raise SystemExit("Screenote image comment integration did not report a terminal operation")
+          if not comment.get("comment", {}).get("id") or not comment.get("attachment", {}).get("id"):
+              raise SystemExit("Screenote image comment integration omitted comment or attachment identity")
           snapshot_events = [json.loads(line) for line in (root / "snapshot.jsonl").read_text().splitlines() if line]
           if not snapshot_events or snapshot_events[-1].get("event") != "snapshot_ready" or not snapshot_events[-1].get("review_url"):
               raise SystemExit("Screenote snapshot integration did not return snapshot_ready.review_url")

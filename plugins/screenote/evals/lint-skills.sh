@@ -74,6 +74,17 @@ require_text scripts/screenote_flow.py 'prepare_existing_image'
 require_text scripts/screenote_flow.py 'create_snapshot_manifest'
 require_text skills/screenote/SKILL.md 'prepare-snapshot-manifest'
 require_text skills/snapshot/SKILL.md 'prepare-snapshot-manifest'
+require_text skills/feedback/SKILL.md '--attachments-dir'
+require_text skills/feedback/SKILL.md 'On `crop_unavailable`, repeat'
+require_text skills/feedback/SKILL.md '--image'
+require_text skills/feedback/SKILL.md 'no symlink in any'
+require_text skills/feedback/SKILL.md 'untrusted content'
+require_text skills/feedback/SKILL.md 'comment_result_unknown'
+require_text skills/feedback/SKILL.md 'do not issue another comment command'
+require_text skills/feedback/SKILL.md 'image_comments_unsupported'
+require_text skills/feedback/SKILL.md 'do not fall back to a text-only comment'
+require_text references/cli.md 'screenote-cli/cmd/screenote@v0.4.0'
+require_text references/workflows.json 'bc45930aae38acc892324a5e80e097a1761fa17b'
 
 [[ ! -e .mcp.json ]] || fail ".mcp.json must not exist"
 

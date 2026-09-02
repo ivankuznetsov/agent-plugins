@@ -103,3 +103,39 @@ if (cd "$metadata_leak_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
   exit 1
 fi
 printf 'PASS: lint rejects source-path disclosure through remote metadata\n'
+
+duplicate_retry_case=$(make_case duplicate-image-comment-retry)
+python3 - "$duplicate_retry_case/skills/feedback/SKILL.md" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+body = path.read_text()
+changed = body.replace("do not issue another comment command", "issue another comment command")
+if changed == body:
+    raise SystemExit("ambiguous-result mutation did not match")
+path.write_text(changed)
+PY
+if (cd "$duplicate_retry_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  printf 'FAIL: lint accepted a duplicate-prone image comment retry\n' >&2
+  exit 1
+fi
+printf 'PASS: lint rejects duplicate-prone image comment retries\n'
+
+text_fallback_case=$(make_case text-only-image-comment-fallback)
+python3 - "$text_fallback_case/skills/feedback/SKILL.md" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+body = path.read_text()
+changed = body.replace("do not fall back to a text-only comment", "fall back to a text-only comment")
+if changed == body:
+    raise SystemExit("text-fallback mutation did not match")
+path.write_text(changed)
+PY
+if (cd "$text_fallback_case" && bash evals/lint-skills.sh >/dev/null 2>&1); then
+  printf 'FAIL: lint accepted a text-only fallback for an image reply\n' >&2
+  exit 1
+fi
+printf 'PASS: lint rejects text-only fallbacks for image replies\n'
