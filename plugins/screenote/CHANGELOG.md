@@ -4,6 +4,21 @@ All notable changes to the Screenote plugin are documented here.
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-09-02
+
+### Added
+
+- Retrieve root and reply image attachments into private local files during
+  feedback review, preserving their thread association for inspection.
+- Attach one explicitly requested or approved PNG, JPEG, or WebP image to a
+  feedback comment through the Screenote CLI v0.4.0 contract.
+
+### Changed
+
+- Stop without a text-only fallback when image comments are unsupported, and
+  do not retry an ambiguous image-comment result that may already have created
+  the comment.
+
 ## [3.1.1] - 2026-08-02
 
 ### Fixed

@@ -12,7 +12,8 @@ python3 evals/validate-plugin.py
 The lint requires only Bash, grep, and Python 3. It checks the approved command
 tuples, project and authentication guidance, JSON exit handling, private file
 permissions, and removal of retired transport configuration. Mutation fixtures
-prove that allowlist drift, transport metadata, and credential arguments fail.
+prove that allowlist drift, transport metadata, credential arguments,
+duplicate-prone image retries, and text-only image fallbacks fail.
 
 `trigger-eval-set.json` maps representative requests to `screenote`, `snapshot`,
 or `feedback`, with unrelated controls. Language-model trigger evaluation can

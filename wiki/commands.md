@@ -16,6 +16,10 @@ Claude Code retains its established slash commands:
 - Screenote: `/screenote [viewport] <URL-or-page>`,
   `/snapshot [viewport] <base-URL>`, and `/feedback [viewport] [filter]`.
 
+`feedback` retrieves annotation crops and root/reply attachments into private
+local files. It may add one image to a comment only when the image reply and
+exact file are explicitly requested or approved.
+
 Codex uses the installed plugin skill names. Pi and OpenClaw use
 `agent-reviewer`, `agent-seo`, `agent-writing`, `screenote`, `snapshot`, and
 `feedback`. LLM Wiki retains its collision-safe Pi names on both generated

@@ -1,8 +1,5 @@
 # Gaps and follow-ups
 
-- Screenote CLI PR 6 has no containing tagged release. Advance only
-  `screenote_cli.minimum_release` when one is published, then refresh the
-  compatibility evidence and tests.
 - The protected-secret Screenote integration is opt-in for authorized release
   environments and intentionally does not run for forks or absent secrets.
 - No main cross-project wiki is configured for this checkout. Project-local

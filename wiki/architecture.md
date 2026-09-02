@@ -39,7 +39,10 @@ collections, pagination, identifiers, private image paths, and manifest-backed
 viewport groups before canonical skills act on them. Browser captures and
 explicit existing images publish through one resumable snapshot per logical
 screen, with desktop, tablet, and mobile represented as child variants rather
-than separate versions.
+than separate versions. Feedback retrieval exports annotation crops plus root
+and reply attachments into one private tree. Image replies remain an optional
+flag on the existing comment tuple, require explicit file intent, and fail
+closed instead of silently creating a text-only comment.
 LLM Wiki's shared transactional refresh runner dispatches exactly one configured
 owner, including a validated OpenClaw workspace agent, from a disposable refresh
 worktree. The primary checkout owns one repository-wide non-persistent systemd

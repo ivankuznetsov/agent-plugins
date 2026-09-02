@@ -7,21 +7,21 @@ and comment operations. There is no MCP transport or compatibility fallback.
 
 ## Compatible CLI baseline
 
-The OAuth-first contract was merged in the reachable
-[Screenote CLI PR 6](https://github.com/ivankuznetsov/screenote-cli/pull/6)
-at merge `c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b`. No containing release is
-tagged yet, so the repository tests that exact public ref:
+The current contract is released as
+[Screenote CLI v0.4.0](https://github.com/ivankuznetsov/screenote-cli/releases/tag/v0.4.0).
+It was merged by [PR 17](https://github.com/ivankuznetsov/screenote-cli/pull/17)
+at `bc45930aae38acc892324a5e80e097a1761fa17b`. The repository tests that exact
+public ref:
 
 ```bash
-go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.0
 plugins/screenote/scripts/screenote-cli.sh --check-contract
 ```
 
 The plugin only detects and checks the executable. It never downloads it,
-starts login, or opens a browser automatically. When the first containing
-release is tagged, maintainers advance `screenote_cli.minimum_release` in
-`plugin-surfaces.json` and regenerate; skills and tests do not carry a second
-baseline.
+starts login, or opens a browser automatically. Maintainers advance the four
+`screenote_cli` provenance fields in `plugin-surfaces.json` together and
+regenerate; skills and tests do not carry a second baseline.
 
 ## Authentication and project setup
 
@@ -97,8 +97,11 @@ recovery path; an unchanged manifest retry resumes the same Snapshot.
 
 ## Feedback resolution
 
-`feedback` lists pages, screenshots, and annotations, retrieves private crops,
-applies the selected fix, and adds a comment. The approved contract does not
+`feedback` lists pages, screenshots, and annotations, then retrieves private
+crops plus root and reply attachments. It applies the selected fix and adds a
+comment, optionally with one explicitly requested image. An ambiguous image
+comment is not retried because it may already exist; an unsupported image
+comment never falls back to text-only creation. The approved contract does not
 include the final resolution mutation, so the skill asks the user to resolve
 the item in the Screenote UI after the comment succeeds.
 

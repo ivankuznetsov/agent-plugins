@@ -84,8 +84,15 @@ def validate_assets() -> None:
         if not (PLUGIN_ROOT / relative).is_file():
             fail(f"missing {relative}")
     workflows = load_json("references/workflows.json")
+    if workflows.get("contract_version") != 2:
+        fail("workflow contract must use the Screenote CLI v0.4.0 contract version")
     if set(workflows.get("workflows", {})) != {"screenote", "snapshot", "feedback"}:
         fail("workflow contract must cover every canonical Screenote skill")
+    commands = workflows.get("commands", {})
+    if "--attachments-dir" not in commands.get("annotation get", {}).get("required_flags", []):
+        fail("annotation get must require attachment export support")
+    if "--image" not in commands.get("comment add", {}).get("required_flags", []):
+        fail("comment add must require image reply support")
     if (PLUGIN_ROOT / ".mcp.json").exists():
         fail("retired transport configuration must be removed")
     triggers = json.loads((PLUGIN_ROOT / "evals" / "trigger-eval-set.json").read_text())

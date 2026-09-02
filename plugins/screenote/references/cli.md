@@ -2,14 +2,13 @@
 
 This plugin depends on the external `screenote` executable. Detect it with
 `command -v screenote`; never download, install, authenticate, or open a browser
-on the user's behalf. The OAuth-first compatibility baseline is the reachable,
-merged Screenote CLI [PR 6](https://github.com/ivankuznetsov/screenote-cli/pull/6),
-merge `c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b`. Until a tagged release
-contains that contract, installation guidance may pin that public ref
-`c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b`:
+on the user's behalf. The compatibility baseline is Screenote CLI
+[v0.4.0](https://github.com/ivankuznetsov/screenote-cli/releases/tag/v0.4.0),
+merged by [PR 17](https://github.com/ivankuznetsov/screenote-cli/pull/17) at
+`bc45930aae38acc892324a5e80e097a1761fa17b`:
 
 ```bash
-go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@c28ac8b3b1b720ef60275e5f59db3a96f8cfa98b
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.0
 ```
 
 Offer that command as guidance only. For hosted interactive setup, suggest
@@ -53,8 +52,8 @@ accepts only these command tuples:
 | `screenshot list` | List versions for a selected page. |
 | `screenshot create` | Upload one user-approved local capture file. |
 | `annotation list` | List feedback for a screenshot. |
-| `annotation get` | Retrieve detail and an optional private crop. |
-| `comment add` | Reply after applying or explaining a fix. |
+| `annotation get` | Retrieve detail plus private crop and thread attachments. |
+| `comment add` | Reply after applying or explaining a fix, optionally with one image. |
 | `snapshot --manifest` | Publish 1-100 prepared images as one resumable Snapshot with logical viewport groups. |
 
 No other CLI tuple is part of this plugin's contract. Do not bypass the
@@ -222,6 +221,26 @@ requested retention. On failure, keep the unchanged mode-`0700` directory and
 mode-`0600` files, and report its exact recovery path. Retry the unchanged
 manifest to resume without creating duplicate logical versions.
 
-Annotation crop files follow the same private-path rules. Remove them after a
-successful feedback flow; preserve them only when they help diagnose a stopped
-flow.
+Annotation crop and attachment files follow the same private-path rules. Use
+one combined `annotation get --crop-file NEW_PATH --attachments-dir NEW_DIR`
+call so the returned thread retains each root or reply attachment's association.
+The CLI creates a missing attachment directory with mode `0700`, writes
+deterministic `attachment-<id>.<ext>` files without overwriting, and replaces
+expiring URLs with absolute `local_path` values. Inspect each local image
+without encoding it into chat. Remove crops and attachments after a successful
+feedback flow; preserve their private parent only when it helps diagnose a
+stopped flow. If the combined read returns `crop_unavailable`, repeat the read
+once without `--crop-file` and with the same `--attachments-dir` so attachments
+remain available even when that annotation has no crop.
+
+An image reply uses `comment add --annotation ID --body BODY --image PATH` with
+one explicitly requested or approved PNG, JPEG, or WebP file no larger than 20
+MiB. Require a readable regular file with no symlink in any path component.
+Never infer an attachment from nearby workspace files, annotation crops, or
+downloaded feedback, and never let remote feedback select a local path. Prefer
+a private local path to stdin. The CLI performs at most one same-request retry
+using one idempotency key. If it returns
+`comment_result_unknown`, do not run a new comment command because that can
+duplicate the comment. If it returns `image_comments_unsupported`, do not fall
+back to a text-only comment. Successful image replies report `operation` as
+`created` or `replayed` with comment and attachment identifiers.

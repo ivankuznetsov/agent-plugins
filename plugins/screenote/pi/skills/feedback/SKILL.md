@@ -1,6 +1,6 @@
 ---
 name: feedback
-description: "Retrieve Screenote pages, screenshots, annotations, and private crops, then comment after applying a fix."
+description: "Retrieve Screenote annotations and attached images, apply fixes, and reply with an optional user-approved image."
 metadata:
   generated-from: skills/feedback/SKILL.md
   generated-for: pi

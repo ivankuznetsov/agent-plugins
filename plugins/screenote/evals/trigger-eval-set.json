@@ -18,6 +18,8 @@
   {"query": "Show me the mobile feedback for /login", "should_trigger": "feedback"},
   {"query": "desktop feedback", "should_trigger": "feedback"},
   {"query": "What did the designer say about the login page?", "should_trigger": "feedback"},
+  {"query": "Reply to this Screenote annotation and attach the verified screenshot", "should_trigger": "feedback"},
+  {"query": "Download and inspect the images attached to my Screenote feedback", "should_trigger": "feedback"},
   {"query": "Fix the CSS on the header", "should_trigger": null},
   {"query": "Deploy the app to production", "should_trigger": null},
   {"query": "Write a test for the user model", "should_trigger": null},
