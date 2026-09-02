@@ -58,6 +58,23 @@ class ScreenoteCliContractTests(unittest.TestCase):
 
         self.assertIn('SCREENOTE_BASE_URL: "https://screenote.ai"', job_configuration)
 
+    def test_protected_integration_embeds_a_valid_upload_image(self):
+        workflow = AGENT_PLATFORMS_WORKFLOW.read_text(encoding="utf-8")
+        marker = 'content = base64.b64decode("'
+        self.assertEqual(1, workflow.count(marker))
+        encoded = workflow.split(marker, 1)[1].split('")', 1)[0]
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "workflow-fixture.png"
+            source.write_bytes(base64.b64decode(encoded, validate=True))
+            private = create_private_directory(root / "captures")
+
+            prepared = prepare_existing_image(source, private)
+
+        self.assertEqual("image/png", prepared.content_type)
+        self.assertEqual((1, 1), (prepared.width, prepared.height))
+
     def _run(self, arguments):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

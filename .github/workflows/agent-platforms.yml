@@ -113,7 +113,7 @@ jobs:
           import sys
 
           root = Path(sys.argv[1])
-          content = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nWQAAAAASUVORK5CYII=")
+          content = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==")
           for viewport in ("desktop", "tablet", "mobile"):
               path = root / f"capture-{viewport}.png"
               path.write_bytes(content)
