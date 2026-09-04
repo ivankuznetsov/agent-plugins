@@ -4,6 +4,11 @@ All notable changes to the Screenote plugin are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject snapshot manifests that put several distinct screens under one Page,
+  preventing those screens from appearing as versions of each other.
+
 ## [3.2.0] - 2026-09-02
 
 ### Added

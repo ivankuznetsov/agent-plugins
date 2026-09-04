@@ -92,8 +92,11 @@ entry arguments:
 ```
 
 Require exit zero and inspect the returned manifest path. The helper rejects
-invalid/private-path entries, duplicate `(page, title, viewport)` tuples, and
-more than 100 images. Publish the complete route/viewport matrix exactly once:
+invalid/private-path entries, duplicate `(page, title, viewport)` tuples,
+multiple screen groups under one case-insensitive Page identity, and more than
+100 images. A Page is one stable screen, normally the normalized route; it is
+not a category for several screens. Publish the complete route/viewport matrix
+exactly once:
 
 ```text
 ../../scripts/screenote-cli.sh --project PROJECT_ID snapshot --manifest PRIVATE_MANIFEST --wait 2m

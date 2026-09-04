@@ -856,8 +856,8 @@
       "version": "3.2.0",
       "canonical": {
         "skills/screenote/SKILL.md": {
-          "sha256": "2944db045534e4d6f45f9637d26c0b117fb96e3595c584cdf4155a635c875782",
-          "semantic_sha256": "08f78714c649329f08575cb905597b2e4687bfeb55617ea7c7a22f08295c2209",
+          "sha256": "0dd17ee55e234d8e0e92db3c9d991a1f69a5837d6af785e07dcad19b1df23d8a",
+          "semantic_sha256": "9f8b702e00b4e291801d173583f745e72f64e7f85786debe5d396eafdfcd5f0a",
           "sections": {
             "1:screenote — one-page visual review": "6860d0df6138cb5f476bd78c6be5a9986d11aa8022f56510b21c9876e3b66acb",
             "2:parse the request": "07af83c395625a98b29917f770bfd2628eb303cec19c667f92ba8bdc6de46ce0",
@@ -865,18 +865,18 @@
             "2:establish the cli and project": "3e721f75c2d0227fb1522d224de9d573d31ad57480f33cfbece0e6b8d5cf0e2b",
             "2:existing-image upload mode": "f1b596ac83c23e33fc9fe64e1be0e81aa6dcf8229a1678cd638c01416c37f8d2",
             "2:browser capture and upload mode": "d9887b3a12436b01bb61c4c14f78e1438502b29851eec0479d44cf55e5102696",
-            "2:build and publish one logical version": "f829329359547291e730570a7c9513752ea128b46fb035efd66d0bd790d046d6",
+            "2:build and publish one logical version": "9f43d88d0f4360bb829fa2fce5204baf6dd127750092d76f66cb088b11f82327",
             "2:report and clean up": "6e2a6f1cb431fd682f1faad3d478baafd331075dc9c6e81e1b39fb5841f3f31c"
           }
         },
         "skills/snapshot/SKILL.md": {
-          "sha256": "a07233be927a686d5d77b6b5276b44ee65c6b878b8513dcaa2f7ec78dea82e8b",
-          "semantic_sha256": "8932abdb3a46b21fd5f7a3244fe40b33623b7c069d08f05cf8afe0a421383c4b",
+          "sha256": "2117830d92dd06273ecd8d02afca4ab01722b4a345b8ad65f243f59315d76e6c",
+          "semantic_sha256": "981e7eed7dea040b7337f53da738bdb754ca0cfb4f833f13b42198385f66d560",
           "sections": {
             "1:snapshot — multi-page visual review": "6be3486148325dcc124469e4eff8988f00b33f0e8778d2d4fe7fa13e40cc1026",
             "2:preflight": "4a0dd546789198a62058792ec0866f08ac3e9c65d35fc3d856b44a42479c5629",
             "2:discover and confirm routes": "5f514b67e742e1beac6d215cb8802e081f26eae46fd07c9698785f188bbfc257",
-            "2:capture and publish": "61216542ce17a118b8b6feaf46849fa2b8c20d1235270c7dc5fdb921cb4b81df"
+            "2:capture and publish": "cf02f92c1b7091fbcb3fbf527b424350266012cabeb1b038f1591b27df506a4f"
           }
         },
         "skills/feedback/SKILL.md": {
@@ -893,7 +893,7 @@
       "resources": {
         "references": {
           "exists": true,
-          "sha256": "4c65cfd4dbef0720cfc33cfc893e02acbfbc09f4d674b35755be1f352ba559d5",
+          "sha256": "bdc193fa70a54038a311bd3416d3e0c833d82117cc5fe7333314d93f2fd90343",
           "files": [
             "references/cli.md",
             "references/workflows.json"
@@ -916,14 +916,14 @@
         },
         "scripts/screenote_flow.py": {
           "exists": true,
-          "sha256": "e7183fe7a22ab633bad4bd7ea21655daf214f37c533614eee53c8894c38e6ae7"
+          "sha256": "7f017523318da1ae7da795b9296b15804a0ddb0e106508e2cd62d7f1a9a780f1"
         }
       },
       "adapters": {
         "pi/skills/screenote/SKILL.md": {
           "sha256": "6acc53b130d691fe0fe3288e2079904d52bbb76065b6620524cdcbad7f03be3f",
           "canonical": "skills/screenote/SKILL.md",
-          "canonical_semantic_sha256": "08f78714c649329f08575cb905597b2e4687bfeb55617ea7c7a22f08295c2209",
+          "canonical_semantic_sha256": "9f8b702e00b4e291801d173583f745e72f64e7f85786debe5d396eafdfcd5f0a",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -933,7 +933,7 @@
         "openclaw/skills/screenote/SKILL.md": {
           "sha256": "a8e0378d09299bc70297800080e348ad928ea914327b3a761ec5804a6a12f018",
           "canonical": "skills/screenote/SKILL.md",
-          "canonical_semantic_sha256": "08f78714c649329f08575cb905597b2e4687bfeb55617ea7c7a22f08295c2209",
+          "canonical_semantic_sha256": "9f8b702e00b4e291801d173583f745e72f64e7f85786debe5d396eafdfcd5f0a",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -943,7 +943,7 @@
         "pi/skills/snapshot/SKILL.md": {
           "sha256": "c935637fe16765d450c68e1bcf60123d2f2af8e1cc362d39838286b2a52ce931",
           "canonical": "skills/snapshot/SKILL.md",
-          "canonical_semantic_sha256": "8932abdb3a46b21fd5f7a3244fe40b33623b7c069d08f05cf8afe0a421383c4b",
+          "canonical_semantic_sha256": "981e7eed7dea040b7337f53da738bdb754ca0cfb4f833f13b42198385f66d560",
           "overlays": [
             "frontmatter",
             "invocation",
@@ -953,7 +953,7 @@
         "openclaw/skills/snapshot/SKILL.md": {
           "sha256": "adebbedd30e55d544a8600fd6b89b4a3aeb70a5549a9fb65f5e6f7c186aed94e",
           "canonical": "skills/snapshot/SKILL.md",
-          "canonical_semantic_sha256": "8932abdb3a46b21fd5f7a3244fe40b33623b7c069d08f05cf8afe0a421383c4b",
+          "canonical_semantic_sha256": "981e7eed7dea040b7337f53da738bdb754ca0cfb4f833f13b42198385f66d560",
           "overlays": [
             "frontmatter",
             "invocation",

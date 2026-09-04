@@ -267,6 +267,7 @@ def create_snapshot_manifest(
 
     normalized_entries: list[dict[str, str]] = []
     seen: set[tuple[str, str, str]] = set()
+    page_groups: dict[str, tuple[str, str]] = {}
     for entry in entries:
         page = str(entry.get("page", "")).strip()
         title = str(entry.get("title", "")).strip()
@@ -292,6 +293,11 @@ def create_snapshot_manifest(
         if key in seen:
             raise CaptureSafetyError("viewport must be unique within each page and title group")
         seen.add(key)
+        page_key = page.lower()
+        group_key = (page, title)
+        if page_key in page_groups and page_groups[page_key] != group_key:
+            raise CaptureSafetyError("each snapshot page must identify one logical screen")
+        page_groups[page_key] = group_key
         normalized_entries.append({"page": page, "title": title, "file": filename, "viewport": viewport})
 
     body = json.dumps(
