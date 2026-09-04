@@ -187,9 +187,11 @@ screenote_flow.py prepare-snapshot-manifest \
 The helper requires 1-100 new or prepared mode-`0600` image files directly
 beneath the private directory and writes a new mode-`0600` `snapshot.json`.
 Viewport variants of one logical screen must repeat the exact same `page` and
-`title`; only `viewport` and `file` differ. It rejects path escapes, symlinks,
-missing files, duplicate `(page, title, viewport)` tuples, and invalid manifest
-metadata.
+`title`; only `viewport` and `file` differ. One case-insensitive Page
+identity may name only that one screen group in a manifest because later
+capture runs, not neighboring screens, become Page versions. It rejects path
+escapes, symlinks, missing files, duplicate `(page, title, viewport)` tuples,
+multiple screen groups under one Page, and invalid manifest metadata.
 
 Publish the whole manifest once:
 

@@ -773,6 +773,64 @@ class ScreenoteCliContractTests(unittest.TestCase):
                 name="other.json",
             )
 
+    def test_snapshot_manifest_helper_rejects_multiple_screens_for_one_page(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        private = create_private_directory(Path(temporary.name))
+        create_private_file(private, "task-board.png")
+        create_private_file(private, "agent-status.png")
+
+        with self.assertRaisesRegex(CaptureSafetyError, "one logical screen"):
+            create_snapshot_manifest(
+                private,
+                git_commit="abc1234",
+                taken_at="2026-07-10T10:00:00Z",
+                entries=[
+                    {
+                        "page": "Hive Web",
+                        "title": "Task board",
+                        "file": "task-board.png",
+                        "viewport": "desktop",
+                    },
+                    {
+                        "page": "hive web",
+                        "title": "Agent status",
+                        "file": "agent-status.png",
+                        "viewport": "desktop",
+                    },
+                ],
+            )
+
+    def test_snapshot_manifest_helper_uses_server_page_case_normalization(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        private = create_private_directory(Path(temporary.name))
+        create_private_file(private, "street.png")
+        create_private_file(private, "capital-street.png")
+
+        manifest_path = create_snapshot_manifest(
+            private,
+            git_commit="abc1234",
+            taken_at="2026-07-10T10:00:00Z",
+            entries=[
+                {
+                    "page": "Straße",
+                    "title": "German street",
+                    "file": "street.png",
+                    "viewport": "desktop",
+                },
+                {
+                    "page": "STRASSE",
+                    "title": "Capital street",
+                    "file": "capital-street.png",
+                    "viewport": "desktop",
+                },
+            ],
+        )
+
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(["Straße", "STRASSE"], [entry["page"] for entry in manifest["images"]])
+
     def test_capture_targets_must_be_safe_http_urls(self):
         self.assertEqual("https://example.test/login?q=one", validate_http_url("https://example.test/login?q=one"))
         for unsafe in (

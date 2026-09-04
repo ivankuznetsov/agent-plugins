@@ -161,7 +161,9 @@ argv element and repeat `--entry` once per image:
 
 Require exit zero and parse its complete JSON. The helper writes a new
 mode-`0600` `snapshot.json`, rejects missing/private-path escapes, duplicate
-`(page, title, viewport)` tuples, invalid metadata, and more than 100 images.
+`(page, title, viewport)` tuples, multiple screen groups under one
+case-insensitive Page identity, invalid metadata, and more than 100 images. A
+Page identifies one stable screen across runs, not a category within a run.
 For one screen, every viewport entry must repeat the exact same page and title.
 
 Publish exactly once:

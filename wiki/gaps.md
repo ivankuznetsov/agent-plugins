@@ -6,6 +6,9 @@
   knowledge remains authoritative here.
 - Automatic Screenote annotation resolution remains deferred until the
   mutation is explicitly approved in the CLI contract.
+- The Screenote helper now rejects multiple logical screens under one Page.
+  Repairing already-published malformed snapshots remains a server/data
+  operation and is outside the plugin package.
 - LLM Wiki's standalone and four-host marketplace packages intentionally use
   separate version lines (`0.1.x` upstream runtime and `0.3.x` consent-gated
   marketplace package). A marketplace release must preserve the consent and
