@@ -17,11 +17,11 @@
     ]
   },
   "screenote_cli": {
-    "contract_pr": "https://github.com/ivankuznetsov/screenote-cli/pull/17",
-    "contract_merge_sha": "bc45930aae38acc892324a5e80e097a1761fa17b",
+    "contract_pr": "https://github.com/ivankuznetsov/screenote-cli/pull/18",
+    "contract_merge_sha": "cce90049d1335413bd903d7da4882d20615fa5d3",
     "public_repository": "https://github.com/ivankuznetsov/screenote-cli",
-    "public_test_ref": "bc45930aae38acc892324a5e80e097a1761fa17b",
-    "minimum_release": "0.4.0",
+    "public_test_ref": "cce90049d1335413bd903d7da4882d20615fa5d3",
+    "minimum_release": "0.4.1",
     "approved_commands": [
       ["project", "list"],
       ["project", "create"],
@@ -210,7 +210,7 @@
     {
       "name": "screenote",
       "path": "plugins/screenote",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "stability": "stable",
       "metadata": {
         "display_name": "Screenote",

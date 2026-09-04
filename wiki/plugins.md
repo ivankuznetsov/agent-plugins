@@ -9,7 +9,7 @@ OpenClaw.
 | `agent-seo` | `2.0.0` | `seo` | agents, context, data sources, hooks, scripts |
 | `agent-writing` | `0.5.1` | `writing` | agents, context |
 | `llm-wiki` | `0.3.5` | `bootstrap`, `upgrade`, `research`, `wiki-plan`, `wiki-status` | assets, consent-gated templates |
-| `screenote` | `3.2.0` | `screenote`, `snapshot`, `feedback` | CLI launcher, references, evals |
+| `screenote` | `3.2.1` | `screenote`, `snapshot`, `feedback` | CLI launcher, references, evals |
 
 Claude and Codex install through their root marketplaces. Pi and OpenClaw
 install a copied `plugins/<name>` directory. Every copied package is complete;
@@ -31,6 +31,9 @@ Screenote 3.2.0 uses CLI v0.4.0 to inspect root and reply image attachments
 locally and to add one explicitly requested image to a feedback comment.
 Ambiguous image-comment results are not retried, and an unsupported server
 never receives a text-only fallback.
+Screenote 3.2.1 requires CLI v0.4.1 and rejects manifests that reuse one Page
+identity for neighboring screens, while preserving viewport variants and later
+capture runs as versions of the same logical screen.
 LLM Wiki bootstrap creates the requested project wiki. Scheduler, managed-hook,
 shared-Git, and provider-backed maintenance are a separate opt-in; 0.2.x
 configs without both consent flags are automation-disabled under the 0.3

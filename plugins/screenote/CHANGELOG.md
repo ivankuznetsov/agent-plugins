@@ -4,10 +4,14 @@ All notable changes to the Screenote plugin are documented here.
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-09-04
+
 ### Fixed
 
 - Reject snapshot manifests that put several distinct screens under one Page,
   preventing those screens from appearing as versions of each other.
+- Require Screenote CLI v0.4.1, the first tagged CLI release that enforces the
+  same one-screen-per-Page snapshot contract.
 
 ## [3.2.0] - 2026-09-02
 

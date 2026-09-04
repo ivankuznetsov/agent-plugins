@@ -3,12 +3,12 @@
 This plugin depends on the external `screenote` executable. Detect it with
 `command -v screenote`; never download, install, authenticate, or open a browser
 on the user's behalf. The compatibility baseline is Screenote CLI
-[v0.4.0](https://github.com/ivankuznetsov/screenote-cli/releases/tag/v0.4.0),
-merged by [PR 17](https://github.com/ivankuznetsov/screenote-cli/pull/17) at
-`bc45930aae38acc892324a5e80e097a1761fa17b`:
+[v0.4.1](https://github.com/ivankuznetsov/screenote-cli/releases/tag/v0.4.1),
+merged by [PR 18](https://github.com/ivankuznetsov/screenote-cli/pull/18) at
+`cce90049d1335413bd903d7da4882d20615fa5d3`:
 
 ```bash
-go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.0
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.1
 ```
 
 Offer that command as guidance only. For hosted interactive setup, suggest
