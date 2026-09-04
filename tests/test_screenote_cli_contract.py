@@ -28,6 +28,7 @@ PLUGIN_ROOT = REPO_ROOT / "plugins/screenote"
 LAUNCHER = PLUGIN_ROOT / "scripts/screenote-cli.sh"
 SHIPPED_FLOW = PLUGIN_ROOT / "scripts/screenote_flow.py"
 AGENT_PLATFORMS_WORKFLOW = REPO_ROOT / ".github/workflows/agent-platforms.yml"
+PLUGIN_SURFACES = REPO_ROOT / "plugin-surfaces.json"
 FIXTURE_ROOT = REPO_ROOT / "tests/fixtures/screenote-cli"
 SCENARIOS = FIXTURE_ROOT / "scenarios"
 APPROVED = {tuple(command.split()) for command in WORKFLOW_CONTRACT["commands"]}
@@ -74,6 +75,16 @@ class ScreenoteCliContractTests(unittest.TestCase):
 
         self.assertEqual("image/png", prepared.content_type)
         self.assertEqual((1, 1), (prepared.width, prepared.height))
+
+    def test_protected_integration_installs_the_recorded_cli_baseline(self):
+        workflow = AGENT_PLATFORMS_WORKFLOW.read_text(encoding="utf-8")
+        contract = json.loads(PLUGIN_SURFACES.read_text(encoding="utf-8"))["screenote_cli"]
+        repository = contract["public_repository"].removeprefix("https://")
+
+        self.assertIn(
+            f"{repository}/cmd/screenote@{contract['public_test_ref']}",
+            workflow,
+        )
 
     def _run(self, arguments):
         temporary = tempfile.TemporaryDirectory()

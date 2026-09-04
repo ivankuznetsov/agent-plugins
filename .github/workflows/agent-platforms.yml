@@ -96,7 +96,7 @@ jobs:
       - name: Install the recorded public Screenote CLI baseline
         run: >-
           go install
-          github.com/ivankuznetsov/screenote-cli/cmd/screenote@bc45930aae38acc892324a5e80e097a1761fa17b
+          github.com/ivankuznetsov/screenote-cli/cmd/screenote@cce90049d1335413bd903d7da4882d20615fa5d3
       - name: Exercise noninteractive project, snapshot, capture, and feedback commands
         shell: bash
         run: |
