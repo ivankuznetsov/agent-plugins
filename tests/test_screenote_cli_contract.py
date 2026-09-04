@@ -239,9 +239,9 @@ class ScreenoteCliContractTests(unittest.TestCase):
     def test_launcher_detects_missing_and_incompatible_cli_contracts(self):
         compatible, argv = self._run(["--check-contract"])
         self.assertEqual(0, compatible.returncode, compatible.stderr)
-        self.assertIn("screenote-cli-v0.4.0", compatible.stdout)
-        self.assertIn("bc45930aae38acc892324a5e80e097a1761fa17b", compatible.stdout)
-        self.assertIn('"minimum_release":"0.4.0"', compatible.stdout)
+        self.assertIn("screenote-cli-v0.4.1", compatible.stdout)
+        self.assertIn("cce90049d1335413bd903d7da4882d20615fa5d3", compatible.stdout)
+        self.assertIn('"minimum_release":"0.4.1"', compatible.stdout)
         self.assertEqual(["snapshot", "--help"], argv)
 
         with tempfile.TemporaryDirectory() as temporary:

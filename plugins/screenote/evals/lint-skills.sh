@@ -83,8 +83,8 @@ require_text skills/feedback/SKILL.md 'comment_result_unknown'
 require_text skills/feedback/SKILL.md 'do not issue another comment command'
 require_text skills/feedback/SKILL.md 'image_comments_unsupported'
 require_text skills/feedback/SKILL.md 'do not fall back to a text-only comment'
-require_text references/cli.md 'screenote-cli/cmd/screenote@v0.4.0'
-require_text references/workflows.json 'bc45930aae38acc892324a5e80e097a1761fa17b'
+require_text references/cli.md 'screenote-cli/cmd/screenote@v0.4.1'
+require_text references/workflows.json 'cce90049d1335413bd903d7da4882d20615fa5d3'
 
 [[ ! -e .mcp.json ]] || fail ".mcp.json must not exist"
 

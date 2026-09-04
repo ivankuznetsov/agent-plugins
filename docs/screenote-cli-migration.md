@@ -8,13 +8,13 @@ and comment operations. There is no MCP transport or compatibility fallback.
 ## Compatible CLI baseline
 
 The current contract is released as
-[Screenote CLI v0.4.0](https://github.com/ivankuznetsov/screenote-cli/releases/tag/v0.4.0).
-It was merged by [PR 17](https://github.com/ivankuznetsov/screenote-cli/pull/17)
-at `bc45930aae38acc892324a5e80e097a1761fa17b`. The repository tests that exact
+[Screenote CLI v0.4.1](https://github.com/ivankuznetsov/screenote-cli/releases/tag/v0.4.1).
+It was merged by [PR 18](https://github.com/ivankuznetsov/screenote-cli/pull/18)
+at `cce90049d1335413bd903d7da4882d20615fa5d3`. The repository tests that exact
 public ref:
 
 ```bash
-go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.0
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.1
 plugins/screenote/scripts/screenote-cli.sh --check-contract
 ```
 

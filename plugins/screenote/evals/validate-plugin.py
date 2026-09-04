@@ -85,7 +85,7 @@ def validate_assets() -> None:
             fail(f"missing {relative}")
     workflows = load_json("references/workflows.json")
     if workflows.get("contract_version") != 2:
-        fail("workflow contract must use the Screenote CLI v0.4.0 contract version")
+        fail("workflow contract must use the Screenote CLI v0.4.1 contract version")
     if set(workflows.get("workflows", {})) != {"screenote", "snapshot", "feedback"}:
         fail("workflow contract must cover every canonical Screenote skill")
     commands = workflows.get("commands", {})

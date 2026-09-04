@@ -853,7 +853,7 @@
       }
     },
     "screenote": {
-      "version": "3.2.0",
+      "version": "3.2.1",
       "canonical": {
         "skills/screenote/SKILL.md": {
           "sha256": "0dd17ee55e234d8e0e92db3c9d991a1f69a5837d6af785e07dcad19b1df23d8a",
@@ -893,7 +893,7 @@
       "resources": {
         "references": {
           "exists": true,
-          "sha256": "bdc193fa70a54038a311bd3416d3e0c833d82117cc5fe7333314d93f2fd90343",
+          "sha256": "59612d94d7e0e3d5a2b4a5a057ba3e40c39f8eadc55950899f6d5034db1b5a34",
           "files": [
             "references/cli.md",
             "references/workflows.json"
@@ -901,7 +901,7 @@
         },
         "evals": {
           "exists": true,
-          "sha256": "6638fbb57b71f9df30c5755f0f87315a9cd4a9a8b7de9fab3c985afc03709d74",
+          "sha256": "0454e8745544da59deb7a8bebf0f61c65757ace381c8690e671508c3b14517ed",
           "files": [
             "evals/README.md",
             "evals/lint-skills-test.sh",
@@ -912,7 +912,7 @@
         },
         "scripts/screenote-cli.sh": {
           "exists": true,
-          "sha256": "21fa315da3b9694514a0deec746c4b35fedbdd3154867a08f3d8d028203f9760"
+          "sha256": "ee205934229c5d7e0c4e05cb95ba2ef1d14e1de56f9b2143b913b0d47be8e8c3"
         },
         "scripts/screenote_flow.py": {
           "exists": true,

@@ -32,10 +32,10 @@ openclaw plugins install /path/to/agent-plugins/plugins/screenote
 
 ## Prerequisite
 
-Install Screenote CLI v0.4.0 or later:
+Install Screenote CLI v0.4.1 or later:
 
 ```bash
-go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.0
+go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.1
 ```
 
 For an interactive machine using the hosted service, authenticate separately

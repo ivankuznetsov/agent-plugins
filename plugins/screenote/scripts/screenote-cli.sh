@@ -100,7 +100,7 @@ if [[ ${1-} == --check-contract ]]; then
       fi
     done
   done
-  printf '%s\n' '{"ok":true,"contract":"screenote-cli-v0.4.0","merge":"bc45930aae38acc892324a5e80e097a1761fa17b","minimum_release":"0.4.0"}'
+  printf '%s\n' '{"ok":true,"contract":"screenote-cli-v0.4.1","merge":"cce90049d1335413bd903d7da4882d20615fa5d3","minimum_release":"0.4.1"}'
   exit 0
 fi
 

@@ -9,11 +9,11 @@ The exact native discovery pins are Claude Code `2.1.179`, Codex CLI
 versions, not claimed formal minimums.
 
 Screenote depends on the external `screenote` executable. The current JSON
-baseline is Screenote CLI v0.4.0, merged by PR 17 at
-`bc45930aae38acc892324a5e80e097a1761fa17b`. The plugin records `0.4.0` as its
-minimum release because feedback now requires attachment export and optional
-image-comment support. It detects the executable but never installs it. Its
-generated allowlist and shipped workflow contract share that pinned public
+baseline is Screenote CLI v0.4.1, merged by PR 18 at
+`cce90049d1335413bd903d7da4882d20615fa5d3`. The plugin records `0.4.1` as its
+minimum release because snapshot publication now also requires one stable Page
+identity per logical screen. It detects the executable but never installs it.
+Its generated allowlist and shipped workflow contract share that pinned public
 provenance.
 
 Workflow-specific optional dependencies remain local to their plugins:
