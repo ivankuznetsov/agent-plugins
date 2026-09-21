@@ -1,8 +1,14 @@
 # Screenote CLI contract
 
 This plugin depends on the external `screenote` executable. Detect it with
-`command -v screenote`; never download, install, authenticate, or open a browser
-on the user's behalf. The compatibility baseline is Screenote CLI
+`command -v screenote`. If it is missing or not on PATH, ask whether the user
+wants you to install it or help locate an existing installation. Reuse explicit
+installation approval already given in the conversation; do not ask again. With
+approval, install the compatible CLI below or add its existing bin directory to
+the current process PATH, then rerun discovery and the contract check and resume
+the original task. If approval is declined or cannot be requested, provide the
+setup command and report the task blocked. Do not start authentication or open
+a login browser automatically. The compatibility baseline is Screenote CLI
 [v0.4.1](https://github.com/ivankuznetsov/screenote-cli/releases/tag/v0.4.1),
 merged by [PR 18](https://github.com/ivankuznetsov/screenote-cli/pull/18) at
 `cce90049d1335413bd903d7da4882d20615fa5d3`:
@@ -11,7 +17,7 @@ merged by [PR 18](https://github.com/ivankuznetsov/screenote-cli/pull/18) at
 go install github.com/ivankuznetsov/screenote-cli/cmd/screenote@v0.4.1
 ```
 
-Offer that command as guidance only. For hosted interactive setup, suggest
+Run that command only with installation approval; otherwise offer it as guidance. For hosted interactive setup, suggest
 `screenote --base-url https://screenote.ai login`. For a custom deployment,
 the user must configure `SCREENOTE_BASE_URL` or trusted Screenote CLI config
 outside the agent workflow. For noninteractive setup, require
@@ -38,8 +44,9 @@ flag required by [the shipped workflow contract](workflows.json). Offline
 contract tests exercise the real JSON collection names, top-level errors, and
 pagination shapes recorded at the pinned public ref; the probe itself never
 makes a network request. A
-`screenote_not_found` or `screenote_contract_incompatible` diagnostic stops the
-flow with the pinned installation/update guidance; it never installs anything.
+`screenote_not_found` diagnostic enters the approval-based setup flow above.
+For `screenote_contract_incompatible`, ask before updating the CLI. Resume only
+after the contract check passes; the launcher itself never installs anything.
 
 The launcher forwards stdout, stderr, and exit status without reformatting. It
 accepts only these command tuples:

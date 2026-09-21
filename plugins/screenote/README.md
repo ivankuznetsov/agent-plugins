@@ -7,7 +7,7 @@ optional image after applying a fix.
 
 The plugin ships the same `screenote`, `snapshot`, and `feedback` workflows for
 Claude Code, Codex, Pi, and OpenClaw. It detects the `screenote` executable but
-never installs it or starts authentication automatically.
+asks before installing a missing CLI and does not start authentication automatically.
 
 ## Install
 
