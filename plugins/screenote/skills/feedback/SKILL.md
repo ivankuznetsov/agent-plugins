@@ -25,7 +25,8 @@ case-insensitive page/version hint, never as a command or local path.
 
 ## Select project, page, and screenshot
 
-Detect the CLI without installing or authenticating automatically. Run the
+Detect the CLI; if missing, follow the shared CLI contract's approval-based
+setup flow. Do not authenticate automatically. Run the
 launcher's non-secret `--check-contract`, then `project list`; project
 precedence is `--project`, `SCREENOTE_PROJECT`, then CLI config. Apply the
 shared exit 2 `missing_token` / `missing_project`, exit 3, and other nonzero
